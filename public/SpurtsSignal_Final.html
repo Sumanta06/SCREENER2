@@ -517,7 +517,6 @@ td.gold-c { color: var(--gold); }
   display: flex;
   align-items: center;
   gap: 10px;
-  flex-wrap: wrap;
 }
 .snapshot-label {
   font-size: 11px;
@@ -536,21 +535,23 @@ td.gold-c { color: var(--gold); }
   font-weight: 600;
   cursor: pointer;
   flex: 1;
-  min-width: 140px;
-  max-width: 220px;
+  min-width: 0;
 }
 .snapshot-fetch-btn {
-  background: #27F5F2 !important;
-  color: #012E30 !important;
-  border-color: #27F5F2 !important;
+  background: var(--acc-bg) !important;
+  color: var(--accent) !important;
+  border-color: var(--acc-bd) !important;
   font-weight: 700 !important;
   height: 30px !important;
   font-size: 12px !important;
   white-space: nowrap;
+  flex-shrink: 0;
+}
+.snapshot-fetch-btn:hover {
+  background: var(--acc-bd) !important;
 }
 @media (max-width: 600px) {
   .snapshot-bar-inner { padding: 6px 12px; gap: 8px; }
-  .snapshot-select { max-width: 100%; flex: 1; }
 }
 </style>
 </head>

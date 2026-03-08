@@ -563,7 +563,7 @@ td.gold-c { color: var(--gold); }
 .grp-row:last-child { border-bottom: none; }
 .grp-main {
   display: grid;
-  grid-template-columns: 160px 100px 90px 80px 150px 80px 164px 130px 150px 90px 80px 16px;
+  grid-template-columns: 160px 100px 90px 80px 150px 80px 100px 110px 150px 90px 80px 16px;
   align-items: center; gap: 6px;
   padding: 9px 14px;
 }
@@ -573,7 +573,7 @@ td.gold-c { color: var(--gold); }
 /* Column headers row */
 .grp-header {
   display: grid;
-  grid-template-columns: 160px 100px 90px 80px 150px 80px 164px 130px 150px 90px 80px 16px;
+  grid-template-columns: 160px 100px 90px 80px 150px 80px 100px 110px 150px 90px 80px 16px;
   align-items: center; gap: 6px;
   padding: 5px 14px;
   background: var(--bg1);
@@ -618,6 +618,28 @@ td.gold-c { color: var(--gold); }
 .vol-bar { height: 4px; border-radius: 2px; background: var(--accent); opacity: .7; }
 .vol-tag { font-size: 10px; color: var(--ink3); }
 .vol-tag.hot { color: var(--gold); font-weight: 700; }
+
+/* ══════════════════════════════════
+   HORIZONTAL SCROLL WRAPPER (mobile)
+══════════════════════════════════ */
+.grp-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  /* subtle scroll indicator on mobile */
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.grp-scroll::-webkit-scrollbar { height: 4px; }
+.grp-scroll::-webkit-scrollbar-track { background: transparent; }
+.grp-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.grp-header, .grp-main {
+  min-width: 1100px;
+}
+/* Force Underlying column (7th) to LEFT align — prevents gap illusion */
+.grp-main > span:nth-child(7),
+.grp-header > span:nth-child(7) {
+  text-align: left !important;
+}
 </style>
 </head>
 <body>
@@ -1382,7 +1404,7 @@ function renderGroupedTable(groups, tableId){
   if(!groups.length)
     return `<div style="padding:20px;text-align:center;font-size:12px;color:var(--ink3);font-style:italic">No signals found</div>`;
 
-  const headerRow = '<div class="grp-header">'
+  const headerRow = '<div class="grp-scroll"><div class="grp-header">'
     +'<span>Symbol</span>'
     +'<span>Dir</span>'
     +'<span>Acc/Dist</span>'
@@ -1471,7 +1493,7 @@ function renderGroupedTable(groups, tableId){
       +'<span>'+typesHtml+'</span>'
       +'<span>'+inlineSig+'</span>'
       +'<span class="grp-str">'+str+'</span>'
-      +'<span style="text-align:right;color:var(--gold);font-size:11px">'+underlyingTxt+'</span>'
+      +'<span style="color:var(--gold);font-size:11px">'+underlyingTxt+'</span>'
       +'<span class="grp-pct">'+oiTxt+'</span>'
       +'<span style="font-size:11px">'+inlineLtp+'</span>'
       +'<span>'+inlineVol+'</span>'
@@ -1480,7 +1502,7 @@ function renderGroupedTable(groups, tableId){
       +'</div>'
       +detailHtml
       +'</div>';  }).join('');
-  return headerRow + rows;
+  return headerRow + rows + '</div>';
 }
 function toggleGrpDetail(id){
   const el=document.getElementById(id);
@@ -1767,6 +1789,23 @@ async function fetchOld(){
 
 // Load snapshot list on page load
 window.addEventListener('DOMContentLoaded', loadSnapshotList);
+
+// ── Fix static HTML tables — wrap grp content in scroll div ──
+window.addEventListener('DOMContentLoaded', function(){
+  document.querySelectorAll('.table-wrap').forEach(function(wrap){
+    const tblHdr = wrap.querySelector('.table-hdr');
+    const grpHdr = wrap.querySelector('.grp-header');
+    if(!grpHdr) return; // no grouped content
+    const scrollDiv = document.createElement('div');
+    scrollDiv.className = 'grp-scroll';
+    // Collect all nodes after .table-hdr
+    const toMove = [];
+    let node = tblHdr ? tblHdr.nextSibling : grpHdr;
+    while(node){ toMove.push(node); node = node.nextSibling; }
+    toMove.forEach(function(n){ scrollDiv.appendChild(n); });
+    wrap.appendChild(scrollDiv);
+  });
+});
 
 // ── Fetch Live ────────────────────────────────────────────
 async function fetchLive(){

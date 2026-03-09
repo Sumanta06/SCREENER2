@@ -325,7 +325,57 @@ select, button, input { outline: none; font-family: inherit; }
    Each group = 2 rows (CE top, PE bottom)
    Cols: [OI-val | OI-bar | Strike | CHG-bar | CHG-val]
 ═══════════════════════════════════════ */
-#chain-body { width: 100%; margin-top: 50px; }
+#chain-body { width: 100%; margin-top: 60px; }
+
+/* ── PC Fixed Info Boxes ── */
+#info-box-oi, #info-box-chg {
+  display: none;
+  position: fixed;
+  top: 98px;
+  z-index: 200;
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: 5px;
+  padding: 5px 10px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  pointer-events: none;
+  box-shadow: 0 4px 16px rgba(0,0,0,.5);
+  white-space: nowrap;
+}
+#info-box-oi  { left: calc(50px + 1fr + 72px + 15px); }
+#info-box-chg { right: 20px; }
+
+.ib-strike {
+  color: var(--atm-txt);
+  font-weight: 700;
+  font-size: 11px;
+  margin-bottom: 3px;
+}
+.ib-data-row {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+.ib-cell {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.ib-label {
+  font-size: 10px;
+  color: var(--text2);
+  font-weight: 600;
+}
+.ib-val { color: var(--text); font-weight: 600; font-size: 11px; }
+.ib-chg { font-size: 10.5px; }
+.ib-chg.pos { color: var(--ce-txt); }
+.ib-chg.neg { color: var(--pe-txt); }
+.ib-chg.zer { color: var(--text3); }
+
+@media (max-width: 768px) {
+  #info-box-oi, #info-box-chg { display: none !important; }
+}
 
 .sg {
   display: grid;
@@ -543,7 +593,39 @@ select, button, input { outline: none; font-family: inherit; }
   <span id="load-msg">Connecting to R2…</span>
 </div>
 
-<!-- TOOLTIP -->
+<!-- PC FIXED INFO BOX - OI -->
+<div id="info-box-oi">
+  <div class="ib-strike" id="ib-oi-strike">Strike : —</div>
+  <div class="ib-data-row">
+    <div class="ib-cell">
+      <span class="ib-label" style="color:var(--ce-txt)">Call</span>
+      <span class="ib-val" id="ib-ce-oi">—</span>
+      <span class="ib-chg" id="ib-ce-chg">—</span>
+    </div>
+    <div class="ib-cell">
+      <span class="ib-label" style="color:var(--pe-txt)">Put</span>
+      <span class="ib-val" id="ib-pe-oi">—</span>
+      <span class="ib-chg" id="ib-pe-chg">—</span>
+    </div>
+  </div>
+</div>
+
+<!-- PC FIXED INFO BOX - CHG -->
+<div id="info-box-chg">
+  <div class="ib-strike" id="ib-chg-strike">Strike : —</div>
+  <div class="ib-data-row">
+    <div class="ib-cell">
+      <span class="ib-label" style="color:var(--ce-txt)">Call</span>
+      <span class="ib-chg" id="ib-ce-chg2">—</span>
+    </div>
+    <div class="ib-cell">
+      <span class="ib-label" style="color:var(--pe-txt)">Put</span>
+      <span class="ib-chg" id="ib-pe-chg2">—</span>
+    </div>
+  </div>
+</div>
+
+<!-- TOOLTIP (mobile) -->
 <div id="oi-tooltip">
   <div class="tt-strike" id="tt-strike"></div>
   <!-- OI zone rows -->
@@ -941,46 +1023,73 @@ function setupTooltip() {
   const oiSec   = document.getElementById('tt-oi-section');
   const chgSec  = document.getElementById('tt-chg-section');
   const body    = document.getElementById('chain-body');
+  const boxOI   = document.getElementById('info-box-oi');
+  const boxChg  = document.getElementById('info-box-chg');
+  const isMobile = () => window.innerWidth <= 768;
 
   function chgHtml(v, el) {
     const n = +v;
     el.textContent = (n>=0?'+':'') + n.toLocaleString('en-IN') + (n<0?' ▼':n>0?' ▲':'');
     el.className   = 'tt-chg ' + (n>0?'pos':n<0?'neg':'zer');
   }
+  function ibChg(v, el) {
+    const n = +v;
+    el.textContent = (n>=0?'+':'') + n.toLocaleString('en-IN') + (n<0?' ▼':n>0?' ▲':'');
+    el.className   = 'ib-chg ' + (n>0?'pos':n<0?'neg':'zer');
+  }
 
   body.addEventListener('mouseover', e => {
     const sg = e.target.closest('.sg');
-    if (!sg) { tip.style.display='none'; return; }
+    if (!sg) {
+      tip.style.display = 'none';
+      if (!isMobile()) { boxOI.style.display='none'; boxChg.style.display='none'; }
+      return;
+    }
     const strike = sg.dataset.strike;
     if (!strike) return;
+    const label = 'Strike : ' + fmtStr(strike);
 
-    document.getElementById('tt-strike').textContent = 'Strike : ' + fmtStr(strike);
-
-    // Determine zone: left half = OI zone, right half = CHG zone
-    const rect   = sg.getBoundingClientRect();
-    const midX   = rect.left + rect.width / 2;
-    const inLeft = e.clientX < midX;
-
-    if (inLeft) {
-      // LEFT ZONE: show total OI + chg
-      oiSec.style.display  = 'block';
-      chgSec.style.display = 'none';
-      document.getElementById('tt-ce-oi').textContent = (+sg.dataset.ceOi||0).toLocaleString('en-IN');
-      document.getElementById('tt-pe-oi').textContent = (+sg.dataset.peOi||0).toLocaleString('en-IN');
-      chgHtml(sg.dataset.ceChg, document.getElementById('tt-ce-chg'));
-      chgHtml(sg.dataset.peChg, document.getElementById('tt-pe-chg'));
+    if (isMobile()) {
+      boxOI.style.display='none'; boxChg.style.display='none';
+      document.getElementById('tt-strike').textContent = label;
+      const rect   = sg.getBoundingClientRect();
+      const inLeft = e.clientX < rect.left + rect.width / 2;
+      if (inLeft) {
+        oiSec.style.display = 'block'; chgSec.style.display = 'none';
+        document.getElementById('tt-ce-oi').textContent = (+sg.dataset.ceOi||0).toLocaleString('en-IN');
+        document.getElementById('tt-pe-oi').textContent = (+sg.dataset.peOi||0).toLocaleString('en-IN');
+        chgHtml(sg.dataset.ceChg, document.getElementById('tt-ce-chg'));
+        chgHtml(sg.dataset.peChg, document.getElementById('tt-pe-chg'));
+      } else {
+        oiSec.style.display = 'none'; chgSec.style.display = 'block';
+        chgHtml(sg.dataset.ceChg, document.getElementById('tt-ce-chg2'));
+        chgHtml(sg.dataset.peChg, document.getElementById('tt-pe-chg2'));
+      }
+      tip.style.display = 'block';
     } else {
-      // RIGHT ZONE: show only change in OI values
-      oiSec.style.display  = 'none';
-      chgSec.style.display = 'block';
-      chgHtml(sg.dataset.ceChg, document.getElementById('tt-ce-chg2'));
-      chgHtml(sg.dataset.peChg, document.getElementById('tt-pe-chg2'));
+      tip.style.display = 'none';
+      document.getElementById('ib-oi-strike').textContent = label;
+      document.getElementById('ib-ce-oi').textContent = (+sg.dataset.ceOi||0).toLocaleString('en-IN');
+      document.getElementById('ib-pe-oi').textContent = (+sg.dataset.peOi||0).toLocaleString('en-IN');
+      ibChg(sg.dataset.ceChg, document.getElementById('ib-ce-chg'));
+      ibChg(sg.dataset.peChg, document.getElementById('ib-pe-chg'));
+      // Position OI box just left of strike column
+      const sc = sg.querySelector('.sc');
+      if (sc) {
+        const scRect = sc.getBoundingClientRect();
+        boxOI.style.left = 'auto';
+        boxOI.style.right = (window.innerWidth - scRect.left + 15) + 'px';
+      }
+      boxOI.style.display = 'block';
+      document.getElementById('ib-chg-strike').textContent = label;
+      ibChg(sg.dataset.ceChg, document.getElementById('ib-ce-chg2'));
+      ibChg(sg.dataset.peChg, document.getElementById('ib-pe-chg2'));
+      boxChg.style.display = 'block';
     }
-
-    tip.style.display = 'block';
   });
 
   body.addEventListener('mousemove', e => {
+    if (!isMobile()) return;
     const sg = e.target.closest('.sg');
     if (!sg) { tip.style.display='none'; return; }
     const tw = tip.offsetWidth, th = tip.offsetHeight;
@@ -992,7 +1101,10 @@ function setupTooltip() {
     tip.style.top  = y + 'px';
   });
 
-  body.addEventListener('mouseleave', () => { tip.style.display='none'; });
+  body.addEventListener('mouseleave', () => {
+    tip.style.display = 'none';
+    if (!isMobile()) { boxOI.style.display='none'; boxChg.style.display='none'; }
+  });
 }
 setupTooltip();
 }

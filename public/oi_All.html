@@ -38,32 +38,32 @@
   --cline:      #272740;
 }
 [data-theme="darkblue"] {
-  --bg:         #012C30;
-  --bg2:        #013a3f;
-  --bg3:        #024850;
-  --bg4:        #035560;
-  --bg5:        #046270;
-  --border:     #024048;
-  --border2:    #035060;
-  --text:       #b0e8e0;
-  --text2:      #408880;
-  --text3:      #1a4845;
-  --strike:     #80d8d0;
-  --ce:         #00f0c8;
-  --ce-bar:     rgba(0,240,200,.32);
-  --ce-edge:    #00f0c8;
-  --ce-dim:     rgba(0,240,200,.12);
-  --ce-txt:     #00f0c8;
-  --pe:         #ff5060;
-  --pe-bar:     rgba(255,80,96,.30);
-  --pe-edge:    #ff5060;
-  --pe-dim:     rgba(255,80,96,.12);
-  --pe-txt:     #ff5060;
-  --atm-bg:     rgba(0,240,200,.07);
-  --atm-line:   rgba(0,240,200,.45);
-  --atm-txt:    #00d8b8;
-  --acc:        #00d8b8;
-  --cline:      #035060;
+  --bg:         #0d1520;
+  --bg2:        #111c28;
+  --bg3:        #162030;
+  --bg4:        #1a2638;
+  --bg5:        #1e2c40;
+  --border:     #1a2535;
+  --border2:    #1e2d40;
+  --text:       #c8d8e4;
+  --text2:      #607888;
+  --text3:      #2a3a48;
+  --strike:     #a8c4d4;
+  --ce:         #3dba6e;
+  --ce-bar:     rgba(45,165,90,.55);
+  --ce-edge:    #3dba6e;
+  --ce-dim:     rgba(45,165,90,.15);
+  --ce-txt:     #4dc878;
+  --pe:         #c84848;
+  --pe-bar:     rgba(185,55,55,.55);
+  --pe-edge:    #c84848;
+  --pe-dim:     rgba(185,55,55,.15);
+  --pe-txt:     #d45555;
+  --atm-bg:     rgba(210,170,0,.08);
+  --atm-line:   rgba(210,170,0,.55);
+  --atm-txt:    #c8a000;
+  --acc:        #5090c0;
+  --cline:      #1e2d40;
 }
 [data-theme="light"] {
   --bg:         #f2f4fa;
@@ -325,7 +325,7 @@ select, button, input { outline: none; font-family: inherit; }
    Each group = 2 rows (CE top, PE bottom)
    Cols: [OI-val | OI-bar | Strike | CHG-bar | CHG-val]
 ═══════════════════════════════════════ */
-#chain-body { width: 100%; }
+#chain-body { width: 100%; margin-top: 50px; }
 
 .sg {
   display: grid;
@@ -606,7 +606,7 @@ select, button, input { outline: none; font-family: inherit; }
 
   <div class="bg" id="theme-grp">
     <button data-v="dark" class="on">Dark</button>
-    <button data-v="darkblue">Teal</button>
+    <button data-v="darkblue">Blue</button>
     <button data-v="light">Light</button>
   </div>
 </div>

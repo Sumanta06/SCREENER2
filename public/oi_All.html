@@ -38,32 +38,32 @@
   --cline:      #272740;
 }
 [data-theme="darkblue"] {
-  --bg:         #010d22;
-  --bg2:        #041330;
-  --bg3:        #081a3c;
-  --bg4:        #0d2248;
-  --bg5:        #122855;
-  --border:     #152040;
-  --border2:    #1c2f55;
-  --text:       #b8d0f5;
-  --text2:      #3a5890;
-  --text3:      #1a2845;
-  --strike:     #90b8e0;
-  --ce:         #00f5ff;
-  --ce-bar:     rgba(0,240,255,.32);
-  --ce-edge:    #00f5ff;
-  --ce-dim:     rgba(0,245,255,.12);
-  --ce-txt:     #00f5ff;
-  --pe:         #ff3888;
-  --pe-bar:     rgba(255,55,140,.30);
-  --pe-edge:    #ff3888;
-  --pe-dim:     rgba(255,55,140,.12);
-  --pe-txt:     #ff3888;
-  --atm-bg:     rgba(80,180,255,.07);
-  --atm-line:   rgba(80,180,255,.45);
-  --atm-txt:    #50b4ff;
-  --acc:        #4d9eff;
-  --cline:      #1c2f55;
+  --bg:         #012C30;
+  --bg2:        #013a3f;
+  --bg3:        #024850;
+  --bg4:        #035560;
+  --bg5:        #046270;
+  --border:     #024048;
+  --border2:    #035060;
+  --text:       #b0e8e0;
+  --text2:      #408880;
+  --text3:      #1a4845;
+  --strike:     #80d8d0;
+  --ce:         #00f0c8;
+  --ce-bar:     rgba(0,240,200,.32);
+  --ce-edge:    #00f0c8;
+  --ce-dim:     rgba(0,240,200,.12);
+  --ce-txt:     #00f0c8;
+  --pe:         #ff5060;
+  --pe-bar:     rgba(255,80,96,.30);
+  --pe-edge:    #ff5060;
+  --pe-dim:     rgba(255,80,96,.12);
+  --pe-txt:     #ff5060;
+  --atm-bg:     rgba(0,240,200,.07);
+  --atm-line:   rgba(0,240,200,.45);
+  --atm-txt:    #00d8b8;
+  --acc:        #00d8b8;
+  --cline:      #035060;
 }
 [data-theme="light"] {
   --bg:         #f2f4fa;
@@ -93,6 +93,40 @@
   --acc:        #2060e0;
   --cline:      #9090b8;
 }
+
+/* ═══════════════════════════════════════
+   TOOLTIP
+═══════════════════════════════════════ */
+#oi-tooltip {
+  display: none;
+  position: fixed;
+  z-index: 500;
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: 7px;
+  padding: 10px 14px;
+  box-shadow: 0 6px 28px rgba(0,0,0,.55);
+  pointer-events: none;
+  min-width: 190px;
+  font-family: 'JetBrains Mono', monospace;
+}
+#oi-tooltip .tt-strike {
+  font-size: 12px; font-weight: 600;
+  color: var(--atm-txt);
+  margin-bottom: 8px;
+  letter-spacing: .03em;
+}
+#oi-tooltip .tt-row {
+  display: flex; align-items: baseline;
+  gap: 6px; margin-bottom: 4px;
+  font-size: 11.5px;
+}
+#oi-tooltip .tt-label { color: var(--text2); font-size: 10px; width: 28px; }
+#oi-tooltip .tt-oi { color: var(--text); font-weight: 600; }
+#oi-tooltip .tt-chg { font-size: 10.5px; }
+#oi-tooltip .tt-chg.pos { color: var(--ce-txt); }
+#oi-tooltip .tt-chg.neg { color: var(--pe-txt); }
+#oi-tooltip .tt-chg.zer { color: var(--text3); }
 
 /* ═══════════════════════════════════════
    BASE
@@ -159,11 +193,19 @@ select, button, input { outline: none; font-family: inherit; }
 .nav-btn:hover { color: var(--text); border-color: var(--acc); }
 
 #sym-select {
-  background: transparent; color: var(--text);
-  border: none;
-  font-size: 14px; font-weight: 600;
+  background: var(--bg3); color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  font-size: 13px; font-weight: 600;
   cursor: pointer; min-width: 110px;
-  padding: 0 6px;
+  padding: 2px 6px;
+}
+#sym-select option {
+  background: var(--bg3);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 4px 8px;
 }
 
 .exp-badge {
@@ -272,11 +314,11 @@ select, button, input { outline: none; font-family: inherit; }
   text-transform: uppercase;
   letter-spacing: .1em;
 }
-.hce { color: var(--ce-txt); justify-content: flex-end; opacity: .7; }
-.hst { color: var(--text3); justify-content: center; border-left: 1px solid var(--border2); border-right: 1px solid var(--border2); }
-.hpe { color: var(--pe-txt); opacity: .7; }
-.hoi { color: var(--text3); justify-content: flex-end; opacity: .6; padding-right: 12px; }
-.hchg { color: var(--text3); opacity: .6; padding-left: 12px; }
+.hce { color: var(--ce-txt); justify-content: flex-end; opacity: .9; }
+.hst { color: var(--text); justify-content: center; border-left: 1px solid var(--border2); border-right: 1px solid var(--border2); font-weight: 700; }
+.hpe { color: var(--pe-txt); opacity: .9; }
+.hoi { color: var(--ce-txt); justify-content: flex-end; opacity: .85; padding-right: 12px; }
+.hchg { color: var(--pe-txt); opacity: .85; padding-left: 12px; }
 
 /* ═══════════════════════════════════════
    STRIKE GROUPS
@@ -333,7 +375,7 @@ select, button, input { outline: none; font-family: inherit; }
 .v-ce { grid-column: 1; grid-row: 1; color: var(--ce-txt); }
 .v-pe { grid-column: 1; grid-row: 2; color: var(--pe-txt); }
 
-/* ── OI Bar (col 2): RIGHT-anchored, extends LEFT ── */
+/* ── OI Bar (col 2): LEFT-anchored 2-part bar ── */
 .b-oi {
   grid-column: 2;
   position: relative; overflow: hidden;
@@ -341,16 +383,43 @@ select, button, input { outline: none; font-family: inherit; }
 .b-ce { grid-row: 1; }
 .b-pe { grid-row: 2; }
 
-.oi-bar {
+/* Base bar = previous OI (light) */
+.oi-base {
   position: absolute;
-  right: 0; top: 3px; bottom: 3px;
-  transition: width .45s cubic-bezier(.25,.46,.45,.94);
-  border-radius: 1px 0 0 1px;
+  left: 0; top: 3px; bottom: 3px;
+  transition: width .4s ease;
+  border-radius: 0 1px 1px 0;
 }
-/* OI addition (chg ≥ 0) = solid/deep */
-/* ALL OI bars solid - no hollow distinction */
-.oi-add-ce, .oi-red-ce { background: var(--ce-bar); border-left: 2px solid var(--ce-edge); }
-.oi-add-pe, .oi-red-pe { background: var(--pe-bar); border-left: 2px solid var(--pe-edge); }
+.oi-base-ce { background: var(--ce-bar); }
+.oi-base-pe { background: var(--pe-bar); }
+
+/* Extension = addition (dark) or unwinding (hatched outline) */
+.oi-ext {
+  position: absolute;
+  top: 3px; bottom: 3px;
+  transition: width .4s ease, left .4s ease;
+  border-radius: 0 1px 1px 0;
+}
+/* Addition: dark solid with bright edge */
+.oi-add-ce {
+  background: var(--ce-edge);
+  opacity: .75;
+}
+.oi-add-pe {
+  background: var(--pe-edge);
+  opacity: .75;
+}
+/* Unwinding: outline only, transparent */
+.oi-red-ce {
+  background: transparent;
+  border: 1.5px solid var(--ce-edge);
+  border-radius: 0 2px 2px 0;
+}
+.oi-red-pe {
+  background: transparent;
+  border: 1.5px solid var(--pe-edge);
+  border-radius: 0 2px 2px 0;
+}
 
 /* Max OI brightness boost */
 .sg.mx-ce .b-ce .oi-bar { filter: brightness(1.25); }
@@ -378,12 +447,13 @@ select, button, input { outline: none; font-family: inherit; }
   z-index: 1;
   border-radius: 1px;
 }
-/* positive: right from center */
-.chg-p-ce { left: 50%; background: var(--ce-bar); border-right: 2px solid var(--ce-edge); }
-.chg-p-pe { left: 50%; background: var(--pe-bar); border-right: 2px solid var(--pe-edge); }
-/* negative: left from center */
-.chg-n-ce { right: 50%; background: var(--ce-dim); border-left: 2px solid var(--ce-edge); }
-.chg-n-pe { right: 50%; background: var(--pe-dim); border-left: 2px solid var(--pe-edge); }
+/* CE always green, PE always red — same color both directions */
+/* Positive: right from center */
+.chg-p-ce { left: 50%;  background: var(--ce-bar); border-right: 2px solid var(--ce-edge); }
+.chg-p-pe { left: 50%;  background: var(--pe-bar); border-right: 2px solid var(--pe-edge); }
+/* Negative: left from center (translateX trick) */
+.chg-n-ce { left: 50%;  background: var(--ce-bar); border-left: 2px solid var(--ce-edge); transform: translateX(-100%); }
+.chg-n-pe { left: 50%;  background: var(--pe-bar); border-left: 2px solid var(--pe-edge); transform: translateX(-100%); }
 
 /* ── CHG Value (col 5) ── */
 .v-chg {
@@ -473,6 +543,35 @@ select, button, input { outline: none; font-family: inherit; }
   <span id="load-msg">Connecting to R2…</span>
 </div>
 
+<!-- TOOLTIP -->
+<div id="oi-tooltip">
+  <div class="tt-strike" id="tt-strike"></div>
+  <!-- OI zone rows -->
+  <div id="tt-oi-section">
+    <div class="tt-row">
+      <span class="tt-label" style="color:var(--ce-txt)">Call</span>
+      <span class="tt-oi" id="tt-ce-oi"></span>
+      <span class="tt-chg" id="tt-ce-chg"></span>
+    </div>
+    <div class="tt-row">
+      <span class="tt-label" style="color:var(--pe-txt)">Put</span>
+      <span class="tt-oi" id="tt-pe-oi"></span>
+      <span class="tt-chg" id="tt-pe-chg"></span>
+    </div>
+  </div>
+  <!-- CHG zone rows -->
+  <div id="tt-chg-section">
+    <div class="tt-row">
+      <span class="tt-label" style="color:var(--ce-txt)">Call</span>
+      <span class="tt-chg" id="tt-ce-chg2"></span>
+    </div>
+    <div class="tt-row">
+      <span class="tt-label" style="color:var(--pe-txt)">Put</span>
+      <span class="tt-chg" id="tt-pe-chg2"></span>
+    </div>
+  </div>
+</div>
+
 <!-- TOPBAR -->
 <div id="topbar">
   <button class="nav-btn" id="prev-sym">‹</button>
@@ -507,7 +606,7 @@ select, button, input { outline: none; font-family: inherit; }
 
   <div class="bg" id="theme-grp">
     <button data-v="dark" class="on">Dark</button>
-    <button data-v="darkblue">Blue</button>
+    <button data-v="darkblue">Teal</button>
     <button data-v="light">Light</button>
   </div>
 </div>
@@ -617,7 +716,13 @@ function buildScanSel() {
 }
 
 function buildSymSel(scan) {
-  symList = scan ? Object.keys(scan.symbols || {}) : [];
+  const raw = scan ? Object.keys(scan.symbols || {}) : [];
+  // Indices first (NIFTY, BANKNIFTY, SENSEX, FINNIFTY, MIDCPNIFTY), then stocks A-Z
+  const INDICES = ['NIFTY','BANKNIFTY','SENSEX','FINNIFTY','MIDCPNIFTY','NIFTYNXT50'];
+  const indices = raw.filter(s => INDICES.includes(s))
+    .sort((a,b) => INDICES.indexOf(a) - INDICES.indexOf(b));
+  const stocks  = raw.filter(s => !INDICES.includes(s)).sort();
+  symList = [...indices, ...stocks];
   const el = document.getElementById('sym-select');
   el.innerHTML = '';
   symList.forEach((s,i) => {
@@ -632,21 +737,35 @@ function buildSymSel(scan) {
 
 // ── COMPUTE ──
 async function computeDisplay(sym, base) {
+  // LEFT column (OI) = hamesha base (selected scan) ka actual OI — koi change nahi
+  // Recent mode: RIGHT column bhi same scan ka chg
   if (dispMode === 'recent') return base.map(s => ({...s}));
+
   const fromVal = document.getElementById('from-time').value;
   if (!fromVal) return base.map(s => ({...s}));
   const fromDt = new Date(fromVal);
+
   let scans;
   try { scans = await scansInRange(fromDt); } catch { scans = []; }
   if (!scans.length) return base.map(s => ({...s}));
 
+  // from-time ka closest scan (oldest in range)
+  const fromScan = scans[scans.length - 1];
+
+  // from-time scan ka chg — Compare ke liye
+  const fromChg = {};
+  if (fromScan?.symbols?.[sym]) {
+    fromScan.symbols[sym].strikes.forEach(s => {
+      fromChg[s.strike] = { ce_chg: s.ce_chg||0, pe_chg: s.pe_chg||0 };
+    });
+  }
+
+  // Avg Range: saare scans ka average chg
   const hist = {};
   scans.forEach(scan => {
     const sd = scan.symbols?.[sym]; if (!sd) return;
     sd.strikes.forEach(s => {
-      if (!hist[s.strike]) hist[s.strike] = {ce_oi:[],pe_oi:[],ce_chg:[],pe_chg:[]};
-      hist[s.strike].ce_oi.push(s.ce_oi||0);
-      hist[s.strike].pe_oi.push(s.pe_oi||0);
+      if (!hist[s.strike]) hist[s.strike] = { ce_chg:[], pe_chg:[] };
       hist[s.strike].ce_chg.push(s.ce_chg||0);
       hist[s.strike].pe_chg.push(s.pe_chg||0);
     });
@@ -654,14 +773,27 @@ async function computeDisplay(sym, base) {
   const avg = arr => arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : 0;
 
   return base.map(s => {
-    const h = hist[s.strike];
-    if (!h) return {...s, ce_chg:0, pe_chg:0, is_new:true};
-    if (dispMode === 'avg') return {
+    const fc = fromChg[s.strike];
+    const h  = hist[s.strike];
+
+    // LEFT: s.ce_oi / s.pe_oi untouched — selected scan ka actual OI
+
+    if (dispMode === 'avg') {
+      return {
+        ...s,
+        // LEFT unchanged — OI same
+        ce_chg: h ? Math.round(avg(h.ce_chg)) : 0,
+        pe_chg: h ? Math.round(avg(h.pe_chg)) : 0,
+      };
+    }
+
+    // Compare: selected scan chg minus from-time scan chg
+    return {
       ...s,
-      ce_oi: Math.round(avg(h.ce_oi)), pe_oi: Math.round(avg(h.pe_oi)),
-      ce_chg: Math.round(avg(h.ce_chg)), pe_chg: Math.round(avg(h.pe_chg)),
+      // LEFT unchanged — OI same
+      ce_chg: Math.round((s.ce_chg||0) - (fc ? fc.ce_chg : 0)),
+      pe_chg: Math.round((s.pe_chg||0) - (fc ? fc.pe_chg : 0)),
     };
-    return {...s, ce_chg: Math.round(s.ce_oi - avg(h.ce_oi)), pe_chg: Math.round(s.pe_oi - avg(h.pe_oi))};
   });
 }
 
@@ -720,11 +852,11 @@ async function render() {
       return `<div class="pcr-sg${atm}">
         <div class="v-oi v-ce">${showCE ? cePct+'%' : ''}</div>
         <div class="b-oi b-ce pcr-track">
-          ${showCE ? `<div class="pcr-fill oi-add-ce" style="right:0;width:${cePct}%"></div>` : ''}
+          ${showCE ? `<div class="pcr-fill oi-add-ce" style="left:0;width:${cePct}%"></div>` : ''}
         </div>
         <div class="sc">${fmtStr(row.strike)}${row.is_atm?'<span class="atm-star">★</span>':''}</div>
         <div class="b-oi b-pe pcr-track">
-          ${showPE ? `<div class="pcr-fill oi-add-pe" style="right:0;width:${pePct}%"></div>` : ''}
+          ${showPE ? `<div class="pcr-fill oi-add-pe" style="left:0;width:${pePct}%"></div>` : ''}
         </div>
         <div class="v-chg vc-pe ${(pcr<1?'cp':'cn')}">${showPE ? (isFinite(pcr)?pcr.toFixed(2):'∞') : ''}</div>
         <div class="b-chg bc-ce"></div><div class="v-chg vc-ce"></div>
@@ -736,13 +868,8 @@ async function render() {
 
   // ── OI VIEW ──
   body.innerHTML = disp.map(row => {
-    const ceOIPct  = barPct(row.ce_oi, maxOI);
-    const peOIPct  = barPct(row.pe_oi, maxOI);
     const ceChgPct = barPct(row.ce_chg, maxChg);
     const peChgPct = barPct(row.pe_chg, maxChg);
-
-    const ceOICls  = (row.ce_chg||0) >= 0 ? 'oi-add-ce' : 'oi-red-ce';
-    const peOICls  = (row.pe_chg||0) >= 0 ? 'oi-add-pe' : 'oi-red-pe';
     const ceChgCls = (row.ce_chg||0) >= 0 ? 'chg-p-ce' : 'chg-n-ce';
     const peChgCls = (row.pe_chg||0) >= 0 ? 'chg-p-pe' : 'chg-n-pe';
 
@@ -753,11 +880,25 @@ async function render() {
     const mpe = (row.pe_oi||0) === maxPE ? ' mx-pe' : '';
     const atm = row.is_atm ? ' atm' : '';
 
-    return `<div class="sg${atm}${mce}${mpe}">
+    // OI bars:
+    // Recent mode: 2-part bar (base + extension)
+    // Avg/Compare: sirf base bar (no extension — OI static)
+    const ceBasePct = barPct(row.ce_oi, maxOI);
+    const peBasePct = barPct(row.pe_oi, maxOI);
+    const ceExtPct  = dispMode === 'recent' ? barPct(row.ce_chg, maxOI) : 0;
+    const peExtPct  = dispMode === 'recent' ? barPct(row.pe_chg, maxOI) : 0;
+
+    const ceExtCls = (row.ce_chg||0) >= 0 ? 'oi-add-ce' : 'oi-red-ce';
+    const peExtCls = (row.pe_chg||0) >= 0 ? 'oi-add-pe' : 'oi-red-pe';
+
+    return `<div class="sg${atm}${mce}${mpe}" data-strike="${row.strike}" data-ce-oi="${row.ce_oi||0}" data-pe-oi="${row.pe_oi||0}" data-ce-chg="${row.ce_chg||0}" data-pe-chg="${row.pe_chg||0}">
 
       <div class="v-oi v-ce">${showCE ? fmtOI(row.ce_oi) : ''}</div>
       <div class="b-oi b-ce">
-        ${showCE ? `<div class="oi-bar ${ceOICls}" style="width:${ceOIPct}%"></div>` : ''}
+        ${showCE ? `
+          <div class="oi-base oi-base-ce" style="width:${ceBasePct}%"></div>
+          ${dispMode === 'recent' ? `<div class="oi-ext ${ceExtCls}" style="left:${ceBasePct}%;width:${ceExtPct}%"></div>` : ''}
+        ` : ''}
       </div>
 
       <div class="sc">${fmtStr(row.strike)}${row.is_atm?'<span class="atm-star">★</span>':''}</div>
@@ -769,7 +910,10 @@ async function render() {
 
       <div class="v-oi v-pe">${showPE ? fmtOI(row.pe_oi) : ''}</div>
       <div class="b-oi b-pe">
-        ${showPE ? `<div class="oi-bar ${peOICls}" style="width:${peOIPct}%"></div>` : ''}
+        ${showPE ? `
+          <div class="oi-base oi-base-pe" style="width:${peBasePct}%"></div>
+          ${dispMode === 'recent' ? `<div class="oi-ext ${peExtCls}" style="left:${peBasePct}%;width:${peExtPct}%"></div>` : ''}
+        ` : ''}
       </div>
 
       <div class="b-chg bc-pe">
@@ -786,6 +930,71 @@ async function render() {
 function scrollATM() {
   const a = document.querySelector('.sg.atm, .pcr-sg.atm');
   if (a) setTimeout(() => a.scrollIntoView({block:'center', behavior:'smooth'}), 100);
+
+// ── TOOLTIP ──
+function fmtNum(v) {
+  v = Math.abs(+v)||0;
+  return v.toLocaleString('en-IN');
+}
+function setupTooltip() {
+  const tip     = document.getElementById('oi-tooltip');
+  const oiSec   = document.getElementById('tt-oi-section');
+  const chgSec  = document.getElementById('tt-chg-section');
+  const body    = document.getElementById('chain-body');
+
+  function chgHtml(v, el) {
+    const n = +v;
+    el.textContent = (n>=0?'+':'') + n.toLocaleString('en-IN') + (n<0?' ▼':n>0?' ▲':'');
+    el.className   = 'tt-chg ' + (n>0?'pos':n<0?'neg':'zer');
+  }
+
+  body.addEventListener('mouseover', e => {
+    const sg = e.target.closest('.sg');
+    if (!sg) { tip.style.display='none'; return; }
+    const strike = sg.dataset.strike;
+    if (!strike) return;
+
+    document.getElementById('tt-strike').textContent = 'Strike : ' + fmtStr(strike);
+
+    // Determine zone: left half = OI zone, right half = CHG zone
+    const rect   = sg.getBoundingClientRect();
+    const midX   = rect.left + rect.width / 2;
+    const inLeft = e.clientX < midX;
+
+    if (inLeft) {
+      // LEFT ZONE: show total OI + chg
+      oiSec.style.display  = 'block';
+      chgSec.style.display = 'none';
+      document.getElementById('tt-ce-oi').textContent = (+sg.dataset.ceOi||0).toLocaleString('en-IN');
+      document.getElementById('tt-pe-oi').textContent = (+sg.dataset.peOi||0).toLocaleString('en-IN');
+      chgHtml(sg.dataset.ceChg, document.getElementById('tt-ce-chg'));
+      chgHtml(sg.dataset.peChg, document.getElementById('tt-pe-chg'));
+    } else {
+      // RIGHT ZONE: show only change in OI values
+      oiSec.style.display  = 'none';
+      chgSec.style.display = 'block';
+      chgHtml(sg.dataset.ceChg, document.getElementById('tt-ce-chg2'));
+      chgHtml(sg.dataset.peChg, document.getElementById('tt-pe-chg2'));
+    }
+
+    tip.style.display = 'block';
+  });
+
+  body.addEventListener('mousemove', e => {
+    const sg = e.target.closest('.sg');
+    if (!sg) { tip.style.display='none'; return; }
+    const tw = tip.offsetWidth, th = tip.offsetHeight;
+    let x = e.clientX + 16, y = e.clientY - th/2;
+    if (x + tw > window.innerWidth - 10) x = e.clientX - tw - 16;
+    if (y < 10) y = 10;
+    if (y + th > window.innerHeight - 10) y = window.innerHeight - th - 10;
+    tip.style.left = x + 'px';
+    tip.style.top  = y + 'px';
+  });
+
+  body.addEventListener('mouseleave', () => { tip.style.display='none'; });
+}
+setupTooltip();
 }
 function setMsg(m) {
   document.getElementById('load-msg').textContent = m;

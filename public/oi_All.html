@@ -429,6 +429,7 @@ select, button, input { outline: none; font-family: inherit; }
 .b-oi {
   grid-column: 2;
   position: relative; overflow: hidden;
+  margin-right: 6px;
 }
 .b-ce { grid-row: 1; }
 .b-pe { grid-row: 2; }
@@ -479,6 +480,7 @@ select, button, input { outline: none; font-family: inherit; }
 .b-chg {
   grid-column: 4;
   position: relative; overflow: hidden;
+  margin-left: 6px;
 }
 .bc-ce { grid-row: 1; }
 .bc-pe { grid-row: 2; }
@@ -918,7 +920,10 @@ async function render() {
   document.getElementById('iv-mce').textContent = `${maxCES} (${fmtOI(maxCE)})`;
   document.getElementById('iv-mpe').textContent = `${maxPES} (${fmtOI(maxPE)})`;
 
-  const maxOI  = Math.max(maxCE, maxPE, 1);
+  const maxOI  = Math.max(...disp.map(r => Math.max(
+    (r.ce_oi||0) + Math.abs(r.ce_chg||0),
+    (r.pe_oi||0) + Math.abs(r.pe_chg||0)
+  )), 1);
   const maxChg = Math.max(...disp.map(r => Math.max(Math.abs(r.ce_chg||0), Math.abs(r.pe_chg||0))), 1);
 
   const showCE = sideMode !== 'put';
@@ -962,20 +967,22 @@ async function render() {
     const mpe = (row.pe_oi||0) === maxPE ? ' mx-pe' : '';
     const atm = row.is_atm ? ' atm' : '';
 
-    // OI bars:
-    // Recent mode: 2-part bar (base + extension)
-    // Avg/Compare: sirf base bar (no extension — OI static)
+    // OI bars: base = total OI, ext = |change| always from base end
     const ceBasePct = barPct(row.ce_oi, maxOI);
     const peBasePct = barPct(row.pe_oi, maxOI);
-    const ceExtPct  = dispMode === 'recent' ? barPct(row.ce_chg, maxOI) : 0;
-    const peExtPct  = dispMode === 'recent' ? barPct(row.pe_chg, maxOI) : 0;
+    const ceExtPct  = dispMode === 'recent' ? barPct(Math.abs(row.ce_chg||0), maxOI) : 0;
+    const peExtPct  = dispMode === 'recent' ? barPct(Math.abs(row.pe_chg||0), maxOI) : 0;
 
     const ceExtCls = (row.ce_chg||0) >= 0 ? 'oi-add-ce' : 'oi-red-ce';
     const peExtCls = (row.pe_chg||0) >= 0 ? 'oi-add-pe' : 'oi-red-pe';
 
+    // Label: currentOI (change)
+    const ceLbl = showCE ? `${fmtOI(row.ce_oi)}${row.ce_chg ? '('+fmtChg(row.ce_chg).t+')' : ''}` : '';
+    const peLbl = showPE ? `${fmtOI(row.pe_oi)}${row.pe_chg ? '('+fmtChg(row.pe_chg).t+')' : ''}` : '';
+
     return `<div class="sg${atm}${mce}${mpe}" data-strike="${row.strike}" data-ce-oi="${row.ce_oi||0}" data-pe-oi="${row.pe_oi||0}" data-ce-chg="${row.ce_chg||0}" data-pe-chg="${row.pe_chg||0}">
 
-      <div class="v-oi v-ce">${showCE ? fmtOI(row.ce_oi) : ''}</div>
+      <div class="v-oi v-ce">${ceLbl}</div>
       <div class="b-oi b-ce">
         ${showCE ? `
           <div class="oi-base oi-base-ce" style="width:${ceBasePct}%"></div>
@@ -990,7 +997,7 @@ async function render() {
       </div>
       <div class="v-chg vc-ce ${cef.c}">${showCE ? cef.t : ''}</div>
 
-      <div class="v-oi v-pe">${showPE ? fmtOI(row.pe_oi) : ''}</div>
+      <div class="v-oi v-pe">${peLbl}</div>
       <div class="b-oi b-pe">
         ${showPE ? `
           <div class="oi-base oi-base-pe" style="width:${peBasePct}%"></div>

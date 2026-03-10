@@ -368,8 +368,6 @@ td.purple{color:var(--purple-text);font-family:'JetBrains Mono',monospace;font-w
 tr.top-signal{background:var(--gold-dim)!important;border-left:2px solid var(--gold);}
 tr.top-signal:hover{background:var(--gold-mid)!important;}
 tr.top-signal td.sym::after{content:'🔥';font-size:.6rem;margin-left:5px;}
-.tv-icon{cursor:pointer;font-size:11px;opacity:.35;margin-left:5px;display:inline-block;transition:opacity .15s,transform .15s;}
-.tv-icon:hover{opacity:1;transform:scale(1.2);}
 .top-badge{display:inline-flex;font-size:.55rem;font-weight:700;
   padding:1px 5px;border-radius:3px;margin-left:5px;
   background:var(--gold-mid);color:var(--gold);vertical-align:middle;}
@@ -721,16 +719,6 @@ function fmtP(v){ const n=parseFloat(v); return isNaN(n)?'—':(n>=0?'+':'')+n.t
 function showDash(){ document.getElementById('empty').style.display='none'; document.getElementById('dash').style.display='block'; }
 function toMap(arr){ const m={}; arr.forEach(r=>m[r.symbol]=r); return m; }
 
-const TV_MAP = {
-  NIFTY:'NSE:NIFTY', BANKNIFTY:'NSE:BANKNIFTY', FINNIFTY:'NSE:CNXFINANCE',
-  MIDCPNIFTY:'NSE:MIDCPNIFTY', SENSEX:'BSE:SENSEX', BANKEX:'BSE:BANKEX', NIFTYNXT50:'NSE:NIFTYNXT50'
-};
-function openTV(sym, e) {
-  if(e) e.stopPropagation();
-  const tvSym = TV_MAP[sym] || ('NSE:' + sym);
-  window.open('https://www.tradingview.com/chart/?symbol=' + tvSym + '&interval=5', '_blank');
-}
-
 function oiCell(pct,cls){
   const n=Math.abs(parseFloat(pct)||0);
   const w=Math.min(n/40*100,100).toFixed(1);
@@ -869,7 +857,7 @@ function buildRow(r,cls,topSet){
   const pc = parseFloat(r.pricePct)>=0?'g':'r';
   const isTop = topSet && topSet.has(r.symbol);
   return `<tr${isTop?' class="top-signal"':''}>
-    <td class="sym">${r.symbol}${isTop?'<span class="top-badge">TOP</span>':''}<span class="tv-icon" onclick="openTV('${r.symbol}',event)" title="TradingView 5m">📈</span></td>
+    <td class="sym">${r.symbol}${isTop?'<span class="top-badge">TOP</span>':''}</td>
     <td class="mono">${fmtN(r.oiNow)}</td>
     <td class="dim">${fmtN(r.oiBase)}</td>
     ${oiCell(r.oiPct,cls)}

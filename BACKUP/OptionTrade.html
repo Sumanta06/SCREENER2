@@ -337,18 +337,6 @@ main { padding: 16px 20px 60px; max-width: 1400px; margin: 0 auto; }
 }
 .idx-row:last-child { border-bottom: none; }
 .idx-row:hover { background: var(--bg2); }
-.tv-icon {
-  cursor: pointer;
-  font-size: 12px;
-  opacity: 0.4;
-  margin-left: 4px;
-  transition: opacity .15s, transform .15s;
-  display: inline-block;
-}
-.tv-icon:hover {
-  opacity: 1;
-  transform: scale(1.2);
-}
 
 .idx-top {
   display: flex; align-items: center; justify-content: space-between;
@@ -742,20 +730,6 @@ td.gold-c { color: var(--gold); }
 const WORKER = 'https://spurts.21aoips3531a1zi.workers.dev/';
 const MON = {Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
 const INDEX_SYMS = new Set(['NIFTY','BANKNIFTY','FINNIFTY','MIDCPNIFTY','SENSEX','BANKEX','NIFTYNXT50']);
-const TV_MAP = {
-  NIFTY:       'NSE:NIFTY',
-  BANKNIFTY:   'NSE:BANKNIFTY',
-  FINNIFTY:    'NSE:CNXFINANCE',
-  MIDCPNIFTY:  'NSE:MIDCPNIFTY',
-  SENSEX:      'BSE:SENSEX',
-  BANKEX:      'BSE:BANKEX',
-  NIFTYNXT50:  'NSE:NIFTYNXT50',
-};
-function openTV(sym, e) {
-  if (e) { e.stopPropagation(); }
-  const tvSym = TV_MAP[sym] || ('NSE:' + sym);
-  window.open('https://www.tradingview.com/chart/?symbol=' + tvSym + '&interval=5', '_blank');
-}
 
 let _data   = null;
 let _active = null;
@@ -1273,7 +1247,7 @@ function renderGroupedTable(groups, tableId){
         +'</tr></thead><tbody>'+detailRows+'</tbody></table></div>'
       : '';
 
-    return '<div class="grp-row" style="position:relative">'
+    return '<div class="grp-row">'
       +'<div class="'+mainCls+'" '+mainClick+'>'
       +'<span class="grp-sym">'+g.sym+'</span>'
       +'<span>'+confirmBadge(g)+'</span>'
@@ -1287,7 +1261,6 @@ function renderGroupedTable(groups, tableId){
       +'<span>'+inlineVol+'</span>'
       +'<span class="grp-days" style="text-align:right">'+daysLbl+'</span>'
       +'<span class="grp-expand-icon">'+expandBtn+'</span>'
-      +'<span class="tv-icon" onclick="openTV(\''+g.sym+'\',event)" title="TradingView 5m Chart">📈</span>'
       +'</div>'
       +detailHtml
       +'</div>';  }).join('');
@@ -1325,7 +1298,7 @@ function renderIndexCard(indexAll){
     rows+=`
     <div class="idx-row" onclick="toggleIdxDetail('${sym}')">
       <div class="idx-top">
-        <div class="idx-sym">${sym} <span class="tv-icon" onclick="openTV('${sym}',event)" title="TradingView 5m Chart">📈</span></div>
+        <div class="idx-sym">${sym}</div>
         <div class="idx-verdict ${net}">${netLabel}</div>
       </div>
       <div class="idx-track-wrap">

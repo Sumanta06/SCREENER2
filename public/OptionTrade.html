@@ -1523,7 +1523,8 @@ async function loadSnapshotList(){
       return;
     }
     sel.innerHTML = '<option value="" disabled selected>-- Select time --</option>' +
-      data.snapshots.map(t => `<option value="${t}">${t}</option>`).join('');
+      data.snapshots.slice().sort((a,b) => b.localeCompare(a))
+        .map((t, i) => `<option value="${t}">${t}${i===0 ? '  (Latest)' : ''}</option>`).join('');
   } catch(e){
     console.warn('Snapshot list load failed:', e.message);
   }

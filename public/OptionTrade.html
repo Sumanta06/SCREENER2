@@ -1,6 +1,28 @@
 <!DOCTYPE html>
 <!-- saved from url=(0065)file:///C:/Users/TELE-TECH-BO/Downloads/SpurtsSignal_Fixed_1.html -->
 <html lang="en" data-theme="blue"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<script>
+(function(){
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const x = c.getContext('2d');
+  x.fillStyle = '#1b5e20';
+  x.beginPath();
+  x.roundRect(0, 0, 64, 64, 12);
+  x.fill();
+  x.font = 'bold 30px Arial';
+  x.textAlign = 'center';
+  x.textBaseline = 'middle';
+  x.fillStyle = '#ffffff';
+  x.fillText('O', 20, 34);
+  x.fillStyle = '#ffffff';
+  x.fillText('T', 44, 34);
+  const l = document.createElement('link');
+  l.rel = 'icon'; l.type = 'image/png';
+  l.href = c.toDataURL('image/png');
+  document.head.appendChild(l);
+})();
+</script>
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Option Trade · NSE F&amp;O</title>

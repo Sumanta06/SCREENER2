@@ -2,6 +2,28 @@
 <html lang="en" data-theme="light">
 <head>
 <meta charset="UTF-8">
+<script>
+(function(){
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const x = c.getContext('2d');
+  x.fillStyle = '#b71c1c';
+  x.beginPath();
+  x.roundRect(0, 0, 64, 64, 12);
+  x.fill();
+  x.font = 'bold 30px Arial';
+  x.textAlign = 'center';
+  x.textBaseline = 'middle';
+  x.fillStyle = '#ffffff';
+  x.fillText('O', 20, 34);
+  x.fillStyle = '#ffffff';
+  x.fillText('I', 44, 34);
+  const l = document.createElement('link');
+  l.rel = 'icon'; l.type = 'image/png';
+  l.href = c.toDataURL('image/png');
+  document.head.appendChild(l);
+})();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>OI Scanner</title>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -329,7 +351,7 @@ select, button, input { outline: none; font-family: inherit; }
   0%,100% { text-shadow: 0 0 4px var(--acc); opacity: 1; }
   50%      { text-shadow: 0 0 10px var(--acc), 0 0 18px var(--acc); opacity: .8; }
 }
-#scan-sel option.latest { color: var(--acc); font-weight: 700; }
+#scan-sel option.latest { color: var(--acc); font-weight: 700; font-size: 12px; }
 #scan-ii {
   background: linear-gradient(90deg, var(--bg4), var(--bg3));
   border-right: 2px solid var(--acc) !important;
@@ -344,14 +366,17 @@ select, button, input { outline: none; font-family: inherit; }
 .iv.bear { color: var(--pe-txt); }
 #scan-sel {
   background: transparent;
-  color: var(--acc);
+  color: var(--text);
   border: none;
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 700;
   font-family: 'JetBrains Mono', monospace;
   cursor: pointer;
   letter-spacing: .03em;
-  min-width: 155px;
+  min-width: 279px;
+}
+#scan-sel.is-latest {
+  color: var(--acc);
 }
 #scan-sel option {
   background: var(--bg3);
@@ -490,22 +515,25 @@ select, button, input { outline: none; font-family: inherit; }
 
 /* ── PC Fixed Info Boxes ── */
 #info-box-oi, #info-box-chg {
-  display: none;
+  display: block;
+  visibility: hidden;
   position: fixed;
-  top: 98px;
+  top: 128px;
   z-index: 200;
-  background: var(--bg2);
+  background: var(--tt-bg, var(--bg4));
   border: 1px solid var(--border2);
+  border-left: 2px solid var(--acc);
   border-radius: 5px;
-  padding: 5px 10px;
+  padding: 7px 12px;
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
   pointer-events: none;
-  box-shadow: 0 4px 16px rgba(0,0,0,.5);
+  box-shadow: 0 4px 20px rgba(0,0,0,.5);
   white-space: nowrap;
 }
-#info-box-oi  { left: calc(50px + 1fr + 72px + 15px); }
-#info-box-chg { right: 20px; }
+[data-theme="dark"]    { --tt-bg: #1a1a2e; }
+[data-theme="darkblue"]{ --tt-bg: #0d1f3c; }
+[data-theme="light"]   { --tt-bg: #dde3f5; }
 
 .ib-strike {
   color: var(--atm-txt);
@@ -860,7 +888,7 @@ select, button, input { outline: none; font-family: inherit; }
 
 <!-- INFOBAR -->
 <div id="infobar">
-  <div class="ii" id="scan-ii"><span class="il" style="color:var(--acc);opacity:.7;font-size:8px;letter-spacing:.15em;">⏱ SCAN</span><select id="scan-sel"></select></div>
+  <div class="ii" id="scan-ii"><span class="il" style="color:var(--acc);opacity:.9;font-size:12px;letter-spacing:.15em;font-weight:700;">⏱ SCAN</span><select id="scan-sel"></select></div>
   <div id="sym-search-wrap">
     <span id="sym-search-icon">⌕</span>
     <input id="sym-search" type="text" placeholder="search symbol..." autocomplete="off" spellcheck="false">
@@ -971,11 +999,20 @@ function buildScanSel() {
   all.forEach(({d,h}, i) => {
     const o = document.createElement('option');
     o.value = `${d}|${h}`;
-    o.textContent = `${d}  ${h.slice(0,2)}:${h.slice(2)}`;
+    o.textContent = i === 0 ? `${d}  ${h.slice(0,2)}:${h.slice(2)}  (Latest)` : `${d}  ${h.slice(0,2)}:${h.slice(2)}`;
     if (i === 0) o.className = 'latest';  // latest option highlight
     el.appendChild(o);
   });
   if (all.length) { curKey = `${all[0].d}|${all[0].h}`; el.value = curKey; }
+  // Color update on change
+  function updateSelColor() {
+    const isLatest = el.selectedIndex === 0;
+    el.classList.toggle('is-latest', isLatest);
+  }
+  el.removeEventListener('change', el._colorHandler);
+  el._colorHandler = updateSelColor;
+  el.addEventListener('change', updateSelColor);
+  updateSelColor();
   // Always show latest scan time in header
   updateLatestScanTime(all[0]);
 }
@@ -1077,6 +1114,11 @@ async function computeDisplay(sym, base) {
 // ── RENDER ──
 async function render() {
   if (!curKey || !symList.length) return;
+  // Symbol/scan change pe lock reset karo
+  if (typeof ttLocked !== 'undefined') {
+    // global reset — setupTooltip ke bahar se access ke liye
+  }
+  window._resetTTLock && window._resetTTLock();
   const [date, hhmm] = curKey.split('|');
   let scan;
   try { scan = await loadScan(date, hhmm); }
@@ -1209,6 +1251,21 @@ async function render() {
   }).join('');
 
   scrollATM();
+  setTimeout(positionInfoBoxes, 80);
+}
+
+function positionInfoBoxes() {
+  const sc = document.querySelector('#chain-body .sg .sc');
+  if (!sc) return;
+  const scRect = sc.getBoundingClientRect();
+  const boxOI  = document.getElementById('info-box-oi');
+  const boxChg = document.getElementById('info-box-chg');
+  // LEFT box: right edge touches left of strike column
+  boxOI.style.right = (window.innerWidth - scRect.left + 4) + 'px';
+  boxOI.style.left  = 'auto';
+  // RIGHT box: left edge touches right of strike column
+  boxChg.style.left  = (scRect.right + 4) + 'px';
+  boxChg.style.right = 'auto';
 }
 
 function scrollATM() {
@@ -1240,57 +1297,112 @@ function setupTooltip() {
     el.className   = 'ib-chg ' + (n>0?'pos':n<0?'neg':'zer');
   }
 
-  body.addEventListener('mouseover', e => {
-    const sg = e.target.closest('.sg');
-    if (!sg) {
-      tip.style.display = 'none';
-      if (!isMobile()) { boxOI.style.display='none'; boxChg.style.display='none'; }
-      return;
-    }
+  // ── LOCK STATE ──
+  let ttLocked = false;
+  window._resetTTLock = function() {
+    ttLocked = false;
+    boxOI.style.outline  = 'none';
+    boxChg.style.outline = 'none';
+    boxOI.style.opacity  = '1';
+    boxChg.style.opacity = '1';
+  };
+
+  // localStorage se last saved data restore karo
+  function restoreTooltip() {
+    try {
+      const saved = localStorage.getItem('oi_tt_last');
+      if (!saved) return;
+      const d = JSON.parse(saved);
+      applyTooltipData(d);
+      boxOI.style.visibility = 'visible';
+      boxChg.style.visibility = 'visible';
+    } catch(e) {}
+  }
+
+  function saveTooltip(d) {
+    try { localStorage.setItem('oi_tt_last', JSON.stringify(d)); } catch(e) {}
+  }
+
+  function applyTooltipData(d) {
+    // LEFT box
+    document.getElementById('ib-oi-strike').textContent = d.label;
+    document.getElementById('ib-ce-oi').textContent = d.ceOi;
+    document.getElementById('ib-pe-oi').textContent = d.peOi;
+    ibChg(d.ceRawChg, document.getElementById('ib-ce-chg'));
+    ibChg(d.peRawChg, document.getElementById('ib-pe-chg'));
+    // RIGHT box
+    document.getElementById('ib-chg-strike').textContent = d.label;
+    ibChg(d.ceChg, document.getElementById('ib-ce-chg2'));
+    ibChg(d.peChg, document.getElementById('ib-pe-chg2'));
+  }
+
+  function updateBoxes(sg) {
     const strike = sg.dataset.strike;
     if (!strike) return;
     const label = 'Strike : ' + fmtStr(strike);
+    const d = {
+      label,
+      ceOi:     (+sg.dataset.ceOi||0).toLocaleString('en-IN'),
+      peOi:     (+sg.dataset.peOi||0).toLocaleString('en-IN'),
+      ceRawChg: sg.dataset.ceRawChg,
+      peRawChg: sg.dataset.peRawChg,
+      ceChg:    sg.dataset.ceChg,
+      peChg:    sg.dataset.peChg,
+    };
+    applyTooltipData(d);
+    saveTooltip(d);
+    boxOI.style.visibility = 'visible';
+    boxChg.style.visibility = 'visible';
+  }
 
+  // ── HOVER: update tooltip (sirf unlock state mein) ──
+  body.addEventListener('mouseover', e => {
     if (isMobile()) {
+      const sg = e.target.closest('.sg');
+      if (!sg) return;
+      const strike = sg.dataset.strike;
+      if (!strike) return;
+      const label = 'Strike : ' + fmtStr(strike);
       boxOI.style.display='none'; boxChg.style.display='none';
       document.getElementById('tt-strike').textContent = label;
       const rect   = sg.getBoundingClientRect();
       const inLeft = e.clientX < rect.left + rect.width / 2;
       if (inLeft) {
-        // LEFT zone: actual OI + original day chg
         oiSec.style.display = 'block'; chgSec.style.display = 'none';
         document.getElementById('tt-ce-oi').textContent = (+sg.dataset.ceOi||0).toLocaleString('en-IN');
         document.getElementById('tt-pe-oi').textContent = (+sg.dataset.peOi||0).toLocaleString('en-IN');
         chgHtml(sg.dataset.ceRawChg, document.getElementById('tt-ce-chg'));
         chgHtml(sg.dataset.peRawChg, document.getElementById('tt-pe-chg'));
       } else {
-        // RIGHT zone: computed chg (bar wala — mode dependent)
         oiSec.style.display = 'none'; chgSec.style.display = 'block';
         chgHtml(sg.dataset.ceChg, document.getElementById('tt-ce-chg2'));
         chgHtml(sg.dataset.peChg, document.getElementById('tt-pe-chg2'));
       }
       tip.style.display = 'block';
+      return;
+    }
+    // Desktop: sirf unlock state mein update
+    if (!ttLocked) {
+      const sg = e.target.closest('.sg');
+      if (sg) { tip.style.display = 'none'; updateBoxes(sg); }
+    }
+  });
+
+  // ── CLICK on .sc = TOGGLE LOCK ──
+  body.addEventListener('click', e => {
+    if (isMobile()) return;
+    if (!e.target.closest('.sc')) return;
+    ttLocked = !ttLocked;
+    if (ttLocked) {
+      boxOI.style.outline  = '2px solid var(--acc)';
+      boxChg.style.outline = '2px solid var(--acc)';
+      boxOI.style.opacity  = '0.75';
+      boxChg.style.opacity = '0.75';
     } else {
-      tip.style.display = 'none';
-      // LEFT box: actual OI + original day chg
-      document.getElementById('ib-oi-strike').textContent = label;
-      document.getElementById('ib-ce-oi').textContent = (+sg.dataset.ceOi||0).toLocaleString('en-IN');
-      document.getElementById('ib-pe-oi').textContent = (+sg.dataset.peOi||0).toLocaleString('en-IN');
-      ibChg(sg.dataset.ceRawChg, document.getElementById('ib-ce-chg'));
-      ibChg(sg.dataset.peRawChg, document.getElementById('ib-pe-chg'));
-      // Position OI box just left of strike column
-      const sc = sg.querySelector('.sc');
-      if (sc) {
-        const scRect = sc.getBoundingClientRect();
-        boxOI.style.left = 'auto';
-        boxOI.style.right = (window.innerWidth - scRect.left + 15) + 'px';
-      }
-      boxOI.style.display = 'block';
-      // RIGHT box: computed chg (bar wala — mode dependent)
-      document.getElementById('ib-chg-strike').textContent = label;
-      ibChg(sg.dataset.ceChg, document.getElementById('ib-ce-chg2'));
-      ibChg(sg.dataset.peChg, document.getElementById('ib-pe-chg2'));
-      boxChg.style.display = 'block';
+      boxOI.style.outline  = 'none';
+      boxChg.style.outline = 'none';
+      boxOI.style.opacity  = '1';
+      boxChg.style.opacity = '1';
     }
   });
 
@@ -1309,10 +1421,14 @@ function setupTooltip() {
 
   body.addEventListener('mouseleave', () => {
     tip.style.display = 'none';
-    if (!isMobile()) { boxOI.style.display='none'; boxChg.style.display='none'; }
+    // ttLocked reset nahi karenge — sirf click se toggle hoga
   });
+
+  // Page load pe restore karo
+  setTimeout(restoreTooltip, 200);
 }
 setupTooltip();
+  window.addEventListener('resize', positionInfoBoxes);
 }
 function setMsg(m) {
   document.getElementById('load-msg').textContent = m;

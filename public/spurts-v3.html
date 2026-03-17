@@ -1,0 +1,1496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>OI Spurts Tracker</title>
+<style>
+  :root {
+    --bg: #0d0f14;
+    --bg2: #141720;
+    --bg3: #1c2030;
+    --border: #262c3e;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --accent: #38bdf8;
+    --green: #22c55e;
+    --red: #ef4444;
+    --orange: #f97316;
+    --gold: #eab308;
+    --purple: #a855f7;
+    --card-r: 10px;
+    --font: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    min-height: 100vh;
+    padding-bottom: 40px;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-row1 {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .logo {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: -0.3px;
+  }
+  .logo span { color: var(--text); }
+  .header-meta {
+    font-size: 11px;
+    color: var(--muted);
+    text-align: right;
+    line-height: 1.5;
+  }
+  .header-meta b { color: var(--accent); }
+  .strong-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(234,179,8,0.15);
+    border: 1px solid rgba(234,179,8,0.4);
+    color: var(--gold);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 20px;
+    margin-top: 4px;
+  }
+
+  /* ── NAV TABS ── */
+  .nav {
+    display: flex;
+    gap: 0;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .nav::-webkit-scrollbar { display: none; }
+  .nav-btn {
+    flex: none;
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 11px 16px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    transition: all 0.2s;
+  }
+  .nav-btn.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+  .nav-btn:hover:not(.active) { color: var(--text); }
+
+  /* ── MAIN CONTENT ── */
+  .page { display: none; padding: 14px 12px; }
+  .page.active { display: block; }
+
+  /* ── WORKER URL SECTION ── */
+  .url-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+    align-items: center;
+  }
+  .url-input {
+    flex: 1;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--card-r);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 13px;
+    padding: 10px 12px;
+    outline: none;
+    min-width: 0;
+  }
+  .url-input:focus { border-color: var(--accent); }
+  .url-input::placeholder { color: var(--muted); }
+  .save-btn {
+    background: var(--accent);
+    border: none;
+    border-radius: var(--card-r);
+    color: #000;
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 10px 16px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: opacity 0.2s;
+  }
+  .save-btn:hover { opacity: 0.85; }
+
+  /* ── INFO CARDS ── */
+  .info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .info-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--card-r);
+    padding: 12px;
+  }
+  .info-card .label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .info-card .val { font-size: 18px; font-weight: 700; margin-top: 4px; }
+  .info-card .val.green { color: var(--green); }
+  .info-card .val.red { color: var(--red); }
+  .info-card .val.gold { color: var(--gold); }
+
+  /* ── ACTION BUTTONS ── */
+  .action-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+  .action-btn {
+    flex: 1;
+    min-width: 100px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--card-r);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 11px 10px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+  }
+  .action-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .action-btn.primary { background: var(--accent); border-color: var(--accent); color: #000; font-weight: 600; }
+  .action-btn.primary:hover { opacity: 0.85; }
+
+  /* ── STATUS BAR ── */
+  .status-bar {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--card-r);
+    padding: 10px 12px;
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 38px;
+  }
+  .status-bar.ok { border-color: rgba(34,197,94,0.3); color: var(--green); }
+  .status-bar.err { border-color: rgba(239,68,68,0.3); color: var(--red); }
+  .spinner {
+    width: 14px; height: 14px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    flex-shrink: 0;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── BASELINE LIST ── */
+  .base-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+  .base-item {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--card-r);
+    padding: 11px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .base-item:hover { border-color: var(--accent); }
+  .base-item.selected { border-color: var(--accent); background: rgba(56,189,248,0.05); }
+  .base-item-time { font-size: 14px; font-weight: 600; }
+  .base-item-label {
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+  .base-item-label.auto { background: rgba(34,197,94,0.15); color: var(--green); }
+  .base-item-label.manual { background: rgba(56,189,248,0.15); color: var(--accent); }
+
+  /* ── ROLLING COMPARE — 3 COLUMNS ── */
+  .rolling-header {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--card-r);
+    padding: 12px;
+    margin-bottom: 12px;
+  }
+  .rolling-times {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    flex-wrap: wrap;
+    font-size: 12px;
+  }
+  .rolling-times .time-chip {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .rolling-times .arrow { color: var(--muted); }
+  .rolling-times .now-chip {
+    background: rgba(56,189,248,0.1);
+    border-color: rgba(56,189,248,0.4);
+    color: var(--accent);
+  }
+  .rolling-times .strong-count {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-weight: 700;
+    color: var(--gold);
+    font-size: 13px;
+  }
+
+  /* 3-col layout */
+  .col-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  @media (max-width: 600px) {
+    .col-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+  .col-panel {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--card-r);
+    overflow: hidden;
+  }
+  .col-panel.strong-panel {
+    border-color: rgba(234,179,8,0.4);
+  }
+  .col-head {
+    padding: 10px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+  .col-head.t10-head { background: rgba(56,189,248,0.06); color: var(--accent); }
+  .col-head.t20-head { background: rgba(168,85,247,0.06); color: var(--purple); }
+  .col-head.strong-head { background: rgba(234,179,8,0.08); color: var(--gold); }
+  .col-body { padding: 8px; display: flex; flex-direction: column; gap: 5px; max-height: 420px; overflow-y: auto; }
+  .col-body::-webkit-scrollbar { width: 3px; }
+  .col-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* Signal card */
+  .sig-card {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 8px 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+  }
+  .sig-card:hover { border-color: var(--accent); transform: translateX(1px); }
+  .sig-card.bull { border-left: 3px solid var(--green); }
+  .sig-card.bear { border-left: 3px solid var(--red); }
+  .sig-card.strong-card {
+    border-left: 3px solid var(--gold);
+    background: rgba(234,179,8,0.04);
+  }
+  .sig-card.strong-card:hover { border-color: var(--gold); }
+  .sig-sym { font-size: 13px; font-weight: 700; letter-spacing: 0.2px; }
+  .sig-type {
+    display: inline-block;
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 1px 6px;
+    border-radius: 4px;
+    margin-left: 5px;
+    vertical-align: middle;
+  }
+  .type-long    { background: rgba(34,197,94,0.2);  color: var(--green); }
+  .type-cover   { background: rgba(34,197,94,0.15); color: #4ade80; }
+  .type-acc     { background: rgba(56,189,248,0.15);color: var(--accent); }
+  .type-short   { background: rgba(239,68,68,0.2);  color: var(--red); }
+  .type-unwind  { background: rgba(239,68,68,0.15); color: #f87171; }
+  .type-dist    { background: rgba(249,115,22,0.15);color: var(--orange); }
+  .sig-nums {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .sig-nums .up { color: var(--green); }
+  .sig-nums .dn { color: var(--red); }
+  .fire-icon { font-size: 13px; }
+
+  /* ── TOOLTIP ── */
+  .tooltip-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 1000;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 0;
+  }
+  .tooltip-overlay.show {
+    display: flex;
+  }
+  .tooltip-box {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 16px 16px 0 0;
+    width: 100%;
+    max-width: 520px;
+    padding: 20px;
+    animation: slideUp 0.25s ease;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(30px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+  }
+  .tooltip-handle {
+    width: 36px; height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin: 0 auto 16px;
+  }
+  .tooltip-sym {
+    font-size: 20px;
+    font-weight: 800;
+    margin-bottom: 4px;
+    letter-spacing: -0.3px;
+  }
+  .tooltip-title { font-size: 13px; color: var(--muted); margin-bottom: 16px; }
+  .tooltip-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .tooltip-item {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px;
+  }
+  .tooltip-item .tl { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .tooltip-item .tv { font-size: 16px; font-weight: 700; margin-top: 3px; }
+  .tooltip-explain {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--text);
+    margin-bottom: 14px;
+  }
+  .tooltip-explain b { color: var(--accent); }
+  .tooltip-close {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 14px;
+    font-weight: 600;
+    padding: 12px;
+    cursor: pointer;
+  }
+  .tooltip-strength-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(234,179,8,0.15);
+    border: 1px solid rgba(234,179,8,0.4);
+    color: var(--gold);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 20px;
+    margin-bottom: 12px;
+  }
+
+  /* ── DAY VIEW ── */
+  .dayview-section { margin-bottom: 20px; }
+  .section-title {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+  .timeline { display: flex; flex-direction: column; gap: 6px; }
+  .tl-item {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--card-r);
+    padding: 11px 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .tl-item::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+  }
+  .tl-item.bull-dom::before { background: var(--green); }
+  .tl-item.bear-dom::before { background: var(--red); }
+  .tl-item.mixed::before    { background: var(--muted); }
+  .tl-item:hover { border-color: var(--accent); }
+  .tl-row1 {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 5px;
+  }
+  .tl-time { font-size: 14px; font-weight: 700; }
+  .tl-strong {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--gold);
+  }
+  .tl-bars {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+  }
+  .tl-bull-bar {
+    height: 6px;
+    background: var(--green);
+    border-radius: 3px;
+    min-width: 4px;
+  }
+  .tl-bear-bar {
+    height: 6px;
+    background: var(--red);
+    border-radius: 3px;
+    min-width: 4px;
+  }
+  .tl-counts { font-size: 11px; color: var(--muted); }
+  .tl-counts .g { color: var(--green); }
+  .tl-counts .r { color: var(--red); }
+  .tl-syms {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 6px;
+  }
+  .tl-sym-chip {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 4px;
+    background: rgba(234,179,8,0.12);
+    color: var(--gold);
+  }
+
+  /* Leaderboard */
+  .lb-grid { display: flex; flex-direction: column; gap: 5px; }
+  .lb-item {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--card-r);
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .lb-rank {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--muted);
+    width: 18px;
+    text-align: center;
+  }
+  .lb-sym { font-size: 14px; font-weight: 700; flex: 1; }
+  .lb-bar-wrap { flex: 2; display: flex; align-items: center; gap: 6px; }
+  .lb-bar-bg {
+    flex: 1;
+    height: 6px;
+    background: var(--bg3);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .lb-bar-fill { height: 100%; background: var(--gold); border-radius: 3px; }
+  .lb-count { font-size: 12px; font-weight: 700; color: var(--gold); }
+
+  /* Manual compare section */
+  .compare-panel {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--card-r);
+    padding: 14px;
+    margin-bottom: 14px;
+  }
+  .compare-panel h3 { font-size: 13px; font-weight: 700; margin-bottom: 12px; color: var(--accent); }
+  .results-grid { display: flex; flex-direction: column; gap: 6px; }
+
+  /* PIN modal */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal-box {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+    width: 100%;
+    max-width: 320px;
+  }
+  .modal-box h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+  .modal-box p { font-size: 13px; color: var(--muted); margin-bottom: 16px; }
+  .pin-input {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 18px;
+    font-weight: 700;
+    padding: 12px;
+    text-align: center;
+    letter-spacing: 8px;
+    outline: none;
+    margin-bottom: 12px;
+  }
+  .pin-input:focus { border-color: var(--accent); }
+  .modal-btns { display: flex; gap: 8px; }
+  .modal-btns button { flex: 1; padding: 11px; border-radius: 8px; cursor: pointer; font-family: var(--font); font-size: 14px; font-weight: 600; border: 1px solid var(--border); }
+  .modal-btns .confirm-btn { background: var(--accent); color: #000; border-color: var(--accent); }
+  .modal-btns .cancel-btn { background: var(--bg3); color: var(--text); }
+
+  /* Auto-refresh indicator */
+  .refresh-indicator {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--muted);
+    padding: 6px 12px;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+  }
+  .refresh-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+  }
+  .refresh-dot.pulse {
+    animation: pulse 2s ease infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: 0.4; transform: scale(0.8); }
+  }
+  .empty-state {
+    padding: 24px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .empty-icon { font-size: 28px; margin-bottom: 8px; }
+
+  /* ── Help guide ── */
+  .help-section { margin-bottom: 16px; }
+  .help-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--card-r);
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+  .help-head {
+    padding: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .help-body {
+    display: none;
+    padding: 4px 12px 12px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+  .help-body.open { display: block; }
+  .sig-legend { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
+  .sig-legend-item { background: var(--bg3); border-radius: 6px; padding: 7px 9px; }
+  .sig-legend-item .type { font-size: 11px; font-weight: 700; }
+  .sig-legend-item .desc { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-row1">
+    <div class="logo">OI<span>Spurts</span></div>
+    <div class="header-meta">
+      <div>Updated: <b id="lastUpdated">—</b></div>
+      <div id="headerStrong" style="display:none">
+        <span class="strong-badge">🔥 <span id="strongCnt">0</span> STRONG</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- AUTO-REFRESH STATUS -->
+<div class="refresh-indicator">
+  <div class="refresh-dot pulse" id="refreshDot"></div>
+  <span id="refreshStatus">Auto-refresh ready</span>
+  <span style="margin-left:auto; cursor:pointer; color:var(--accent);" onclick="manualRefresh()">↻ Refresh now</span>
+</div>
+
+<!-- TABS -->
+<nav class="nav">
+  <button class="nav-btn active" onclick="showTab('rolling')">📡 Live</button>
+  <button class="nav-btn" onclick="showTab('manual')">🔍 Compare</button>
+  <button class="nav-btn" onclick="showTab('dayview')">📅 Day View</button>
+  <button class="nav-btn" onclick="showTab('settings')">⚙️ Settings</button>
+  <button class="nav-btn" onclick="showTab('help')">❓ Guide</button>
+</nav>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- TAB: ROLLING (LIVE)                        -->
+<!-- ══════════════════════════════════════════ -->
+<div class="page active" id="page-rolling">
+
+  <div class="status-bar" id="rollingStatus">
+    <div class="spinner"></div>
+    <span>Fetching latest data…</span>
+  </div>
+
+  <!-- Timeline header -->
+  <div class="rolling-header" id="rollingHeader" style="display:none">
+    <div class="rolling-times" id="rollingTimes"></div>
+  </div>
+
+  <!-- 3-col grid -->
+  <div class="col-grid">
+    <!-- 10m col -->
+    <div class="col-panel" id="t10Panel">
+      <div class="col-head t10-head">
+        📊 10 Min
+        <span id="t10BaseTime" style="font-weight:400;font-size:11px;color:var(--muted)"></span>
+      </div>
+      <div class="col-body" id="t10Body">
+        <div class="empty-state"><div class="empty-icon">⏳</div>Waiting…</div>
+      </div>
+    </div>
+    <!-- 20m col -->
+    <div class="col-panel" id="t20Panel">
+      <div class="col-head t20-head">
+        📊 20 Min
+        <span id="t20BaseTime" style="font-weight:400;font-size:11px;color:var(--muted)"></span>
+      </div>
+      <div class="col-body" id="t20Body">
+        <div class="empty-state"><div class="empty-icon">⏳</div>Waiting…</div>
+      </div>
+    </div>
+    <!-- STRONG col -->
+    <div class="col-panel strong-panel" id="strongPanel">
+      <div class="col-head strong-head">
+        🔥 Strong <span id="strongHeadCount" style="font-weight:400;font-size:11px"></span>
+      </div>
+      <div class="col-body" id="strongBody">
+        <div class="empty-state"><div class="empty-icon">🎯</div>No strong signals yet</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- TAB: MANUAL COMPARE                        -->
+<!-- ══════════════════════════════════════════ -->
+<div class="page" id="page-manual">
+
+  <div class="status-bar" id="manualStatus" style="display:none"></div>
+
+  <div class="compare-panel">
+    <h3>📋 Saved Baselines</h3>
+    <div id="baselineList">
+      <div class="empty-state"><div class="empty-icon">📭</div>No baselines saved yet</div>
+    </div>
+  </div>
+
+  <div class="action-row">
+    <button class="action-btn primary" onclick="loadBaselines()">↻ Refresh List</button>
+    <button class="action-btn" onclick="showPinModal()">💾 Save Baseline</button>
+    <button class="action-btn" id="compareBtn" onclick="doManualCompare()" style="display:none">🔍 Compare</button>
+  </div>
+
+  <div id="manualResults"></div>
+
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- TAB: DAY VIEW                              -->
+<!-- ══════════════════════════════════════════ -->
+<div class="page" id="page-dayview">
+
+  <div class="action-row">
+    <button class="action-btn primary" onclick="loadDayview()">↻ Load Day View</button>
+  </div>
+
+  <div class="status-bar" id="dayviewStatus" style="display:none"></div>
+
+  <div class="dayview-section">
+    <div class="section-title">📅 Scan Timeline</div>
+    <div class="timeline" id="dvTimeline">
+      <div class="empty-state"><div class="empty-icon">📅</div>Press Load to see today's scans</div>
+    </div>
+  </div>
+
+  <div class="dayview-section">
+    <div class="section-title">🏆 Symbol Leaderboard</div>
+    <div class="lb-grid" id="dvLeaderboard">
+      <div class="empty-state"><div class="empty-icon">📊</div>Leaderboard loads with timeline</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- TAB: SETTINGS                             -->
+<!-- ══════════════════════════════════════════ -->
+<div class="page" id="page-settings">
+
+  <div style="margin-bottom:12px">
+    <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Worker URL</div>
+    <div class="url-row">
+      <input class="url-input" id="workerUrl" type="url" placeholder="https://your-worker.workers.dev"/>
+      <button class="save-btn" onclick="saveUrl()">Save</button>
+    </div>
+  </div>
+
+  <div class="info-grid">
+    <div class="info-card">
+      <div class="label">Auto-Refresh</div>
+      <div class="val" style="font-size:14px;color:var(--accent)">Every 10 min</div>
+    </div>
+    <div class="info-card">
+      <div class="label">Market Hours</div>
+      <div class="val" style="font-size:14px;">9:15 – 15:35</div>
+    </div>
+  </div>
+
+  <div class="action-row" style="margin-top:8px">
+    <button class="action-btn" onclick="testWorker()">🧪 Test Connection</button>
+    <button class="action-btn" onclick="clearStorage()">🗑️ Clear Cache</button>
+  </div>
+
+  <div class="status-bar" id="settingsStatus" style="display:none;margin-top:8px"></div>
+
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- TAB: HELP / GUIDE                         -->
+<!-- ══════════════════════════════════════════ -->
+<div class="page" id="page-help">
+
+  <div class="help-section">
+
+    <div class="help-card">
+      <div class="help-head" onclick="toggleHelp(this)">
+        📡 Rolling Compare kya hai? <span>▾</span>
+      </div>
+      <div class="help-body">
+        Har 10 minute pe worker automatically NSE se fresh data fetch karta hai aur:<br><br>
+        • <b>10 min pehle</b> ke scan se compare → signals generate<br>
+        • <b>20 min pehle</b> ke scan se compare → signals generate<br>
+        • Agar dono mein <b>same symbol, same signal</b> → <b>STRONG</b> tag lage<br><br>
+        Aapko kuch karne ki zaroorat nahi — Live tab automatically update hota hai.
+      </div>
+    </div>
+
+    <div class="help-card">
+      <div class="help-head" onclick="toggleHelp(this)">
+        🔥 STRONG signal kya hota hai? <span>▾</span>
+      </div>
+      <div class="help-body">
+        Agar koi symbol <b>10 min compare</b> mein bhi signal de raha hai <b>aur</b> <b>20 min compare</b> mein bhi <b>same direction</b> mein — to woh STRONG hai.<br><br>
+        Matlab: 2 alag timeframes confirm kar rahe hain. Yeh highest priority trade candidates hain. <b>WEAK</b> sirf ek timeframe mein signal deta hai.
+      </div>
+    </div>
+
+    <div class="help-card">
+      <div class="help-head" onclick="toggleHelp(this)">
+        📊 Signal Types kya matlab hai? <span>▾</span>
+      </div>
+      <div class="help-body open">
+        <div class="sig-legend">
+          <div class="sig-legend-item">
+            <div class="type" style="color:var(--green)">LONG BUILDUP</div>
+            <div class="desc">OI ↑ + Price ↑ + Volume spike — Fresh buying</div>
+          </div>
+          <div class="sig-legend-item">
+            <div class="type" style="color:var(--green)">SHORT COVERING</div>
+            <div class="desc">OI ↓ + Price ↑ — Bears exiting</div>
+          </div>
+          <div class="sig-legend-item">
+            <div class="type" style="color:var(--accent)">ACCUMULATION</div>
+            <div class="desc">OI ↑ + Price ↑ (no vol spike) — Slow buying</div>
+          </div>
+          <div class="sig-legend-item">
+            <div class="type" style="color:var(--red)">SHORT BUILDUP</div>
+            <div class="desc">OI ↑ + Price ↓ + Volume spike — Fresh selling</div>
+          </div>
+          <div class="sig-legend-item">
+            <div class="type" style="color:var(--red)">LONG UNWINDING</div>
+            <div class="desc">OI ↓ + Price ↓ — Bulls exiting</div>
+          </div>
+          <div class="sig-legend-item">
+            <div class="type" style="color:var(--orange)">DISTRIBUTION</div>
+            <div class="desc">OI ↑ + Price ↓ (no vol spike) — Slow selling</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="help-card">
+      <div class="help-head" onclick="toggleHelp(this)">
+        📅 Day View kaise use karein? <span>▾</span>
+      </div>
+      <div class="help-body">
+        Day View tab mein aaj ke saare rolling scans ka timeline dikhta hai:<br><br>
+        • <b>Green bar</b> = us scan mein bullish signals zyada<br>
+        • <b>Red bar</b> = bearish signals zyada<br>
+        • <b>Fire icons</b> = us scan ke STRONG signals<br>
+        • <b>Leaderboard</b> = kaun sa symbol aaj sabse zyada baar signal diya<br><br>
+        Kisi bhi scan row pe tap karke us waqt ke signals dekh sakte ho.
+      </div>
+    </div>
+
+    <div class="help-card">
+      <div class="help-head" onclick="toggleHelp(this)">
+        ⚙️ Setup kaise karein? <span>▾</span>
+      </div>
+      <div class="help-body">
+        1. Settings tab mein apna Cloudflare Worker URL paste karo<br>
+        2. Save dabao — URL browser mein save ho jayegi<br>
+        3. Test Connection se verify karo<br>
+        4. Live tab pe aao — auto-refresh 10 min mein pehla result dikhayega<br><br>
+        Manual baseline: Compare tab → Save Baseline → PIN dalo → Baseline save hoga.
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── TOOLTIP OVERLAY ── -->
+<div class="tooltip-overlay" id="tooltipOverlay" onclick="closeTooltip(event)">
+  <div class="tooltip-box" id="tooltipBox">
+    <div class="tooltip-handle"></div>
+    <div id="tooltipContent"></div>
+    <button class="tooltip-close" onclick="closeTooltip()">Close</button>
+  </div>
+</div>
+
+<!-- ── PIN MODAL ── -->
+<div class="modal-overlay" id="pinModal">
+  <div class="modal-box">
+    <h3>💾 Save Manual Baseline</h3>
+    <p>Enter your PIN to save a baseline snapshot</p>
+    <input class="pin-input" id="pinInput" type="password" inputmode="numeric" maxlength="8" placeholder="••••"/>
+    <div class="modal-btns">
+      <button class="cancel-btn" onclick="closePinModal()">Cancel</button>
+      <button class="confirm-btn" onclick="submitPin()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── CONFIG ──
+let WORKER_URL = localStorage.getItem('spurts_worker_url') || '';
+let selectedBaseKey = null;
+let autoRefreshTimer = null;
+const REFRESH_MS = 10 * 60 * 1000; // 10 min
+
+// ── SIGNAL DISPLAY MAP ──
+const TYPE_DISPLAY = {
+  long  : { label: 'Long Buildup',  cls: 'type-long',   bull: true  },
+  cover : { label: 'Short Covering',cls: 'type-cover',  bull: true  },
+  acc   : { label: 'Accumulation',  cls: 'type-acc',    bull: true  },
+  short : { label: 'Short Buildup', cls: 'type-short',  bull: false },
+  unwind: { label: 'Long Unwinding',cls: 'type-unwind', bull: false },
+  dist  : { label: 'Distribution',  cls: 'type-dist',   bull: false },
+};
+
+const BULL_TYPES = new Set(['long','cover','acc']);
+const BEAR_TYPES = new Set(['short','unwind','dist']);
+
+// Init
+window.onload = () => {
+  const saved = localStorage.getItem('spurts_worker_url') || '';
+  if (saved) {
+    document.getElementById('workerUrl').value = saved;
+    WORKER_URL = saved;
+  }
+  startAutoRefresh();
+};
+
+// ── TABS ──
+function showTab(tab) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + tab).classList.add('active');
+  event.target.classList.add('active');
+
+  if (tab === 'manual') loadBaselines();
+  if (tab === 'dayview') loadDayview();
+}
+
+// ── SETTINGS ──
+function saveUrl() {
+  const val = document.getElementById('workerUrl').value.trim().replace(/\/$/, '');
+  if (!val) return showSettingsStatus('Please enter a URL', 'err');
+  localStorage.setItem('spurts_worker_url', val);
+  WORKER_URL = val;
+  showSettingsStatus('✓ URL saved!', 'ok');
+}
+
+function testWorker() {
+  if (!WORKER_URL) return showSettingsStatus('No URL set', 'err');
+  showSettingsStatus('Testing…', '');
+  fetch(`${WORKER_URL}?mode=list`)
+    .then(r => r.json())
+    .then(d => showSettingsStatus(d.ok ? `✓ Connected! ${d.baselines?.length || 0} baselines` : 'Error: ' + d.error, d.ok ? 'ok' : 'err'))
+    .catch(e => showSettingsStatus('Connection failed: ' + e.message, 'err'));
+}
+
+function clearStorage() {
+  localStorage.removeItem('spurts_last_roll');
+  showSettingsStatus('✓ Cache cleared', 'ok');
+}
+
+function showSettingsStatus(msg, type) {
+  const el = document.getElementById('settingsStatus');
+  el.style.display = 'flex';
+  el.className = 'status-bar ' + type;
+  el.textContent = msg;
+}
+
+// ── AUTO-REFRESH ──
+function startAutoRefresh() {
+  fetchRolling();
+  if (autoRefreshTimer) clearInterval(autoRefreshTimer);
+  autoRefreshTimer = setInterval(() => {
+    fetchRolling();
+    const dv = document.getElementById('page-dayview');
+    if (dv.classList.contains('active')) loadDayview();
+  }, REFRESH_MS);
+}
+
+function manualRefresh() {
+  document.getElementById('refreshStatus').textContent = 'Refreshing…';
+  fetchRolling().then(() => {
+    const dv = document.getElementById('page-dayview');
+    if (dv.classList.contains('active')) loadDayview();
+  });
+}
+
+// ── FETCH ROLLING ──
+async function fetchRolling() {
+  if (!WORKER_URL) {
+    setRollingStatus('Set Worker URL in Settings tab ⚙️', 'err');
+    return;
+  }
+  setRollingStatus('Fetching latest rolling result…', 'loading');
+  try {
+    const res = await fetch(`${WORKER_URL}?mode=rolling`);
+    const d   = await res.json();
+    if (!d.ok) throw new Error(d.error);
+
+    const nowStr = fmtTime(new Date());
+    document.getElementById('lastUpdated').textContent = nowStr;
+    document.getElementById('refreshStatus').textContent = `Last updated: ${nowStr}`;
+
+    if (!d.result) {
+      setRollingStatus('No rolling results yet — market may not have opened or not enough scans.', '');
+      clearCols();
+      return;
+    }
+    renderRolling(d.result);
+    hideRollingStatus();
+  } catch(e) {
+    setRollingStatus('Error: ' + e.message, 'err');
+  }
+}
+
+function setRollingStatus(msg, type) {
+  const el = document.getElementById('rollingStatus');
+  el.style.display = 'flex';
+  el.className = 'status-bar ' + type;
+  if (type === 'loading') {
+    el.innerHTML = `<div class="spinner"></div><span>${msg}</span>`;
+  } else {
+    el.textContent = msg;
+  }
+}
+
+function hideRollingStatus() {
+  document.getElementById('rollingStatus').style.display = 'none';
+}
+
+function clearCols() {
+  const empty = '<div class="empty-state"><div class="empty-icon">⏳</div>Waiting for data…</div>';
+  ['t10Body','t20Body','strongBody'].forEach(id => document.getElementById(id).innerHTML = empty);
+  document.getElementById('rollingHeader').style.display = 'none';
+  document.getElementById('headerStrong').style.display = 'none';
+}
+
+function renderRolling(r) {
+  const t10 = r.t10, t20 = r.t20, strong = r.strong || [];
+  const nowStr = fmtTime(new Date(r.savedAt));
+
+  // Header strip
+  const hdr = document.getElementById('rollingHeader');
+  hdr.style.display = 'block';
+  const timesDiv = document.getElementById('rollingTimes');
+  let t20Time = t20 ? fmtTime(new Date(t20.baseTime)) : '—';
+  let t10Time = t10 ? fmtTime(new Date(t10.baseTime)) : '—';
+  timesDiv.innerHTML = `
+    <div class="time-chip">🕐 ${t20Time}</div>
+    <span class="arrow">→</span>
+    <div class="time-chip">🕐 ${t10Time}</div>
+    <span class="arrow">→</span>
+    <div class="time-chip now-chip">Now: ${nowStr}</div>
+    ${strong.length ? `<div class="strong-count">🔥 ${strong.length} STRONG</div>` : ''}
+  `;
+
+  // t10 col
+  const t10Head = document.getElementById('t10BaseTime');
+  t10Head.textContent = t10 ? `vs ${t10Time}` : '';
+  renderSigCol('t10Body', t10?.signals || [], false);
+
+  // t20 col
+  const t20Head = document.getElementById('t20BaseTime');
+  t20Head.textContent = t20 ? `vs ${t20Time}` : '';
+  renderSigCol('t20Body', t20?.signals || [], false);
+
+  // Strong col
+  document.getElementById('strongHeadCount').textContent = strong.length ? `(${strong.length})` : '';
+  renderSigCol('strongBody', strong, true);
+
+  // Header badge
+  if (strong.length > 0) {
+    document.getElementById('headerStrong').style.display = 'block';
+    document.getElementById('strongCnt').textContent = strong.length;
+  } else {
+    document.getElementById('headerStrong').style.display = 'none';
+  }
+}
+
+function renderSigCol(bodyId, signals, isStrong) {
+  const el = document.getElementById(bodyId);
+  if (!signals || !signals.length) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">${isStrong ? '🎯' : '📊'}</div>${isStrong ? 'No strong signals' : 'No signals'}</div>`;
+    return;
+  }
+  el.innerHTML = signals.map(s => makeSigCard(s, isStrong)).join('');
+}
+
+function makeSigCard(s, isStrong) {
+  const td = TYPE_DISPLAY[s.type] || { label: s.type, cls: '', bull: true };
+  const bull = td.bull;
+  const borderCls = isStrong ? 'strong-card' : (bull ? 'bull' : 'bear');
+  const oiColor = s.oiPct > 0 ? 'up' : 'dn';
+  const priceColor = s.pricePct > 0 ? 'up' : 'dn';
+  return `<div class="sig-card ${borderCls}" onclick="showTooltip(${JSON.stringify(s).replace(/"/g, '&quot;')})">
+    <div>
+      <span class="sig-sym">${s.symbol}</span>
+      <span class="sig-type ${td.cls}">${td.label}</span>
+      ${isStrong ? '<span class="fire-icon">🔥</span>' : ''}
+    </div>
+    <div class="sig-nums">
+      <span class="${priceColor}">${s.pricePct > 0 ? '+' : ''}${s.pricePct}%</span>
+      <span class="${oiColor}">OI ${s.oiPct > 0 ? '+' : ''}${s.oiPct}%</span>
+    </div>
+  </div>`;
+}
+
+// ── TOOLTIP ──
+function showTooltip(s) {
+  const td = TYPE_DISPLAY[s.type] || { label: s.type, cls: '', bull: true };
+  const isStrong = s.strength === 'STRONG';
+  const explanations = {
+    long  : 'OI badhna + price badhna + volume spike — Fresh long positions build ho rahi hain. Bulls actively buy kar rahe hain.',
+    cover : 'OI ghata + price badha — Short positions close ho rahi hain. Bears covering kar rahe hain.',
+    acc   : 'OI badhna + price badha (bina volume spike) — Slow/gradual accumulation. Bulls dheere dheere buy kar rahe hain.',
+    short : 'OI badhna + price ghata + volume spike — Fresh short positions build ho rahi hain. Bears actively sell kar rahe hain.',
+    unwind: 'OI ghata + price ghata — Long positions close ho rahi hain. Bulls apni positions kaat rahe hain.',
+    dist  : 'OI badhna + price ghata (bina volume spike) — Slow distribution. Bears dheere dheere sell kar rahe hain.',
+  };
+  const html = `
+    ${isStrong ? '<div class="tooltip-strength-badge">🔥 STRONG SIGNAL — Dono timeframes confirm</div>' : ''}
+    <div class="tooltip-sym">${s.symbol}</div>
+    <div class="tooltip-title"><span class="sig-type ${td.cls}">${td.label}</span></div>
+    <div class="tooltip-grid">
+      <div class="tooltip-item">
+        <div class="tl">Price Change</div>
+        <div class="tv" style="color:${s.pricePct>0?'var(--green)':'var(--red)'}">${s.pricePct>0?'+':''}${s.pricePct}%</div>
+      </div>
+      <div class="tooltip-item">
+        <div class="tl">OI Change</div>
+        <div class="tv" style="color:${s.oiPct>0?'var(--green)':'var(--red)'}">${s.oiPct>0?'+':''}${s.oiPct}%</div>
+      </div>
+      <div class="tooltip-item">
+        <div class="tl">Price Now</div>
+        <div class="tv">₹${s.priceNow?.toFixed(2) || '—'}</div>
+      </div>
+      <div class="tooltip-item">
+        <div class="tl">Base Price</div>
+        <div class="tv" style="color:var(--muted)">₹${s.priceBase?.toFixed(2) || '—'}</div>
+      </div>
+    </div>
+    <div class="tooltip-explain"><b>Kya ho raha hai:</b><br>${explanations[s.type] || ''}</div>
+  `;
+  document.getElementById('tooltipContent').innerHTML = html;
+  document.getElementById('tooltipOverlay').classList.add('show');
+}
+
+function closeTooltip(e) {
+  if (!e || e.target.id === 'tooltipOverlay' || e.target.classList.contains('tooltip-close')) {
+    document.getElementById('tooltipOverlay').classList.remove('show');
+  }
+}
+
+// ── MANUAL COMPARE ──
+async function loadBaselines() {
+  if (!WORKER_URL) {
+    showManualStatus('Set Worker URL in Settings ⚙️', 'err');
+    return;
+  }
+  showManualStatus('Loading baselines…', 'loading');
+  try {
+    const res = await fetch(`${WORKER_URL}?mode=list`);
+    const d   = await res.json();
+    if (!d.ok) throw new Error(d.error);
+
+    const list = document.getElementById('baselineList');
+    if (!d.baselines?.length) {
+      list.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div>No baselines found</div>';
+      hideManualStatus();
+      return;
+    }
+    list.innerHTML = d.baselines.map(b => `
+      <div class="base-item" id="bi_${b.key}" onclick="selectBase('${b.key}')">
+        <span class="base-item-time">🕐 ${b.timeStr}</span>
+        <span class="base-item-label ${b.key.includes('manual') ? 'manual' : 'auto'}">${b.key.includes('manual') ? 'Manual' : 'Auto'}</span>
+      </div>
+    `).join('');
+    hideManualStatus();
+    selectedBaseKey = null;
+    document.getElementById('compareBtn').style.display = 'none';
+  } catch(e) {
+    showManualStatus('Error: ' + e.message, 'err');
+  }
+}
+
+function selectBase(key) {
+  document.querySelectorAll('.base-item').forEach(el => el.classList.remove('selected'));
+  const el = document.getElementById('bi_' + key);
+  if (el) el.classList.add('selected');
+  selectedBaseKey = key;
+  document.getElementById('compareBtn').style.display = 'block';
+}
+
+async function doManualCompare() {
+  if (!selectedBaseKey || !WORKER_URL) return;
+  showManualStatus('Comparing with NSE live data…', 'loading');
+  try {
+    const res = await fetch(`${WORKER_URL}?mode=compare&key=${selectedBaseKey}`);
+    const d   = await res.json();
+    if (!d.ok) throw new Error(d.error);
+
+    const signals = genSignalsFE(d.data, d.baseData);
+    const resultsEl = document.getElementById('manualResults');
+    if (!signals.length) {
+      resultsEl.innerHTML = '<div class="empty-state"><div class="empty-icon">🔍</div>No signals found for this comparison</div>';
+    } else {
+      const bull = signals.filter(s => BULL_TYPES.has(s.type));
+      const bear = signals.filter(s => BEAR_TYPES.has(s.type));
+      resultsEl.innerHTML = `
+        <div class="compare-panel">
+          <h3>📊 Results vs ${d.baseLabel || 'baseline'} (${fmtTime(new Date(d.baseTime))})</h3>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:10px">
+            <span style="color:var(--green)">▲ ${bull.length} Bullish</span> &nbsp;
+            <span style="color:var(--red)">▼ ${bear.length} Bearish</span>
+          </div>
+          <div class="results-grid">
+            ${signals.map(s => makeSigCard(s, false)).join('')}
+          </div>
+        </div>
+      `;
+    }
+    hideManualStatus();
+  } catch(e) {
+    showManualStatus('Error: ' + e.message, 'err');
+  }
+}
+
+function showManualStatus(msg, type) {
+  const el = document.getElementById('manualStatus');
+  el.style.display = 'flex';
+  el.className = 'status-bar ' + type;
+  if (type === 'loading') {
+    el.innerHTML = `<div class="spinner"></div><span>${msg}</span>`;
+  } else {
+    el.textContent = msg;
+  }
+}
+
+function hideManualStatus() {
+  document.getElementById('manualStatus').style.display = 'none';
+}
+
+// ── PIN MODAL ──
+function showPinModal() { document.getElementById('pinModal').classList.add('show'); document.getElementById('pinInput').value = ''; }
+function closePinModal() { document.getElementById('pinModal').classList.remove('show'); }
+
+async function submitPin() {
+  const pin = document.getElementById('pinInput').value.trim();
+  if (!pin) return;
+  if (!WORKER_URL) { closePinModal(); showManualStatus('Set Worker URL first', 'err'); return; }
+  closePinModal();
+  showManualStatus('Saving baseline…', 'loading');
+  try {
+    const res = await fetch(`${WORKER_URL}?mode=manualbase&pin=${pin}`);
+    const d   = await res.json();
+    if (!d.ok) throw new Error(d.error);
+    showManualStatus(`✓ Baseline saved at ${fmtTime(new Date(d.scanTime))}`, 'ok');
+    loadBaselines();
+  } catch(e) {
+    showManualStatus('Error: ' + e.message, 'err');
+  }
+}
+
+// ── DAY VIEW ──
+async function loadDayview() {
+  if (!WORKER_URL) {
+    showDVStatus('Set Worker URL in Settings ⚙️', 'err');
+    return;
+  }
+  showDVStatus('Loading day view…', 'loading');
+  try {
+    const res = await fetch(`${WORKER_URL}?mode=dayview`);
+    const d   = await res.json();
+    if (!d.ok) throw new Error(d.error);
+    renderDayview(d.results || []);
+    hideDVStatus();
+  } catch(e) {
+    showDVStatus('Error: ' + e.message, 'err');
+  }
+}
+
+function renderDayview(results) {
+  const tlEl = document.getElementById('dvTimeline');
+  const lbEl = document.getElementById('dvLeaderboard');
+
+  if (!results.length) {
+    tlEl.innerHTML = '<div class="empty-state"><div class="empty-icon">📅</div>No scans yet today</div>';
+    lbEl.innerHTML = '<div class="empty-state"><div class="empty-icon">📊</div>No data</div>';
+    return;
+  }
+
+  // Leaderboard data
+  const symCount = {};
+  for (const r of results) {
+    for (const sym of r.strong || []) {
+      const s = sym.split(':')[0];
+      symCount[s] = (symCount[s] || 0) + 1;
+    }
+  }
+  const lbData = Object.entries(symCount).sort((a,b) => b[1]-a[1]).slice(0, 10);
+  const maxCount = lbData[0]?.[1] || 1;
+
+  // Timeline
+  const maxBull = Math.max(...results.map(r => r.bullCount), 1);
+  const maxBear = Math.max(...results.map(r => r.bearCount), 1);
+  tlEl.innerHTML = results.map(r => {
+    const dom = r.bullCount > r.bearCount ? 'bull-dom' : r.bearCount > r.bullCount ? 'bear-dom' : 'mixed';
+    const bw = Math.round(r.bullCount / maxBull * 60);
+    const rw = Math.round(r.bearCount / maxBear * 60);
+    const strongSyms = r.strong.slice(0,5);
+    return `<div class="tl-item ${dom}">
+      <div class="tl-row1">
+        <span class="tl-time">🕐 ${r.timeStr}</span>
+        ${r.strongCount > 0 ? `<span class="tl-strong">🔥 ${r.strongCount}</span>` : ''}
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="tl-bars">
+          <div class="tl-bull-bar" style="width:${bw}px"></div>
+          <div class="tl-bear-bar" style="width:${rw}px"></div>
+        </div>
+        <span class="tl-counts"><span class="g">▲${r.bullCount}</span> <span class="r">▼${r.bearCount}</span></span>
+      </div>
+      ${strongSyms.length ? `<div class="tl-syms">${strongSyms.map(s => `<span class="tl-sym-chip">${s.split(':')[0]}</span>`).join('')}</div>` : ''}
+    </div>`;
+  }).join('');
+
+  // Leaderboard
+  if (!lbData.length) {
+    lbEl.innerHTML = '<div class="empty-state"><div class="empty-icon">🏆</div>No strong signals today</div>';
+  } else {
+    lbEl.innerHTML = lbData.map(([sym, cnt], i) => `
+      <div class="lb-item">
+        <span class="lb-rank">${i+1}</span>
+        <span class="lb-sym">${sym}</span>
+        <div class="lb-bar-wrap">
+          <div class="lb-bar-bg"><div class="lb-bar-fill" style="width:${Math.round(cnt/maxCount*100)}%"></div></div>
+          <span class="lb-count">${cnt}×</span>
+        </div>
+      </div>
+    `).join('');
+  }
+}
+
+function showDVStatus(msg, type) {
+  const el = document.getElementById('dayviewStatus');
+  el.style.display = 'flex';
+  el.className = 'status-bar ' + type;
+  if (type === 'loading') {
+    el.innerHTML = `<div class="spinner"></div><span>${msg}</span>`;
+  } else {
+    el.textContent = msg;
+  }
+}
+
+function hideDVStatus() {
+  document.getElementById('dayviewStatus').style.display = 'none';
+}
+
+// ── FRONTEND SIGNAL ENGINE (for manual compare) ──
+function genSignalsFE(freshData, baseDataArr) {
+  const OI_TH = 2.0, PR_TH = 0.20;
+  const baseMap = {};
+  (baseDataArr || []).forEach(r => baseMap[r.symbol] = r);
+  const signals = [];
+
+  for (const c of (freshData || [])) {
+    const b = baseMap[c.symbol];
+    if (!b) continue;
+    const oiPct = b.oiRecent ? (c.oiRecent - b.oiRecent) / b.oiRecent * 100 : 0;
+    const oiUp  = oiPct > OI_TH, oiDn = oiPct < -OI_TH;
+    if (!oiUp && !oiDn) continue;
+    const pp    = b.underlying ? (c.underlying - b.underlying) / b.underlying * 100 : 0;
+    const pUp   = pp > PR_TH,   pDn  = pp < -PR_TH;
+    const vSpike = (c.volume - b.volume) > b.volume * 0.10;
+    const score  = Math.abs(pp) * Math.abs(oiPct) * (vSpike ? 1.5 : 1.0);
+
+    let type = null;
+    if (oiUp) {
+      if      (pUp && vSpike) type = 'long';
+      else if (pDn && vSpike) type = 'short';
+      else if (pUp)           type = 'acc';
+      else if (pDn)           type = 'dist';
+    } else if (oiDn) {
+      if (pUp) type = 'cover';
+      else if (pDn) type = 'unwind';
+    }
+    if (!type) continue;
+
+    signals.push({
+      symbol: c.symbol, type,
+      oiPct: +oiPct.toFixed(2), pricePct: +pp.toFixed(2),
+      priceNow: c.underlying, priceBase: b.underlying,
+      oiNow: c.oiRecent, oiBase: b.oiRecent,
+      score, strength: 'WEAK',
+    });
+  }
+  return signals.sort((a,b) => b.score - a.score);
+}
+
+// ── HELP ACCORDION ──
+function toggleHelp(head) {
+  const body = head.nextElementSibling;
+  const isOpen = body.classList.contains('open');
+  document.querySelectorAll('.help-body').forEach(b => b.classList.remove('open'));
+  document.querySelectorAll('.help-head span').forEach(s => s.textContent = '▾');
+  if (!isOpen) {
+    body.classList.add('open');
+    head.querySelector('span').textContent = '▴';
+  }
+}
+
+// ── UTILS ──
+function fmtTime(d) {
+  const ist = new Date(d.getTime() + 5.5 * 60 * 60 * 1000);
+  let hh = ist.getUTCHours(), mm = String(ist.getUTCMinutes()).padStart(2,'0');
+  const ap = hh >= 12 ? 'PM' : 'AM';
+  hh = hh % 12 || 12;
+  return `${hh}:${mm} ${ap}`;
+}
+</script>
+</body>
+</html>

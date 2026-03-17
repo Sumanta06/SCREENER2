@@ -485,10 +485,10 @@ tr.nodata td{text-align:center;color:var(--ink3);padding:16px;font-size:.75rem;}
 
 /* ════════════════════════════════════════ MOBILE */
 @media(max-width:640px){
-  .hdr-row1{padding:0 12px;height:46px;}
+  .hdr-row1{padding:0 12px;height:46px;overflow:hidden;}
   .hdr-row2{padding:0 12px;height:auto;min-height:36px;flex-wrap:wrap;gap:4px;padding-top:6px;padding-bottom:6px;}
   .st-strip{display:none;}
-  .hdr-right{padding-left:8px;gap:4px;}
+  .hdr-right{padding-left:8px;gap:4px;flex:1;justify-content:flex-end;overflow:hidden;}
   .hbtn span{display:none;}
   .hbtn{padding:0 8px;}
   .hbtn.sq{width:30px;}
@@ -506,6 +506,11 @@ tr.nodata td{text-align:center;color:var(--ink3);padding:16px;font-size:.75rem;}
   table{min-width:480px;}
   .status-bar{flex-wrap:wrap;}
   .sb-item{min-width:50%;border-right:none;border-bottom:1px solid var(--border2);}
+  .hbtn.dayv{order:1;}
+  .hbtn.cmp{order:2;}
+  .hbtn.manual{order:3;}
+  .hbtn.sq{order:4;}
+  #badge{order:5;}
 
   /* Day view mobile */
   .dv-header{padding:12px 14px;}

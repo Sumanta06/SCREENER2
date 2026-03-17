@@ -485,19 +485,26 @@ tr.nodata td{text-align:center;color:var(--ink3);padding:16px;font-size:.75rem;}
 
 /* ════════════════════════════════════════ MOBILE */
 @media(max-width:640px){
-  .hdr-row1{padding:0 12px;height:46px;overflow:hidden;}
-  .hdr-row2{padding:0 12px;height:auto;min-height:36px;flex-wrap:wrap;gap:4px;padding-top:6px;padding-bottom:6px;}
+  .hdr-row1{padding:0 8px;height:46px;}
+  .hdr-row2{padding:0 8px;height:auto;min-height:36px;flex-wrap:wrap;gap:4px;padding-top:6px;padding-bottom:6px;}
   .st-strip{display:none;}
-  .hdr-right{padding-left:8px;gap:4px;flex:1;justify-content:flex-end;overflow:hidden;}
+  .brand{padding-right:8px;}
+  .hdr-right{padding-left:6px;gap:3px;flex:1;justify-content:flex-end;border-left:none;}
+  .hbtn{padding:0 7px;height:28px;font-size:.68rem;}
   .hbtn span{display:none;}
-  .hbtn{padding:0 8px;}
-  .hbtn.sq{width:30px;}
+  .hbtn.sq{width:28px;}
+  #badge{font-size:.58rem;padding:2px 6px;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .hbtn.dayv{order:1;}
+  .hbtn.cmp{order:2;}
+  .hbtn.manual{order:3;}
+  #badge{order:4;}
+  .hbtn.sq{order:5;}
   .base-wrap{padding:0 8px;border-right:none;}
   .thresh-wrap{padding:0 8px;border-right:none;}
   select#base-select{max-width:140px;}
-  input[type=range].tslider{flex:1; margin:0 12px;}
-  input[type=range].tslider::-webkit-slider-thumb{width:24px; height:24px;}
-  input[type=range].tslider::-moz-range-thumb{width:24px; height:24px;}
+  input[type=range].tslider{flex:1;margin:0 12px;}
+  input[type=range].tslider::-webkit-slider-thumb{width:24px;height:24px;}
+  input[type=range].tslider::-moz-range-thumb{width:24px;height:24px;}
   main{padding:10px 10px 40px;}
   .guide-grid{grid-template-columns:1fr 1fr;}
   .empty-flow{flex-direction:column;}
@@ -506,11 +513,6 @@ tr.nodata td{text-align:center;color:var(--ink3);padding:16px;font-size:.75rem;}
   table{min-width:480px;}
   .status-bar{flex-wrap:wrap;}
   .sb-item{min-width:50%;border-right:none;border-bottom:1px solid var(--border2);}
-  .hbtn.dayv{order:1;}
-  .hbtn.cmp{order:2;}
-  .hbtn.manual{order:3;}
-  #badge{order:4;}
-  .hbtn.sq{order:5;}
 
   /* Day view mobile */
   .dv-header{padding:12px 14px;}
@@ -573,7 +575,7 @@ tr.nodata td{text-align:center;color:var(--ink3);padding:16px;font-size:.75rem;}
           <rect x="14" y="3" width="4" height="15" rx="1.5" fill="white"/>
         </svg>
       </div>
-      <div class="b-name">STOCK TRADE <em>NSE F&O</em></div>
+      <div class="b-name">STOCK TRADE <em>F&O</em></div>
     </div>
     <div class="st-strip">
       <div class="st-item">

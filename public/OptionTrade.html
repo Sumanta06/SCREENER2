@@ -22,6 +22,200 @@
   l.href = c.toDataURL('image/png');
   document.head.appendChild(l);
 })();
+
+/* ════════════════════════════════════════
+   DAY VIEW — OptionTrade
+════════════════════════════════════════ */
+let _otDvTimer      = null;
+let _otDvLastSavedAt = null;
+
+function otOpenDayView(){
+  document.getElementById('ot-dv-modal').classList.add('open');
+  otLoadDayView();
+  _otDvTimer = setInterval(otLoadDayViewSmart, 60 * 1000);
+}
+function otCloseDayView(){
+  document.getElementById('ot-dv-modal').classList.remove('open');
+  if(_otDvTimer){ clearInterval(_otDvTimer); _otDvTimer = null; }
+}
+
+async function otLoadDayView(){
+  const body = document.getElementById('ot-dv-body');
+  const sub  = document.getElementById('ot-dv-subtitle');
+  body.innerHTML = '<div class="ot-dv-loading"><div class="ot-dv-spin"></div> Loading today\'s signals…</div>';
+  sub.textContent = 'Loading…';
+  _otDvLastSavedAt = null;
+  try{
+    const res = await fetch(WORKER_B + 'dayview');
+    const j   = await res.json();
+    if(!j.ok) throw new Error(j.error || 'Worker error');
+    const results = j.results || [];
+    if(results.length) _otDvLastSavedAt = results[results.length-1].savedAt;
+    otRenderDayView(results);
+  } catch(e){
+    body.innerHTML = `<div class="ot-dv-empty">⚠️ Failed to load: ${e.message}</div>`;
+    sub.textContent = 'Error';
+  }
+}
+
+async function otLoadDayViewSmart(){
+  try{
+    const res = await fetch(WORKER_B + 'dayview');
+    const j   = await res.json();
+    if(!j.ok) return;
+    const results = j.results || [];
+    if(!results.length) return;
+    const latest = results[results.length-1].savedAt;
+    if(latest === _otDvLastSavedAt) return; // same data — skip
+    _otDvLastSavedAt = latest;
+    otRenderDayView(results);
+  } catch(e){ /* silent */ }
+}
+
+function otRenderDayView(results){
+  const body = document.getElementById('ot-dv-body');
+  const sub  = document.getElementById('ot-dv-subtitle');
+
+  if(!results.length){
+    body.innerHTML = '<div class="ot-dv-empty">📭 No data yet today.<br>Appears after market opens.</div>';
+    sub.textContent = 'No data yet';
+    return;
+  }
+
+  sub.textContent = `${results.length} scan${results.length>1?'s':''} today`;
+
+  // Leaderboard — strong count + first seen time
+  const symCount = {}, symFirst = {};
+  for(const r of results){
+    for(const s of (r.strongFut||[])){
+      symCount[s.symbol] = (symCount[s.symbol]||0) + 1;
+      if(!symFirst[s.symbol]) symFirst[s.symbol] = r.timeStr;
+    }
+    for(const s of (r.strongOpt||[])){
+      symCount[s.symbol] = (symCount[s.symbol]||0) + 1;
+      if(!symFirst[s.symbol]) symFirst[s.symbol] = r.timeStr;
+    }
+  }
+  const lbData   = Object.entries(symCount).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  const maxCount = lbData[0]?.[1] || 1;
+  const maxBull  = Math.max(...results.map(r=>r.bullCount), 1);
+  const maxBear  = Math.max(...results.map(r=>r.bearCount), 1);
+
+  let html = '';
+
+  // ── Timeline (newest first) ──
+  html += '<div class="ot-dv-sec">📅 Scan Timeline — newest first</div>';
+  const sorted = [...results].reverse();
+
+  sorted.forEach((r, idx) => {
+    const dom = r.bullCount > r.bearCount ? 'bull-dom' : r.bearCount > r.bullCount ? 'bear-dom' : 'mixed';
+    const bw  = Math.round(r.bullCount / maxBull * 80);
+    const rw  = Math.round(r.bearCount / maxBear * 80);
+    const uid = 'ot_tl_' + idx;
+
+    html += `<div class="ot-tl-item ${dom}" id="${uid}">
+      <div class="ot-tl-head" onclick="otDvToggle('${uid}')">
+        <div class="ot-tl-row1">
+          <span class="ot-tl-time">🕐 ${r.timeStr}</span>
+          ${r.strongCount > 0 ? `<span class="ot-tl-strong">🔥 ${r.strongCount} Strong</span>` : ''}
+        </div>
+        <div class="ot-tl-row2">
+          <div class="ot-bars">
+            <div class="ot-bar-g" style="width:${bw}px"></div>
+            <div class="ot-bar-r" style="width:${rw}px"></div>
+          </div>
+          <span class="ot-tl-counts">
+            <span class="bc">▲${r.bullCount}</span>&nbsp;
+            <span class="rc">▼${r.bearCount}</span>
+          </span>
+        </div>
+      </div>
+      <div class="ot-detail" id="${uid}_det">
+        ${otBuildDetail(r)}
+      </div>
+    </div>`;
+  });
+
+  // ── Leaderboard ──
+  if(lbData.length){
+    html += '<div class="ot-dv-sec" style="margin-top:20px;">🏆 Symbol Leaderboard — Strong signal count</div>';
+    lbData.forEach(([sym, cnt], i) => {
+      const ft = symFirst[sym] || '';
+      html += `<div class="ot-lb-item">
+        <span class="ot-lb-rank">${i+1}</span>
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="ot-lb-sym">${sym}</span>
+            ${ft ? `<span style="font-size:.6rem;color:var(--ink3);white-space:nowrap;">🕐 First: ${ft}</span>` : ''}
+          </div>
+        </div>
+        <div class="ot-lb-bar-wrap">
+          <div class="ot-lb-bar-bg"><div class="ot-lb-bar-fill" style="width:${Math.round(cnt/maxCount*100)}%"></div></div>
+          <span class="ot-lb-count">${cnt}×</span>
+        </div>
+      </div>`;
+    });
+  }
+
+  body.innerHTML = html;
+}
+
+function otBuildDetail(r){
+  const futBull = (r.strongFut||[]).filter(s=>s.dir==='BULL');
+  const futBear = (r.strongFut||[]).filter(s=>s.dir==='BEAR');
+  const optBull = (r.strongOpt||[]).filter(s=>s.dir==='BULL');
+  const optBear = (r.strongOpt||[]).filter(s=>s.dir==='BEAR');
+
+  let html = '';
+
+  // Futures
+  if(r.strongFut && r.strongFut.length){
+    html += '<div class="ot-detail-sec">📦 Futures — Strong</div>';
+    html += '<div class="ot-chips">';
+    if(futBull.length) futBull.forEach(s=>{
+      html += `<span class="ot-chip bull">▲ ${s.symbol}</span>`;
+    });
+    if(futBear.length) futBear.forEach(s=>{
+      html += `<span class="ot-chip bear">▼ ${s.symbol}</span>`;
+    });
+    html += '</div>';
+  } else {
+    html += '<div class="ot-detail-sec">📦 Futures — Strong</div>';
+    html += '<div class="ot-chip-empty">No strong futures signals</div>';
+  }
+
+  // Options
+  if(r.strongOpt && r.strongOpt.length){
+    html += '<div class="ot-detail-sec" style="margin-top:8px;">🎯 Options — Strong</div>';
+    html += '<div class="ot-chips">';
+    if(optBull.length) optBull.forEach(s=>{
+      html += `<span class="ot-chip bull">▲ ${s.symbol} ${s.strike ? s.strike + ' ' + s.type : ''}</span>`;
+    });
+    if(optBear.length) optBear.forEach(s=>{
+      html += `<span class="ot-chip bear">▼ ${s.symbol} ${s.strike ? s.strike + ' ' + s.type : ''}</span>`;
+    });
+    html += '</div>';
+  } else {
+    html += '<div class="ot-detail-sec" style="margin-top:8px;">🎯 Options — Strong</div>';
+    html += '<div class="ot-chip-empty">No strong options signals</div>';
+  }
+
+  return html;
+}
+
+function otDvToggle(uid){
+  const item = document.getElementById(uid);
+  const det  = document.getElementById(uid + '_det');
+  const isOpen = det.classList.contains('open');
+  document.querySelectorAll('.ot-detail.open').forEach(el=>el.classList.remove('open'));
+  document.querySelectorAll('.ot-tl-item.expanded').forEach(el=>el.classList.remove('expanded'));
+  if(!isOpen){
+    det.classList.add('open');
+    item.classList.add('expanded');
+    setTimeout(()=>item.scrollIntoView({behavior:'smooth',block:'nearest'}),50);
+  }
+}
+
 </script>
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -674,6 +868,74 @@ td.gold-c { color: var(--gold); }
 .grp-header > span:nth-child(7) {
   text-align: left !important;
 }
+
+/* ══════════════════════════════════
+   DAY VIEW MODAL
+══════════════════════════════════ */
+#ot-dv-modal{display:none;position:fixed;inset:0;z-index:998;
+  background:rgba(0,0,0,.85);backdrop-filter:blur(8px);flex-direction:column;}
+#ot-dv-modal.open{display:flex;}
+.ot-dv-header{display:flex;align-items:center;justify-content:space-between;
+  padding:14px 20px;background:var(--card);border-bottom:1px solid var(--border);flex-shrink:0;}
+.ot-dv-title{font-size:.95rem;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:8px;}
+.ot-dv-subtitle{font-size:.7rem;color:var(--ink3);margin-top:2px;}
+.ot-dv-close{width:30px;height:30px;border-radius:6px;border:1px solid var(--border);
+  background:var(--bg2);color:var(--ink2);cursor:pointer;font-size:1rem;
+  display:flex;align-items:center;justify-content:center;transition:all .15s;}
+.ot-dv-close:hover{background:var(--bg);color:var(--ink);}
+.ot-dv-body{flex:1;overflow-y:auto;padding:14px 16px 40px;}
+.ot-dv-loading{display:flex;align-items:center;justify-content:center;
+  gap:10px;padding:40px;color:var(--ink3);font-size:.8rem;}
+.ot-dv-spin{width:18px;height:18px;border:2px solid var(--border);
+  border-top-color:var(--accent);border-radius:50%;animation:otDvSpin .7s linear infinite;flex-shrink:0;}
+@keyframes otDvSpin{to{transform:rotate(360deg);}}
+.ot-dv-empty{text-align:center;padding:48px 20px;color:var(--ink3);font-size:.82rem;}
+.ot-dv-sec{font-size:.58rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:1.1px;color:var(--ink3);margin:16px 0 8px;
+  display:flex;align-items:center;gap:8px;}
+.ot-dv-sec::after{content:'';flex:1;height:1px;background:var(--border);}
+/* Timeline */
+.ot-tl-item{background:var(--card);border:1px solid var(--border);
+  border-radius:9px;margin-bottom:6px;overflow:hidden;cursor:pointer;transition:border-color .15s;}
+.ot-tl-item:hover{border-color:var(--accent);}
+.ot-tl-item.expanded{border-color:var(--accent);}
+.ot-tl-item.bull-dom{border-left:3px solid var(--bull);}
+.ot-tl-item.bear-dom{border-left:3px solid var(--bear);}
+.ot-tl-item.mixed{border-left:3px solid var(--border);}
+.ot-tl-head{padding:10px 14px;}
+.ot-tl-row1{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+.ot-tl-time{font-size:.82rem;font-weight:700;color:var(--ink);}
+.ot-tl-strong{font-size:.68rem;font-weight:700;color:var(--gold);}
+.ot-tl-row2{display:flex;align-items:center;gap:10px;}
+.ot-bars{display:flex;align-items:center;gap:4px;flex:1;}
+.ot-bar-g{height:6px;background:var(--bull);border-radius:3px;min-width:4px;}
+.ot-bar-r{height:6px;background:var(--bear);border-radius:3px;min-width:4px;}
+.ot-tl-counts{font-size:.7rem;color:var(--ink3);white-space:nowrap;}
+.ot-tl-counts .bc{color:var(--bull);}
+.ot-tl-counts .rc{color:var(--bear);}
+.ot-detail{display:none;border-top:1px solid var(--border);padding:10px 14px;}
+.ot-detail.open{display:block;}
+.ot-detail-sec{font-size:.65rem;font-weight:700;color:var(--ink3);
+  text-transform:uppercase;letter-spacing:.8px;margin:8px 0 6px;}
+.ot-chips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px;}
+.ot-chip{font-size:.65rem;font-weight:700;padding:3px 9px;border-radius:5px;}
+.ot-chip.bull{background:var(--bull-bg);color:var(--bull);border:1px solid var(--bull-bd);}
+.ot-chip.bear{background:var(--bear-bg);color:var(--bear);border:1px solid var(--bear-bd);}
+.ot-chip-empty{font-size:.7rem;color:var(--ink3);}
+/* Leaderboard */
+.ot-lb-item{display:flex;align-items:center;gap:10px;
+  padding:9px 12px;background:var(--card);border:1px solid var(--border);
+  border-radius:8px;margin-bottom:5px;}
+.ot-lb-rank{font-size:.7rem;font-weight:700;color:var(--ink3);width:18px;text-align:center;flex-shrink:0;}
+.ot-lb-sym{font-size:.82rem;font-weight:700;flex:1;}
+.ot-lb-bar-wrap{flex:2;display:flex;align-items:center;gap:8px;}
+.ot-lb-bar-bg{flex:1;height:5px;background:var(--bg);border-radius:3px;overflow:hidden;}
+.ot-lb-bar-fill{height:100%;background:var(--gold);border-radius:3px;transition:width .4s ease;}
+.ot-lb-count{font-size:.75rem;font-weight:700;color:var(--gold);min-width:24px;text-align:right;}
+/* Day View button */
+.btn.dayv{background:rgba(168,85,247,.12);color:#c084fc;border-color:rgba(168,85,247,.35);}
+.btn.dayv:hover{background:rgba(168,85,247,.25);}
+
 </style>
 </head>
 <body>
@@ -685,6 +947,7 @@ td.gold-c { color: var(--gold); }
       <div class="brand-title"><span>OPTION</span>TRADE</div>
     </div>
     <div class="hdr-right">
+      <button class="btn dayv" onclick="otOpenDayView()">📅 <span class="btn-lbl">Day View</span></button>
       <span class="badge" id="scan-badge"></span>
       <span class="scan-time" id="scan-time"></span>
       <button class="btn sq" onclick="toggleTheme()" id="theme-btn" title="Toggle theme">🌑</button>
@@ -1744,5 +2007,20 @@ async function handleFiles(files){
 }
 </script>
 
+
+
+<!-- ═══ DAY VIEW MODAL ═══ -->
+<div id="ot-dv-modal">
+  <div class="ot-dv-header">
+    <div>
+      <div class="ot-dv-title">📅 Day View</div>
+      <div class="ot-dv-subtitle" id="ot-dv-subtitle">Loading today's signals…</div>
+    </div>
+    <button class="ot-dv-close" onclick="otCloseDayView()">✕</button>
+  </div>
+  <div class="ot-dv-body" id="ot-dv-body">
+    <div class="ot-dv-loading"><div class="ot-dv-spin"></div> Loading…</div>
+  </div>
+</div>
 
 </body></html>

@@ -68,21 +68,21 @@ async function otLoadDayViewSmart(){
     const latest = results[results.length-1].savedAt;
     if(latest === _otDvLastSavedAt) return; // same data — skip
     _otDvLastSavedAt = latest;
-    otRenderView(results);
+    otRenderDayView(results);
   } catch(e){ /* silent */ }
 }
 
-function otRenderView(results){
+function otRenderDayView(results){
   const body = document.getElementById('ot-dv-body');
   const sub  = document.getElementById('ot-dv-subtitle');
 
   if(!results.length){
-    body.innerHTML = '<div class="ot-dv-empty">📭 No data yet to.<br>Appears after market opens.</div>';
+    body.innerHTML = '<div class="ot-dv-empty">📭 No data yet today.<br>Appears after market opens.</div>';
     sub.textContent = 'No data yet';
     return;
   }
 
-  sub.textContent = `${results.length} scan${results.length>1?'s':''} to`;
+  sub.textContent = `${results.length} scan${results.length>1?'s':''} today`;
 
   // Leaderboard — strong count + first seen time
   const symCount = {}, symFirst = {};
@@ -824,7 +824,7 @@ td.gold-c { color: var(--gold); }
 .grp-badge.normal-bull    { background: var(--bull-bg); color: var(--bull); border: 1px solid var(--bull-bd); }
 .grp-badge.normal-bear    { background: var(--bear-bg); color: var(--bear); border: 1px solid var(--bear-bd); }
 .grp-types { font-size: 11px; color: var(--ink3); }
-.grp-s  { font-size: 11px; color: var(--ink3); font-weight: 600; text-align: right; }
+.grp-days  { font-size: 11px; color: var(--ink3); font-weight: 600; text-align: right; }
 .grp-str   { }
 .grp-pct   { font-size: 12px; font-weight: 700; }
 .grp-expand-icon { font-size: 10px; color: var(--ink3); text-align: center; }
@@ -870,7 +870,7 @@ td.gold-c { color: var(--gold); }
 }
 
 /* ══════════════════════════════════
-    VIEW MODAL
+   DAY VIEW MODAL
 ══════════════════════════════════ */
 #ot-dv-modal{display:none;position:fixed;inset:0;z-index:998;
   background:rgba(0,0,0,.85);backdrop-filter:blur(8px);flex-direction:column;}
@@ -932,7 +932,7 @@ td.gold-c { color: var(--gold); }
 .ot-lb-bar-bg{flex:1;height:5px;background:var(--bg);border-radius:3px;overflow:hidden;}
 .ot-lb-bar-fill{height:100%;background:var(--gold);border-radius:3px;transition:width .4s ease;}
 .ot-lb-count{font-size:.75rem;font-weight:700;color:var(--gold);min-width:24px;text-align:right;}
-/*  View button */
+/* Day View button */
 .btn.dayv{background:rgba(168,85,247,.12);color:#c084fc;border-color:rgba(168,85,247,.35);}
 .btn.dayv:hover{background:rgba(168,85,247,.25);}
 
@@ -947,7 +947,15 @@ td.gold-c { color: var(--gold); }
       <div class="brand-title"><span>OPTION</span>TRADE</div>
     </div>
     <div class="hdr-right">
-      <button class="btn dayv" onclick="otOpenDayView()">👁️ <span class="btn-lbl">Day View</span></button>
+      <button class="btn dayv premium-btn" onclick="otOpenDayView()">
+        <span class="icon-mobile">👁️</span>
+        <span class="icon-pc pulse-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+          </svg>
+        </span>
+        <span class="btn-lbl">Day View</span>
+      </button>
       <span class="badge" id="scan-badge"></span>
       <span class="scan-time" id="scan-time"></span>
       <button class="btn sq" onclick="toggleTheme()" id="theme-btn" title="Toggle theme">🌑</button>

@@ -848,7 +848,15 @@ tr.nodata td{text-align:center;color:var(--ink3);padding:16px;font-size:.75rem;}
       <span id="badge">Ready</span>
       <button class="hbtn sq" onclick="cycleTheme()" id="theme-btn" title="Change theme">🌙</button>
       <button class="hbtn ad" onclick="openAD()">📊 <span>A/D</span></button>
-      <button class="hbtn dayv" onclick="openDayView()">📅 <span>Day View</span></button>
+      <button class="btn dayv" onclick="otOpenDayView()">
+        <span class="icon-mobile">⏳</span>
+        <span class="icon-pc">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+          </svg>
+        </span>
+        <span class="btn-lbl">Day View</span>
+      </button>
       <button class="hbtn cmp" id="cmp-btn" onclick="compareAndSignal()">🔄 <span>Compare</span></button>
       <button class="hbtn manual" id="manual-btn" onclick="openPin()">🔐 <span>Set Base</span></button>
     </div>

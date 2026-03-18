@@ -1064,12 +1064,19 @@ const SIG_LABELS = {
   short:'▼ Short Buildup', unwind:'↓ Long Unwinding', dist:'◆ Distribution',
 };
 
+let _dvRefreshTimer = null;
+let _dvLastSavedAt  = null;
+
 function openDayView(){
   document.getElementById('dv-modal').classList.add('open');
   loadDayView();
+  _dvRefreshTimer = setInterval(async ()=>{
+    await loadDayViewSmart();
+  }, 60 * 1000);
 }
 function closeDayView(){
   document.getElementById('dv-modal').classList.remove('open');
+  if(_dvRefreshTimer){ clearInterval(_dvRefreshTimer); _dvRefreshTimer = null; }
 }
 
 async function loadDayView(){
@@ -1077,16 +1084,34 @@ async function loadDayView(){
   const sub  = document.getElementById('dv-subtitle');
   body.innerHTML = '<div class="dv-loading"><div class="dv-spin"></div> Loading today\'s signals…</div>';
   sub.textContent = 'Loading…';
+  _dvLastSavedAt = null;
 
   try{
     const res = await fetch(WORKER+'?mode=dayview');
     const j   = await res.json();
     if(!j.ok) throw new Error(j.error||'Worker error');
-    renderDayView(j.results||[]);
+    const results = j.results||[];
+    if(results.length) _dvLastSavedAt = results[results.length-1].savedAt;
+    renderDayView(results);
   } catch(e){
     body.innerHTML = `<div class="dv-empty"><div class="dv-empty-icon">⚠️</div>Failed to load: ${e.message}</div>`;
     sub.textContent = 'Error loading data';
   }
+}
+
+async function loadDayViewSmart(){
+  try{
+    const res = await fetch(WORKER+'?mode=dayview');
+    const j   = await res.json();
+    if(!j.ok) return;
+    const results = j.results||[];
+    if(!results.length) return;
+    const latestSavedAt = results[results.length-1].savedAt;
+    // Sirf naya data aane par re-render karo
+    if(latestSavedAt === _dvLastSavedAt) return;
+    _dvLastSavedAt = latestSavedAt;
+    renderDayView(results);
+  } catch(e){ /* silent fail */ }
 }
 
 function renderDayView(results){
@@ -1175,12 +1200,12 @@ function buildDvTable(r){
   // Collect all unique symbols from t10 + t20
   const t10Map = {}, t20Map = {};
   (r.t10Syms||[]).forEach(s=>{
-    const [sym,type,pct] = s.split(':');
-    t10Map[sym] = {type, pct};
+    const [sym,type,pct,oiPct,priceNow] = s.split(':');
+    t10Map[sym] = {type, pct, oiPct, priceNow};
   });
   (r.t20Syms||[]).forEach(s=>{
-    const [sym,type,pct] = s.split(':');
-    t20Map[sym] = {type, pct};
+    const [sym,type,pct,oiPct,priceNow] = s.split(':');
+    t20Map[sym] = {type, pct, oiPct, priceNow};
   });
 
   const strongSet = new Set((r.strong||[]).map(s=>s.split(':')[0]));
@@ -1188,14 +1213,28 @@ function buildDvTable(r){
 
   if(!allSyms.length) return '<div style="padding:12px;color:var(--ink3);font-size:.75rem;text-align:center;">No signals in this scan</div>';
 
+  // LTP: t20 se lelo (purana), warna t10
   let rows = allSyms.map(sym=>{
     const s10 = t10Map[sym];
     const s20 = t20Map[sym];
     const isStrong = strongSet.has(sym);
+
+    // LTP
+    const ltp = s10?.priceNow || s20?.priceNow;
+    const ltpCell = ltp ? `<span style="font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:600;color:var(--ink);">₹${parseFloat(ltp).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}</span>` : `<span class="dim">—</span>`;
+
+    // OI% — t10 se prefer
+    const oiVal = s10?.oiPct ?? s20?.oiPct;
+    const oiCell = oiVal!=null && oiVal!=='' && oiVal!=='undefined'
+      ? `<span class="${parseFloat(oiVal)>=0?'pct-g':'pct-r'}" style="font-family:'JetBrains Mono',monospace;font-size:.72rem;">${parseFloat(oiVal)>=0?'+':''}${parseFloat(oiVal).toFixed(2)}%</span>`
+      : `<span class="dim">—</span>`;
+
     const cell10 = s10 ? `<span class="sig-pill ${s10.type}">${SIG_LABELS[s10.type]||s10.type}</span> <span class="${parseFloat(s10.pct)>=0?'pct-g':'pct-r'}">${parseFloat(s10.pct)>=0?'+':''}${s10.pct}%</span>` : `<span class="sig-pill none">—</span>`;
     const cell20 = s20 ? `<span class="sig-pill ${s20.type}">${SIG_LABELS[s20.type]||s20.type}</span> <span class="${parseFloat(s20.pct)>=0?'pct-g':'pct-r'}">${parseFloat(s20.pct)>=0?'+':''}${s20.pct}%</span>` : `<span class="sig-pill none">—</span>`;
     return `<tr>
       <td class="sym-col">${sym}${isStrong?'<span class="strong-fire">🔥</span>':''}</td>
+      <td>${ltpCell}</td>
+      <td>${oiCell}</td>
       <td><div class="sig-cell">${cell10}</div></td>
       <td><div class="sig-cell">${cell20}</div></td>
     </tr>`;
@@ -1204,6 +1243,8 @@ function buildDvTable(r){
   return `<table>
     <thead><tr>
       <th>Symbol</th>
+      <th>LTP</th>
+      <th>OI Change</th>
       <th>10 Min Compare</th>
       <th>20 Min Compare</th>
     </tr></thead>

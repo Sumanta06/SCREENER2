@@ -44,15 +44,20 @@ const WORKER = 'https://spurts-ul.21aoips3531a1zi.workers.dev/';
 let _adTimer        = null;
 let _adLastSavedAt  = null;
 
+function closeAD(){
+  const m = document.getElementById('ad-modal');
+  m.classList.remove('open');
+  m.style.display = 'none';
+  if(_adTimer){ clearInterval(_adTimer); _adTimer = null; }
+}
+
 function openAD(){
-  document.getElementById('ad-modal').classList.add('open');
+  const m = document.getElementById('ad-modal');
+  m.style.display = '';
+  m.classList.add('open');
   if(_adTimer){ clearInterval(_adTimer); _adTimer = null; }
   loadAD();
   _adTimer = setInterval(loadADSmart, 60 * 1000);
-}
-function closeAD(){
-  document.getElementById('ad-modal').classList.remove('open');
-  if(_adTimer){ clearInterval(_adTimer); _adTimer = null; }
 }
 
 async function loadAD(){
@@ -1324,7 +1329,9 @@ let _dvRefreshTimer = null;
 let _dvLastSavedAt  = null;
 
 function openDayView(){
-  document.getElementById('dv-modal').classList.add('open');
+  const m = document.getElementById('dv-modal');
+  m.style.display = '';
+  m.classList.add('open');
   if(_dvRefreshTimer){ clearInterval(_dvRefreshTimer); _dvRefreshTimer = null; }
   loadDayView();
   _dvRefreshTimer = setInterval(async ()=>{
@@ -1332,7 +1339,9 @@ function openDayView(){
   }, 60 * 1000);
 }
 function closeDayView(){
-  document.getElementById('dv-modal').classList.remove('open');
+  const m = document.getElementById('dv-modal');
+  m.classList.remove('open');
+  m.style.display = 'none';
   if(_dvRefreshTimer){ clearInterval(_dvRefreshTimer); _dvRefreshTimer = null; }
 }
 

@@ -32,6 +32,7 @@ let _adLastSavedAt  = null;
 
 function openAD(){
   document.getElementById('ad-modal').classList.add('open');
+  if(_adTimer){ clearInterval(_adTimer); _adTimer = null; }
   loadAD();
   _adTimer = setInterval(loadADSmart, 60 * 1000);
 }
@@ -301,8 +302,9 @@ header{background:var(--card);border-bottom:1px solid var(--border);
 .hbtn.ad:hover{background:var(--teal-mid);}
 
 /* AD Modal */
-#ad-modal{display:none;position:fixed;inset:0;z-index:997;
-  background:var(--modal-bg);backdrop-filter:blur(8px);flex-direction:column;}
+#ad-modal{display:none;position:fixed;inset:0;z-index:999;
+  background:var(--modal-bg);backdrop-filter:blur(8px);flex-direction:column;
+  overflow:hidden;}
 #ad-modal.open{display:flex;}
 .ad-header{display:flex;align-items:center;justify-content:space-between;
   padding:14px 20px;background:var(--card);border-bottom:1px solid var(--border);flex-shrink:0;}
@@ -430,7 +432,7 @@ input#pin-input:focus{border-color:var(--b);}
 /* ════════════════════════════════════════ DAY VIEW MODAL */
 #dv-modal{display:none;position:fixed;inset:0;z-index:998;
   background:var(--modal-bg);backdrop-filter:blur(8px);
-  flex-direction:column;}
+  flex-direction:column;overflow:hidden;}
 #dv-modal.open{display:flex;}
 
 .dv-header{
@@ -1316,6 +1318,7 @@ let _dvLastSavedAt  = null;
 
 function openDayView(){
   document.getElementById('dv-modal').classList.add('open');
+  if(_dvRefreshTimer){ clearInterval(_dvRefreshTimer); _dvRefreshTimer = null; }
   loadDayView();
   _dvRefreshTimer = setInterval(async ()=>{
     await loadDayViewSmart();

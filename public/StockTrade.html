@@ -1126,12 +1126,15 @@ function renderDayView(results){
 
   sub.textContent = `${results.length} scan${results.length>1?'s':''} today`;
 
-  // Build leaderboard data
+  // Build leaderboard data + first-seen time
   const symCount = {};
+  const symFirstTime = {};
   for(const r of results){
     for(const s of (r.strong||[])){
       const sym = s.split(':')[0];
       symCount[sym] = (symCount[sym]||0)+1;
+      // Pehli baar jo scan mein aaya, us scan ka timeStr save karo
+      if(!symFirstTime[sym]) symFirstTime[sym] = r.timeStr;
     }
   }
   const lbData = Object.entries(symCount).sort((a,b)=>b[1]-a[1]).slice(0,10);
@@ -1182,9 +1185,15 @@ function renderDayView(results){
   if(lbData.length){
     html += '<div class="dv-sec-label" style="margin-top:20px;">🏆 Symbol Leaderboard — Strong signal count</div>';
     lbData.forEach(([sym,cnt],i)=>{
+      const firstTime = symFirstTime[sym] || '';
       html += `<div class="dv-lb-item">
         <span class="dv-lb-rank">${i+1}</span>
-        <span class="dv-lb-sym">${sym}</span>
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="dv-lb-sym">${sym}</span>
+            ${firstTime?`<span style="font-size:.6rem;color:var(--ink3);white-space:nowrap;">🕐 First: ${firstTime}</span>`:''}
+          </div>
+        </div>
         <div class="dv-lb-bar-wrap">
           <div class="dv-lb-bar-bg"><div class="dv-lb-bar-fill" style="width:${Math.round(cnt/maxCount*100)}%"></div></div>
           <span class="dv-lb-count">${cnt}×</span>

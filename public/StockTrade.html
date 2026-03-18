@@ -3,25 +3,39 @@
 <head>
 <meta charset="UTF-8">
 <script>
+/* WORKER defined here at top so all functions below can safely reference it */
+const WORKER = 'https://spurts-ul.21aoips3531a1zi.workers.dev/';
+
 (function(){
-  const c = document.createElement('canvas');
-  c.width = c.height = 64;
-  const x = c.getContext('2d');
-  x.fillStyle = '#1565C0';
-  x.beginPath();
-  x.roundRect(0, 0, 64, 64, 12);
-  x.fill();
-  x.font = 'bold 30px Arial';
-  x.textAlign = 'center';
-  x.textBaseline = 'middle';
-  x.fillStyle = '#ffffff';
-  x.fillText('S', 20, 34);
-  x.fillStyle = '#ffffff';
-  x.fillText('T', 44, 34);
-  const l = document.createElement('link');
-  l.rel = 'icon'; l.type = 'image/png';
-  l.href = c.toDataURL('image/png');
-  document.head.appendChild(l);
+  try{
+    const c = document.createElement('canvas');
+    c.width = c.height = 64;
+    const x = c.getContext('2d');
+    x.fillStyle = '#1565C0';
+    x.beginPath();
+    /* roundRect not supported in all Chromium builds — safe fallback */
+    if(typeof x.roundRect === 'function'){
+      x.roundRect(0, 0, 64, 64, 12);
+    } else {
+      const r=12,w=64,h=64;
+      x.moveTo(r,0);x.lineTo(w-r,0);x.quadraticCurveTo(w,0,w,r);
+      x.lineTo(w,h-r);x.quadraticCurveTo(w,h,w-r,h);
+      x.lineTo(r,h);x.quadraticCurveTo(0,h,0,h-r);
+      x.lineTo(0,r);x.quadraticCurveTo(0,0,r,0);x.closePath();
+    }
+    x.fill();
+    x.font = 'bold 30px Arial';
+    x.textAlign = 'center';
+    x.textBaseline = 'middle';
+    x.fillStyle = '#ffffff';
+    x.fillText('S', 20, 34);
+    x.fillStyle = '#ffffff';
+    x.fillText('T', 44, 34);
+    const l = document.createElement('link');
+    l.rel = 'icon'; l.type = 'image/png';
+    l.href = c.toDataURL('image/png');
+    document.head.appendChild(l);
+  }catch(e){/* favicon silently fails — harmless */}
 })();
 
 /* ════════════════════════════════════════
@@ -303,7 +317,7 @@ header{background:var(--card);border-bottom:1px solid var(--border);
 
 /* AD Modal */
 #ad-modal{display:none;position:fixed;inset:0;z-index:999;
-  background:var(--modal-bg);backdrop-filter:blur(8px);flex-direction:column;
+  background:var(--modal-bg);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);flex-direction:column;
   overflow:hidden;}
 #ad-modal.open{display:flex;}
 .ad-header{display:flex;align-items:center;justify-content:space-between;
@@ -390,7 +404,7 @@ input[type=range].tslider::-webkit-slider-thumb{-webkit-appearance:none;
 
 /* ════════════════════════════════════════ PIN MODAL */
 #pin-modal{display:none;position:fixed;inset:0;z-index:999;
-  background:var(--modal-bg);backdrop-filter:blur(8px);
+  background:var(--modal-bg);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
   align-items:center;justify-content:center;padding:16px;}
 #pin-modal.open{display:flex;}
 .pin-box{background:var(--card);border:1px solid var(--border2);border-radius:14px;
@@ -431,7 +445,7 @@ input#pin-input:focus{border-color:var(--b);}
 
 /* ════════════════════════════════════════ DAY VIEW MODAL */
 #dv-modal{display:none;position:fixed;inset:0;z-index:998;
-  background:var(--modal-bg);backdrop-filter:blur(8px);
+  background:var(--modal-bg);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
   flex-direction:column;overflow:hidden;}
 #dv-modal.open{display:flex;}
 
@@ -1038,7 +1052,7 @@ tr.nodata td{text-align:center;color:var(--ink3);padding:16px;font-size:.75rem;}
 <script>
 'use strict';
 
-const WORKER      = 'https://spurts-ul.21aoips3531a1zi.workers.dev/';
+/* WORKER is defined in the <head> script block above — do not redefine */
 const TOP_N       = 10;
 const TOP_HL      = 3;
 const THEMES      = ['dark','light','teal'];

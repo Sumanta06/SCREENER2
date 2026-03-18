@@ -23,6 +23,180 @@
   l.href = c.toDataURL('image/png');
   document.head.appendChild(l);
 })();
+
+/* ════════════════════════════════════════
+   A/D — ACCUMULATION / DISTRIBUTION VIEW
+════════════════════════════════════════ */
+let _adTimer        = null;
+let _adLastSavedAt  = null;
+
+function openAD(){
+  document.getElementById('ad-modal').classList.add('open');
+  loadAD();
+  _adTimer = setInterval(loadADSmart, 60 * 1000);
+}
+function closeAD(){
+  document.getElementById('ad-modal').classList.remove('open');
+  if(_adTimer){ clearInterval(_adTimer); _adTimer = null; }
+}
+
+async function loadAD(){
+  const body = document.getElementById('ad-body');
+  const sub  = document.getElementById('ad-subtitle');
+  body.innerHTML = '<div class="ad-loading"><div class="ad-spin"></div> Loading…</div>';
+  sub.textContent = 'Loading…';
+  _adLastSavedAt = null;
+  try{
+    const res = await fetch(WORKER+'?mode=dayview');
+    const j   = await res.json();
+    if(!j.ok) throw new Error(j.error || 'Worker error');
+    const results = j.results || [];
+    if(results.length) _adLastSavedAt = results[results.length-1].savedAt;
+    renderAD(results, body, sub);
+  } catch(e){
+    body.innerHTML = `<div class="ad-empty">⚠️ Failed: ${e.message}</div>`;
+    sub.textContent = 'Error';
+  }
+}
+
+async function loadADSmart(){
+  try{
+    const res = await fetch(WORKER+'?mode=dayview');
+    const j   = await res.json();
+    if(!j.ok) return;
+    const results = j.results || [];
+    if(!results.length) return;
+    const latest = results[results.length-1].savedAt;
+    if(latest === _adLastSavedAt) return; // same data — skip
+    _adLastSavedAt = latest;
+    const body = document.getElementById('ad-body');
+    const sub  = document.getElementById('ad-subtitle');
+    renderAD(results, body, sub);
+  } catch(e){ /* silent */ }
+}
+
+function renderAD(results, body, sub){
+  if(!results.length){
+    body.innerHTML = '<div class="ad-empty">📭 Aaj ka koi data nahi mila abhi.</div>';
+    sub.textContent = 'No data yet';
+    return;
+  }
+
+  // Count total acc/dist across all scans
+  const totalAcc  = results.reduce((a,r) => a + (r.accCount||0), 0);
+  const totalDist = results.reduce((a,r) => a + (r.distCount||0), 0);
+  sub.textContent = `${results.length} scans · ${totalAcc} Acc signals · ${totalDist} Dist signals today`;
+
+  // Timeline newest first
+  const sorted = [...results].reverse();
+  let html = '';
+
+  sorted.forEach((r, idx) => {
+    const accSyms  = (r.accSyms  || []);
+    const distSyms = (r.distSyms || []);
+    if(!accSyms.length && !distSyms.length) return; // skip scans with no acc/dist
+
+    const uid = 'ad_tl_' + idx;
+    const totalCount = accSyms.length + distSyms.length;
+
+    html += `<div class="ad-tl-item" id="${uid}">
+      <div class="ad-tl-head" onclick="adTlToggle('${uid}')">
+        <div class="ad-tl-row1">
+          <span class="ad-tl-time">🕐 ${r.timeStr}</span>
+          <span class="ad-tl-counts">
+            <span class="ad-tl-acc">${accSyms.length} Acc</span>
+            &nbsp;·&nbsp;
+            <span class="ad-tl-dist">${distSyms.length} Dist</span>
+          </span>
+        </div>
+        <div class="ad-tl-chips">
+          ${accSyms.slice(0,4).map(s => `<span class="ad-chip acc">◆ ${s.split(':')[0]}</span>`).join('')}
+          ${distSyms.slice(0,4).map(s => `<span class="ad-chip dist">◆ ${s.split(':')[0]}</span>`).join('')}
+        </div>
+      </div>
+      <div class="ad-tl-detail" id="${uid}_det">
+        ${buildADDetail(accSyms, distSyms)}
+      </div>
+    </div>`;
+  });
+
+  if(!html){
+    body.innerHTML = '<div class="ad-empty">📭 Aaj koi Accumulation ya Distribution signal nahi mila abhi.</div>';
+    return;
+  }
+
+  body.innerHTML = '<div class="ad-sec">📅 Scan Timeline — newest first</div>' + html;
+}
+
+function buildADDetail(accSyms, distSyms){
+  let html = '<div class="ad-detail-inner">';
+
+  if(accSyms.length){
+    html += '<div class="ad-detail-sec acc-sec">◆ Accumulation</div><div class="ad-grid">';
+    accSyms.forEach(s => {
+      const [sym, pricePct, oiPct, priceNow] = s.split(':');
+      html += buildADCard({symbol:sym, pricePct, oiPct, priceNow}, 'acc');
+    });
+    html += '</div>';
+  }
+
+  if(distSyms.length){
+    html += '<div class="ad-detail-sec dist-sec">◆ Distribution</div><div class="ad-grid">';
+    distSyms.forEach(s => {
+      const [sym, pricePct, oiPct, priceNow] = s.split(':');
+      html += buildADCard({symbol:sym, pricePct, oiPct, priceNow}, 'dist');
+    });
+    html += '</div>';
+  }
+
+  html += '</div>';
+  return html;
+}
+
+function buildADCard(r, type){
+  const pPct  = parseFloat(r.pricePct) || 0;
+  const oiPct = parseFloat(r.oiPct)    || 0;
+  const pCls  = pPct  >= 0 ? 'g' : 'r';
+  const oiCls = oiPct >= 0 ? 'teal' : 'r';
+  const pSign = pPct  >= 0 ? '+' : '';
+  const oSign = oiPct >= 0 ? '+' : '';
+  const label = type === 'acc' ? '◆ Accumulation' : '◆ Distribution';
+  const price = r.priceNow ? `₹${parseFloat(r.priceNow).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}` : '—';
+  return `<div class="ad-card ${type}">
+    <div class="ad-card-top">
+      <span class="ad-sym">${r.symbol}</span>
+      <span class="ad-badge ${type}">${label}</span>
+    </div>
+    <div class="ad-stats">
+      <div class="ad-stat">
+        <span class="ad-stat-label">Price Δ</span>
+        <span class="ad-stat-val ${pCls}">${pSign}${pPct.toFixed(2)}%</span>
+      </div>
+      <div class="ad-stat">
+        <span class="ad-stat-label">OI Δ</span>
+        <span class="ad-stat-val ${oiCls}">${oSign}${oiPct.toFixed(2)}%</span>
+      </div>
+      <div class="ad-stat">
+        <span class="ad-stat-label">Price Now</span>
+        <span class="ad-stat-val" style="color:var(--ink);">${price}</span>
+      </div>
+    </div>
+  </div>`;
+}
+
+function adTlToggle(uid){
+  const item = document.getElementById(uid);
+  const det  = document.getElementById(uid+'_det');
+  const isOpen = det.classList.contains('open');
+  document.querySelectorAll('.ad-tl-detail.open').forEach(el=>el.classList.remove('open'));
+  document.querySelectorAll('.ad-tl-item.expanded').forEach(el=>el.classList.remove('expanded'));
+  if(!isOpen){
+    det.classList.add('open');
+    item.classList.add('expanded');
+    setTimeout(()=>item.scrollIntoView({behavior:'smooth',block:'nearest'}),50);
+  }
+}
+
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>StockTrade · NSE F&O</title>
@@ -122,6 +296,77 @@ header{background:var(--card);border-bottom:1px solid var(--border);
 .hbtn.dayv{background:var(--purple-dim);color:var(--purple-text);border-color:var(--purple-mid);}
 .hbtn.dayv:hover{background:var(--purple-mid);}
 .hbtn.loading{opacity:.5;pointer-events:none;}
+
+.hbtn.ad{background:var(--teal-dim);color:var(--teal-text);border-color:var(--teal-mid);}
+.hbtn.ad:hover{background:var(--teal-mid);}
+
+/* AD Modal */
+#ad-modal{display:none;position:fixed;inset:0;z-index:997;
+  background:var(--modal-bg);backdrop-filter:blur(8px);flex-direction:column;}
+#ad-modal.open{display:flex;}
+.ad-header{display:flex;align-items:center;justify-content:space-between;
+  padding:14px 20px;background:var(--card);border-bottom:1px solid var(--border);flex-shrink:0;}
+.ad-title{font-size:.95rem;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:8px;}
+.ad-subtitle{font-size:.7rem;color:var(--ink3);margin-top:2px;}
+.ad-close{width:30px;height:30px;border-radius:6px;border:1px solid var(--border2);
+  background:var(--bg2);color:var(--ink2);cursor:pointer;font-size:1rem;
+  display:flex;align-items:center;justify-content:center;transition:all .15s;}
+.ad-close:hover{background:var(--bg3);color:var(--ink);}
+.ad-body{flex:1;overflow-y:auto;padding:18px 20px 40px;}
+.ad-loading{display:flex;align-items:center;justify-content:center;
+  gap:10px;padding:40px;color:var(--ink3);font-size:.8rem;}
+.ad-spin{width:18px;height:18px;border:2px solid var(--border2);
+  border-top-color:var(--teal);border-radius:50%;
+  animation:adSpin .7s linear infinite;flex-shrink:0;}
+@keyframes adSpin{to{transform:rotate(360deg);}}
+.ad-empty{text-align:center;padding:48px 20px;color:var(--ink3);font-size:.82rem;}
+.ad-sec{display:flex;align-items:center;gap:8px;
+  font-size:.58rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:1.1px;color:var(--ink3);margin:0 0 10px;}
+.ad-sec::after{content:'';flex:1;height:1px;background:var(--border);}
+.ad-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;margin-bottom:24px;}
+.ad-card{background:var(--card);border:1px solid var(--border);border-radius:9px;
+  padding:12px 14px;display:flex;flex-direction:column;gap:6px;}
+.ad-card.acc{border-left:3px solid var(--teal);}
+.ad-card.dist{border-left:3px solid var(--orange);}
+.ad-card-top{display:flex;align-items:center;justify-content:space-between;}
+.ad-sym{font-size:.88rem;font-weight:700;color:var(--ink);}
+.ad-badge{font-size:.6rem;font-weight:700;padding:2px 8px;border-radius:4px;}
+.ad-badge.acc{background:var(--teal-dim);color:var(--teal-text);border:1px solid var(--teal-mid);}
+.ad-badge.dist{background:var(--orange-dim);color:var(--orange-text);border:1px solid var(--orange-mid);}
+.ad-stats{display:flex;gap:12px;font-size:.7rem;}
+.ad-stat{display:flex;flex-direction:column;gap:2px;}
+.ad-stat-label{font-size:.55rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.8px;color:var(--ink3);}
+.ad-stat-val{font-family:'JetBrains Mono',monospace;font-weight:600;}
+.ad-stat-val.g{color:var(--g-text);} .ad-stat-val.r{color:var(--r-text);}
+.ad-stat-val.teal{color:var(--teal-text);}
+.ad-empty-sec{color:var(--ink3);font-size:.75rem;padding:10px 0 16px;font-style:italic;}
+
+/* AD Timeline */
+.ad-tl-item{background:var(--card);border:1px solid var(--border);
+  border-radius:9px;margin-bottom:6px;overflow:hidden;cursor:pointer;transition:border-color .15s;}
+.ad-tl-item:hover{border-color:var(--teal);}
+.ad-tl-item.expanded{border-color:var(--teal);}
+.ad-tl-head{padding:10px 14px;}
+.ad-tl-row1{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+.ad-tl-time{font-size:.82rem;font-weight:700;color:var(--ink);}
+.ad-tl-counts{font-size:.72rem;font-weight:600;}
+.ad-tl-acc{color:var(--teal-text);}
+.ad-tl-dist{color:var(--orange-text);}
+.ad-tl-chips{display:flex;flex-wrap:wrap;gap:4px;}
+.ad-chip{font-size:.62rem;font-weight:600;padding:2px 7px;border-radius:4px;}
+.ad-chip.acc{background:var(--teal-dim);color:var(--teal-text);border:1px solid var(--teal-mid);}
+.ad-chip.dist{background:var(--orange-dim);color:var(--orange-text);border:1px solid var(--orange-mid);}
+.ad-tl-detail{display:none;border-top:1px solid var(--border);}
+.ad-tl-detail.open{display:block;}
+.ad-detail-inner{padding:12px 14px;}
+.ad-detail-sec{font-size:.65rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.8px;margin:8px 0 6px;}
+.ad-detail-sec.acc-sec{color:var(--teal-text);}
+.ad-detail-sec.dist-sec{color:var(--orange-text);}
+
+
 .base-wrap{display:flex;align-items:center;gap:6px;padding:0 14px;
   border-right:1px solid var(--border);height:36px;}
 .ctrl-label{font-size:.56rem;font-weight:700;text-transform:uppercase;
@@ -494,9 +739,10 @@ tr.nodata td{text-align:center;color:var(--ink3);padding:16px;font-size:.75rem;}
   .hbtn span{display:none;}
   .hbtn.sq{width:28px;}
   #badge{font-size:.58rem;padding:2px 6px;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .hbtn.dayv{order:1;}
-  .hbtn.cmp{order:2;}
-  .hbtn.manual{order:3;}
+  .hbtn.ad{order:1;}
+  .hbtn.dayv{order:2;}
+  .hbtn.cmp{order:3;}
+  .hbtn.manual{order:4;}
   #badge{order:4;}
   .hbtn.sq{order:5;}
   .base-wrap{padding:0 8px;border-right:none;}
@@ -594,6 +840,7 @@ tr.nodata td{text-align:center;color:var(--ink3);padding:16px;font-size:.75rem;}
     <div class="hdr-right">
       <span id="badge">Ready</span>
       <button class="hbtn sq" onclick="cycleTheme()" id="theme-btn" title="Change theme">🌙</button>
+      <button class="hbtn ad" onclick="openAD()">📊 <span>A/D</span></button>
       <button class="hbtn dayv" onclick="openDayView()">📅 <span>Day View</span></button>
       <button class="hbtn cmp" id="cmp-btn" onclick="compareAndSignal()">🔄 <span>Compare</span></button>
       <button class="hbtn manual" id="manual-btn" onclick="openPin()">🔐 <span>Set Base</span></button>
@@ -1358,5 +1605,20 @@ async function compareAndSignal(){
 
 
 </script>
+
+<!-- ═══ AD MODAL ═══ -->
+<div id="ad-modal">
+  <div class="ad-header">
+    <div>
+      <div class="ad-title">📊 Accumulation / Distribution</div>
+      <div class="ad-subtitle" id="ad-subtitle">Loading…</div>
+    </div>
+    <button class="ad-close" onclick="closeAD()">✕</button>
+  </div>
+  <div class="ad-body" id="ad-body">
+    <div class="ad-loading"><div class="ad-spin"></div> Loading…</div>
+  </div>
+</div>
+
 </body>
 </html>

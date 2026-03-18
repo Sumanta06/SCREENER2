@@ -819,20 +819,6 @@ tr.nodata td{text-align:center;color:var(--ink3);padding:16px;font-size:.75rem;}
   </div>
 </div>
 
-<!-- ═══ DAY VIEW MODAL ═══ -->
-<div id="dv-modal">
-  <div class="dv-header">
-    <div>
-      <div class="dv-title">📅 Day View</div>
-      <div class="dv-subtitle" id="dv-subtitle">Loading today's signals…</div>
-    </div>
-    <button class="dv-close" onclick="closeDayView()">✕</button>
-  </div>
-  <div class="dv-body" id="dv-body">
-    <div class="dv-loading"><div class="dv-spin"></div> Loading…</div>
-  </div>
-</div>
-
 <!-- ═══ HEADER ═══ -->
 <header>
   <div class="hdr-row1">
@@ -1641,6 +1627,20 @@ async function compareAndSignal(){
   </div>
   <div class="ad-body" id="ad-body">
     <div class="ad-loading"><div class="ad-spin"></div> Loading…</div>
+  </div>
+</div>
+
+<!-- ═══ DAY VIEW MODAL ═══ -->
+<div id="dv-modal">
+  <div class="dv-header">
+    <div>
+      <div class="dv-title">📅 Day View</div>
+      <div class="dv-subtitle" id="dv-subtitle">Loading today's signals…</div>
+    </div>
+    <button class="dv-close" onclick="closeDayView()">✕</button>
+  </div>
+  <div class="dv-body" id="dv-body">
+    <div class="dv-loading"><div class="dv-spin"></div> Loading…</div>
   </div>
 </div>
 

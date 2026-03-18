@@ -936,6 +936,47 @@ td.gold-c { color: var(--gold); }
 .btn.dayv{background:rgba(168,85,247,.12);color:#c084fc;border-color:rgba(168,85,247,.35);}
 .btn.dayv:hover{background:rgba(168,85,247,.25);}
 
+
+/* PC aur Mobile ke liye alag icons */
+.icon-mobile { display: none; }
+.icon-pc { display: inline-flex; align-items: center; margin-right: 4px; }
+
+@media (max-width: 600px) {
+  .icon-mobile { display: inline-block; margin-right: 4px; }
+  .icon-pc { display: none; }
+}
+
+/* 💎 Premium Button Styling */
+.btn.premium-btn {
+  background: linear-gradient(135deg, #0D1680 0%, #30239E 100%) !important;
+  color: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.4);
+  transition: all 0.3s ease;
+}
+.btn.premium-btn:hover {
+  background: linear-gradient(135deg, #4f46e5 0%, #9333ea 100%) !important;
+  box-shadow: 0 6px 18px rgba(168, 85, 247, 0.6);
+  transform: translateY(-2px);
+}
+.btn.premium-btn .btn-lbl {
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+/* 💓 SVG Pulse Animation */
+.pulse-icon svg {
+  animation: heartbeat 2s infinite;
+}
+@keyframes heartbeat {
+  0% { transform: scale(1); }
+  10% { transform: scale(1.2); }
+  20% { transform: scale(1); }
+  30% { transform: scale(1.2); }
+  40% { transform: scale(1); }
+  100% { transform: scale(1); }
+}
+
 </style>
 </head>
 <body>

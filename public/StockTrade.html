@@ -44,20 +44,15 @@ const WORKER = 'https://spurts-ul.21aoips3531a1zi.workers.dev/';
 let _adTimer        = null;
 let _adLastSavedAt  = null;
 
-function closeAD(){
-  const m = document.getElementById('ad-modal');
-  m.classList.remove('open');
-  m.style.display = 'none';
-  if(_adTimer){ clearInterval(_adTimer); _adTimer = null; }
-}
-
 function openAD(){
-  const m = document.getElementById('ad-modal');
-  m.style.display = '';
-  m.classList.add('open');
+  document.getElementById('ad-modal').classList.add('open');
   if(_adTimer){ clearInterval(_adTimer); _adTimer = null; }
   loadAD();
   _adTimer = setInterval(loadADSmart, 60 * 1000);
+}
+function closeAD(){
+  document.getElementById('ad-modal').classList.remove('open');
+  if(_adTimer){ clearInterval(_adTimer); _adTimer = null; }
 }
 
 async function loadAD(){
@@ -321,10 +316,11 @@ header{background:var(--card);border-bottom:1px solid var(--border);
 .hbtn.ad:hover{background:var(--teal-mid);}
 
 /* AD Modal */
-#ad-modal{display:none;position:fixed;inset:0;z-index:999;
+#ad-modal{display:-webkit-flex;display:flex;-webkit-flex-direction:column;flex-direction:column;
+  position:fixed;inset:0;z-index:999;
   background:var(--modal-bg);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
-  overflow:hidden;}
-#ad-modal.open{display:-webkit-flex;display:flex;-webkit-flex-direction:column;flex-direction:column;}
+  overflow:hidden;visibility:hidden;pointer-events:none;}
+#ad-modal.open{visibility:visible;pointer-events:auto;}
 .ad-header{display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;
   -webkit-justify-content:space-between;justify-content:space-between;
   padding:14px 20px;background:var(--card);border-bottom:1px solid var(--border);flex-shrink:0;}
@@ -452,10 +448,11 @@ input#pin-input:focus{border-color:var(--b);}
 .pbtn.confirm:hover{background:var(--b-mid);}
 
 /* ════════════════════════════════════════ DAY VIEW MODAL */
-#dv-modal{display:none;position:fixed;inset:0;z-index:998;
+#dv-modal{display:-webkit-flex;display:flex;-webkit-flex-direction:column;flex-direction:column;
+  position:fixed;inset:0;z-index:998;
   background:var(--modal-bg);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
-  overflow:hidden;}
-#dv-modal.open{display:-webkit-flex;display:flex;-webkit-flex-direction:column;flex-direction:column;}
+  overflow:hidden;visibility:hidden;pointer-events:none;}
+#dv-modal.open{visibility:visible;pointer-events:auto;}
 
 .dv-header{
   display:-webkit-flex;display:flex;
@@ -835,7 +832,7 @@ tr.nodata td{text-align:center;color:var(--ink3);padding:16px;font-size:.75rem;}
           <rect x="14" y="3" width="4" height="15" rx="1.5" fill="white"/>
         </svg>
       </div>
-      <div class="b-name">STOCK TRADE <em>V1</em></div>
+      <div class="b-name">STOCK TRADE <em>F&O</em></div>
     </div>
     <div class="st-strip">
       <div class="st-item">
@@ -1329,9 +1326,7 @@ let _dvRefreshTimer = null;
 let _dvLastSavedAt  = null;
 
 function openDayView(){
-  const m = document.getElementById('dv-modal');
-  m.style.display = '';
-  m.classList.add('open');
+  document.getElementById('dv-modal').classList.add('open');
   if(_dvRefreshTimer){ clearInterval(_dvRefreshTimer); _dvRefreshTimer = null; }
   loadDayView();
   _dvRefreshTimer = setInterval(async ()=>{
@@ -1339,9 +1334,7 @@ function openDayView(){
   }, 60 * 1000);
 }
 function closeDayView(){
-  const m = document.getElementById('dv-modal');
-  m.classList.remove('open');
-  m.style.display = 'none';
+  document.getElementById('dv-modal').classList.remove('open');
   if(_dvRefreshTimer){ clearInterval(_dvRefreshTimer); _dvRefreshTimer = null; }
 }
 

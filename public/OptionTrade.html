@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-<!-- saved from url=(0065)file:///C:/Users/TELE-TECH-BO/Downloads/SpurtsSignal_Fixed_1.html -->
 <html lang="en" data-theme="blue"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <script>
 (function(){
@@ -936,6 +935,46 @@ td.gold-c { color: var(--gold); }
 .btn.dayv{background:rgba(168,85,247,.12);color:#c084fc;border-color:rgba(168,85,247,.35);}
 .btn.dayv:hover{background:rgba(168,85,247,.25);}
 
+/* PC aur Mobile ke liye alag icons */
+.icon-mobile { display: none; }
+.icon-pc { display: inline-flex; align-items: center; margin-right: 4px; }
+
+@media (max-width: 600px) {
+  .icon-mobile { display: inline-block; margin-right: 4px; }
+  .icon-pc { display: none; }
+}
+
+/* 💎 Premium Button Styling */
+.btn.premium-btn {
+  background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%) !important;
+  color: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.4);
+  transition: all 0.3s ease;
+}
+.btn.premium-btn:hover {
+  background: linear-gradient(135deg, #4f46e5 0%, #9333ea 100%) !important;
+  box-shadow: 0 6px 18px rgba(168, 85, 247, 0.6);
+  transform: translateY(-2px);
+}
+.btn.premium-btn .btn-lbl {
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+/* 💓 SVG Pulse Animation */
+.pulse-icon svg {
+  animation: heartbeat 2s infinite;
+}
+@keyframes heartbeat {
+  0% { transform: scale(1); }
+  10% { transform: scale(1.2); }
+  20% { transform: scale(1); }
+  30% { transform: scale(1.2); }
+  40% { transform: scale(1); }
+  100% { transform: scale(1); }
+}
+
 </style>
 </head>
 <body>
@@ -947,7 +986,15 @@ td.gold-c { color: var(--gold); }
       <div class="brand-title"><span>OPTION</span>TRADE</div>
     </div>
     <div class="hdr-right">
-      <button class="btn dayv" onclick="otOpenDayView()">📅 <span class="btn-lbl">Day View</span></button>
+      <button class="btn dayv premium-btn" onclick="otOpenDayView()">
+        <span class="icon-mobile">👁️</span>
+        <span class="icon-pc pulse-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+          </svg>
+        </span>
+        <span class="btn-lbl">Day View</span>
+      </button>
       <span class="badge" id="scan-badge"></span>
       <span class="scan-time" id="scan-time"></span>
       <button class="btn sq" onclick="toggleTheme()" id="theme-btn" title="Toggle theme">🌑</button>
@@ -961,7 +1008,6 @@ td.gold-c { color: var(--gold); }
   </div>
 </header>
 
-<!-- Snapshot Sub-bar -->
 <div class="snapshot-bar">
   <div class="snapshot-bar-inner">
     <span class="snapshot-label">🕐 Snapshot</span>
@@ -972,7 +1018,6 @@ td.gold-c { color: var(--gold); }
 
 <main>
 
-  <!-- Empty State -->
   <div id="empty-state" style="display: flex;">
     <div class="es-icon">📊</div>
     <div class="es-title">SpikeScanner</div>
@@ -996,10 +1041,8 @@ td.gold-c { color: var(--gold); }
     </div>
   </div>
 
-  <!-- Dashboard -->
   <div id="dashboard" style="display: none;">
 
-    <!-- Bias Bar -->
     <div class="bias-bar">
       <span class="bias-label">Market</span>
       <div class="bias-track">
@@ -1015,7 +1058,6 @@ td.gold-c { color: var(--gold); }
 
 
 
-    <!-- Cards injected here -->
     <div id="sections"></div>
     <div id="sig-tables"></div>
 
@@ -2009,7 +2051,6 @@ async function handleFiles(files){
 
 
 
-<!-- ═══ DAY VIEW MODAL ═══ -->
 <div id="ot-dv-modal">
   <div class="ot-dv-header">
     <div>

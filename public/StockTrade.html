@@ -757,6 +757,23 @@ tr.nodata td{text-align:center;color:var(--ink3);padding:16px;font-size:.75rem;}
 /* Mobile row2 btns — PC pe hide */
 .mobile-row2-btns{display:none;}
 
+/* PC row2 right side A/D + Day View */
+.pc-row2-btns{
+  display:flex;align-items:center;gap:10px;
+  margin-left:auto;
+  padding-left:16px;
+  border-left:1px solid var(--border);
+}
+.pc-row2-btns .hbtn{
+  height:26px;padding:0 14px;
+  font-size:.72rem;font-weight:700;
+  border-width:1.5px;
+  letter-spacing:.3px;
+}
+/* Row1 se A/D aur DayView PC pe hide */
+.row1-ad-hide{display:none;}
+.row1-dayv-hide{display:none;}
+
 /* ════════════════════════════════════════ MOBILE */
 @media(max-width:640px){
   .hdr-row1{padding:0 8px;height:46px;}
@@ -859,8 +876,8 @@ tr.nodata td{text-align:center;color:var(--ink3);padding:16px;font-size:.75rem;}
     <div class="hdr-right">
       <span id="badge">Ready</span>
       <button class="hbtn sq" onclick="cycleTheme()" id="theme-btn" title="Change theme">🌙</button>
-      <button class="hbtn ad" onclick="openAD()"><span class="ad-btn-text">A/D</span> <span class="ad-btn-icon">🧱</span></button>
-      <button class="hbtn dayv" onclick="openDayView()">📶 <span>Day View</span></button>
+      <button class="hbtn ad row1-ad-hide" onclick="openAD()"><span class="ad-btn-text">A/D</span> <span class="ad-btn-icon">🧱</span></button>
+      <button class="hbtn dayv row1-dayv-hide" onclick="openDayView()">📶 <span>Day View</span></button>
       <button class="hbtn cmp" id="cmp-btn" onclick="compareAndSignal()">🆚 <span>Compare</span></button>
       <button class="hbtn manual" id="manual-btn" onclick="openPin()">🔐 <span>Set Base</span></button>
     </div>
@@ -879,6 +896,11 @@ tr.nodata td{text-align:center;color:var(--ink3);padding:16px;font-size:.75rem;}
       <input type="range" class="tslider" id="thresh-slider"
         min="0.05" max="1.0" step="0.05" value="0.20" oninput="updateThresh(this.value)">
       <span class="thresh-val" id="thresh-disp">0.20%</span>
+    </div>
+    <!-- PC only: A/D + Day View right side -->
+    <div class="pc-row2-btns pc-only">
+      <button class="hbtn ad" onclick="openAD()"><span class="ad-btn-text">A/D</span> <span class="ad-btn-icon">🧱</span></button>
+      <button class="hbtn dayv" onclick="openDayView()">📶 <span>Day View</span></button>
     </div>
     <!-- Mobile only: A/D + Day View -->
     <div class="mobile-row2-btns">

@@ -107,31 +107,35 @@ function otRenderDayView(results){
   const sorted = [...results].reverse();
 
   sorted.forEach((r, idx) => {
-    const dom = r.bullCount > r.bearCount ? 'bull-dom' : r.bearCount > r.bullCount ? 'bear-dom' : 'mixed';
+    const hasStrong = r.strongCount > 0;
+    const dom = !hasStrong ? 'no-strong'
+      : r.bullCount > r.bearCount ? 'bull-dom'
+      : r.bearCount > r.bullCount ? 'bear-dom' : 'mixed';
     const bw  = Math.round(r.bullCount / maxBull * 80);
     const rw  = Math.round(r.bearCount / maxBear * 80);
     const uid = 'ot_tl_' + idx;
+    const clickAttr = hasStrong ? `onclick="otDvToggle('${uid}')"` : '';
 
     html += `<div class="ot-tl-item ${dom}" id="${uid}">
-      <div class="ot-tl-head" onclick="otDvToggle('${uid}')">
+      <div class="ot-tl-head" ${clickAttr}>
         <div class="ot-tl-row1">
-          <span class="ot-tl-time">🕐 ${r.timeStr}</span>
-          ${r.strongCount > 0 ? `<span class="ot-tl-strong">🔥 ${r.strongCount} Strong</span>` : ''}
+          <span class="ot-tl-time ${!hasStrong?'dimmed':''}">🕐 ${r.timeStr}</span>
+          ${hasStrong
+            ? `<span class="ot-tl-strong">🔥 ${r.strongCount} Strong</span>`
+            : `<span class="ot-tl-no-strong">— No strong signals</span>`}
         </div>
         <div class="ot-tl-row2">
           <div class="ot-bars">
-            <div class="ot-bar-g" style="width:${bw}px"></div>
-            <div class="ot-bar-r" style="width:${rw}px"></div>
+            <div class="ot-bar-g" style="width:${bw}px;${!hasStrong?'opacity:.3':''}"></div>
+            <div class="ot-bar-r" style="width:${rw}px;${!hasStrong?'opacity:.3':''}"></div>
           </div>
-          <span class="ot-tl-counts">
+          <span class="ot-tl-counts ${!hasStrong?'dimmed':''}">
             <span class="bc">▲${r.bullCount}</span>&nbsp;
             <span class="rc">▼${r.bearCount}</span>
           </span>
         </div>
       </div>
-      <div class="ot-detail" id="${uid}_det">
-        ${otBuildDetail(r)}
-      </div>
+      ${hasStrong ? `<div class="ot-detail" id="${uid}_det">${otBuildDetail(r)}</div>` : ''}
     </div>`;
   });
 
@@ -165,37 +169,33 @@ function otBuildDetail(r){
   const optBull = (r.strongOpt||[]).filter(s=>s.dir==='BULL');
   const optBear = (r.strongOpt||[]).filter(s=>s.dir==='BEAR');
 
+  function dirRow(dir, items, labelFn){
+    if(!items.length) return '';
+    const isBull = dir==='BULL';
+    const arrow  = isBull ? '▲' : '▼';
+    const cls    = isBull ? 'bull' : 'bear';
+    let chips = items.map(s=>`<span class="ot-chip ${cls}">${arrow} ${labelFn(s)}</span>`).join('');
+    return `<div class="ot-dir-row ${cls}">
+      <span class="ot-dir-label ${cls}">${arrow} ${isBull?'Bullish':'Bearish'}</span>
+      <div class="ot-chips">${chips}</div>
+    </div>`;
+  }
+
   let html = '';
 
-  // Futures
-  if(r.strongFut && r.strongFut.length){
-    html += '<div class="ot-detail-sec">📦 Futures — Strong</div>';
-    html += '<div class="ot-chips">';
-    if(futBull.length) futBull.forEach(s=>{
-      html += `<span class="ot-chip bull">▲ ${s.symbol}</span>`;
-    });
-    if(futBear.length) futBear.forEach(s=>{
-      html += `<span class="ot-chip bear">▼ ${s.symbol}</span>`;
-    });
-    html += '</div>';
+  html += '<div class="ot-detail-sec">📦 Futures — Strong</div>';
+  if(futBull.length || futBear.length){
+    html += dirRow('BULL', futBull, s => s.symbol);
+    html += dirRow('BEAR', futBear, s => s.symbol);
   } else {
-    html += '<div class="ot-detail-sec">📦 Futures — Strong</div>';
     html += '<div class="ot-chip-empty">No strong futures signals</div>';
   }
 
-  // Options
-  if(r.strongOpt && r.strongOpt.length){
-    html += '<div class="ot-detail-sec" style="margin-top:8px;">🎯 Options — Strong</div>';
-    html += '<div class="ot-chips">';
-    if(optBull.length) optBull.forEach(s=>{
-      html += `<span class="ot-chip bull">▲ ${s.symbol} ${s.strike ? s.strike + ' ' + s.type : ''}</span>`;
-    });
-    if(optBear.length) optBear.forEach(s=>{
-      html += `<span class="ot-chip bear">▼ ${s.symbol} ${s.strike ? s.strike + ' ' + s.type : ''}</span>`;
-    });
-    html += '</div>';
+  html += '<div class="ot-detail-sec" style="margin-top:10px;">🎯 Options — Strong</div>';
+  if(optBull.length || optBear.length){
+    html += dirRow('BULL', optBull, s => s.symbol + (s.strike ? ' '+s.strike+' '+s.type : ''));
+    html += dirRow('BEAR', optBear, s => s.symbol + (s.strike ? ' '+s.strike+' '+s.type : ''));
   } else {
-    html += '<div class="ot-detail-sec" style="margin-top:8px;">🎯 Options — Strong</div>';
     html += '<div class="ot-chip-empty">No strong options signals</div>';
   }
 
@@ -893,6 +893,14 @@ td.gold-c { color: var(--gold); }
   letter-spacing:1.1px;color:var(--ink3);margin:16px 0 8px;
   display:flex;align-items:center;gap:8px;}
 .ot-dv-sec::after{content:'';flex:1;height:1px;background:var(--border);}
+.ot-tl-item.no-strong{
+  opacity:.5;
+  border-left:3px solid var(--border) !important;
+  border-color:var(--border) !important;
+}
+.ot-tl-item.no-strong .ot-tl-head{ cursor:default; }
+.ot-tl-no-strong{font-size:.65rem;color:var(--ink3);font-style:italic;}
+.dimmed{opacity:.45;}
 /* Timeline */
 .ot-tl-item{background:var(--card);border:1px solid var(--border);
   border-radius:9px;margin-bottom:6px;overflow:hidden;cursor:pointer;transition:border-color .15s;}
@@ -921,6 +929,14 @@ td.gold-c { color: var(--gold); }
 .ot-chip.bull{background:var(--bull-bg);color:var(--bull);border:1px solid var(--bull-bd);}
 .ot-chip.bear{background:var(--bear-bg);color:var(--bear);border:1px solid var(--bear-bd);}
 .ot-chip-empty{font-size:.7rem;color:var(--ink3);}
+.ot-dir-row{display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;padding:6px 10px;border-radius:7px;}
+.ot-dir-row.bull{background:var(--bull-bg);border:1px solid var(--bull-bd);}
+.ot-dir-row.bear{background:var(--bear-bg);border:1px solid var(--bear-bd);}
+.ot-dir-label{font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:.6px;
+  white-space:nowrap;padding:2px 7px;border-radius:4px;margin-top:2px;flex-shrink:0;}
+.ot-dir-label.bull{background:var(--bull);color:#000;}
+.ot-dir-label.bear{background:var(--bear);color:#fff;}
+.ot-dir-row .ot-chips{flex:1;margin-bottom:0;}
 /* Leaderboard */
 .ot-lb-item{display:flex;align-items:center;gap:10px;
   padding:9px 12px;background:var(--card);border:1px solid var(--border);

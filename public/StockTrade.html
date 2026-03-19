@@ -54,13 +54,14 @@ async function loadAD(){
     const res = await fetch(WORKER+'?mode=adresult');
     const j   = await res.json();
     if(!j.ok) throw new Error(j.error || 'Worker error');
-    if(!j.result){
+    const results = j.results || [];
+    if(!results.length){
       body.innerHTML = '<div class="ad-empty">📭 Abhi tak koi A/D data nahi. Market hours mein aayega.</div>';
       sub.textContent = 'No data yet';
       return;
     }
-    _adLastSavedAt = j.result.savedAt;
-    renderAD(j.result, body, sub);
+    _adLastSavedAt = results[results.length-1].savedAt;
+    renderAD(results, body, sub);
   } catch(e){
     body.innerHTML = `<div class="ad-empty">⚠️ Failed: ${e.message}</div>`;
     sub.textContent = 'Error';
@@ -71,60 +72,88 @@ async function loadADSmart(){
   try{
     const res = await fetch(WORKER+'?mode=adresult');
     const j   = await res.json();
-    if(!j.ok || !j.result) return;
-    if(j.result.savedAt === _adLastSavedAt) return;
-    _adLastSavedAt = j.result.savedAt;
+    if(!j.ok) return;
+    const results = j.results || [];
+    if(!results.length) return;
+    const latest = results[results.length-1].savedAt;
+    if(latest === _adLastSavedAt) return;
+    _adLastSavedAt = latest;
     const body = document.getElementById('ad-body');
     const sub  = document.getElementById('ad-subtitle');
-    renderAD(j.result, body, sub);
+    renderAD(results, body, sub);
   } catch(e){ /* silent */ }
 }
 
-function renderAD(result, body, sub){
-  const accSignals  = result.accSignals  || [];
-  const distSignals = result.distSignals || [];
+function renderAD(results, body, sub){
+  const totalAcc  = results.reduce((a,r) => a + (r.accCount||0), 0);
+  const totalDist = results.reduce((a,r) => a + (r.distCount||0), 0);
+  sub.textContent = `${results.length} scans · ${totalAcc} Acc · ${totalDist} Dist today`;
 
-  sub.textContent = `Scan: ${result.timeStr} · Base: ${result.baseTimeStr} · ${accSignals.length} Acc · ${distSignals.length} Dist`;
+  const sorted = [...results].reverse(); // newest first
+  let html = '<div class="ad-sec">📅 Scan History — newest first</div>';
 
-  if(!accSignals.length && !distSignals.length){
-    body.innerHTML = `<div class="ad-status-card">
-      <div class="ad-status-row">
-        <span class="ad-status-dot idle"></span>
-        <span class="ad-status-label">✓ Scan Complete</span>
+  sorted.forEach((r, idx) => {
+    const accSignals  = r.accSignals  || [];
+    const distSignals = r.distSignals || [];
+    const uid = 'ad_tl_' + idx;
+    const hasSignals = accSignals.length || distSignals.length;
+
+    html += `<div class="ad-tl-item${hasSignals ? '' : ' no-sig'}" id="${uid}">
+      <div class="ad-tl-head" onclick="adTlToggle('${uid}')">
+        <div class="ad-tl-row1">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="ad-status-dot ${hasSignals ? 'active' : 'idle'}" style="flex-shrink:0;"></span>
+            <span class="ad-tl-time">🕐 ${r.timeStr}</span>
+            <span style="font-size:.62rem;color:var(--ink3);">Base: ${r.baseTimeStr}</span>
+          </div>
+          <span class="ad-tl-counts">
+            <span class="ad-tl-acc">${accSignals.length} Acc</span>
+            &nbsp;·&nbsp;
+            <span class="ad-tl-dist">${distSignals.length} Dist</span>
+          </span>
+        </div>
+        ${hasSignals ? `<div class="ad-tl-chips">
+          ${accSignals.slice(0,4).map(s=>`<span class="ad-chip acc">◆ ${s.symbol}</span>`).join('')}
+          ${distSignals.slice(0,4).map(s=>`<span class="ad-chip dist">◆ ${s.symbol}</span>`).join('')}
+        </div>` : `<div style="font-size:.68rem;color:var(--ink3);font-style:italic;padding-top:2px;">No signals in this scan</div>`}
       </div>
-      <div class="ad-status-meta">
-        <span>🕐 Scan: <strong>${result.timeStr}</strong></span>
-        <span>📌 Base: <strong>${result.baseTimeStr}</strong></span>
+      <div class="ad-tl-detail" id="${uid}_det">
+        ${hasSignals ? buildADDetail(accSignals, distSignals) : ''}
       </div>
-      <div class="ad-status-none">No Accumulation or Distribution signals in this scan</div>
     </div>`;
-    return;
-  }
+  });
 
-  let html = `<div class="ad-status-card active-card">
-    <div class="ad-status-row">
-      <span class="ad-status-dot active"></span>
-      <span class="ad-status-label">✓ Scan Complete · Signals Found</span>
-    </div>
-    <div class="ad-status-meta">
-      <span>🕐 Scan: <strong>${result.timeStr}</strong></span>
-      <span>📌 Base: <strong>${result.baseTimeStr}</strong></span>
-    </div>
-  </div>`;
+  body.innerHTML = html;
+}
 
+function buildADDetail(accSignals, distSignals){
+  let html = '<div class="ad-detail-inner">';
   if(accSignals.length){
-    html += '<div class="ad-sec">◆ Accumulation</div><div class="ad-grid">';
+    html += '<div class="ad-detail-sec acc-sec">◆ Accumulation</div><div class="ad-grid">';
     accSignals.forEach(s => { html += buildADCard(s, 'acc'); });
     html += '</div>';
   }
-
   if(distSignals.length){
-    html += '<div class="ad-sec">◆ Distribution</div><div class="ad-grid">';
+    html += '<div class="ad-detail-sec dist-sec">◆ Distribution</div><div class="ad-grid">';
     distSignals.forEach(s => { html += buildADCard(s, 'dist'); });
     html += '</div>';
   }
+  html += '</div>';
+  return html;
+}
 
-  body.innerHTML = html;
+function adTlToggle(uid){
+  const item = document.getElementById(uid);
+  const det  = document.getElementById(uid+'_det');
+  if(!det.innerHTML.trim()) return; // no signals — toggle nahi
+  const isOpen = det.classList.contains('open');
+  document.querySelectorAll('.ad-tl-detail.open').forEach(el=>el.classList.remove('open'));
+  document.querySelectorAll('.ad-tl-item.expanded').forEach(el=>el.classList.remove('expanded'));
+  if(!isOpen){
+    det.classList.add('open');
+    item.classList.add('expanded');
+    setTimeout(()=>item.scrollIntoView({behavior:'smooth',block:'nearest'}),50);
+  }
 }
 
 function buildADCard(r, type){
@@ -765,9 +794,9 @@ tr.nodata td{text-align:center;color:var(--ink3);padding:16px;font-size:.75rem;}
   .pc-only{display:none !important;}
 
   /* Row2 mobile btns dikho */
-  .mobile-row2-btns{display:flex;gap:6px;align-items:center;margin-left:auto;}
+  .mobile-row2-btns{display:flex;gap:6px;align-items:center;width:100%;margin-top:4px;}
+  .mobile-row2-btns .hbtn{flex:1;justify-content:center;height:32px;padding:0;font-size:.72rem;}
   .mobile-row2-btns .hbtn span{display:inline;}
-  .mobile-row2-btns .hbtn{height:28px;padding:0 10px;font-size:.7rem;}
 }
 </style>
 </head>

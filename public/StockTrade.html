@@ -41,11 +41,8 @@ const WORKER = 'https://spurts-ul.21aoips3531a1zi.workers.dev/';
 /* ════════════════════════════════════════
    A/D — ACCUMULATION / DISTRIBUTION VIEW
 ════════════════════════════════════════ */
-let _adTimer        = null;
-let _adLastSavedAt  = null;
-
-
-
+let _adTimer       = null;
+let _adLastSavedAt = null;
 
 async function loadAD(){
   const body = document.getElementById('ad-body');
@@ -54,12 +51,16 @@ async function loadAD(){
   sub.textContent = 'Loading…';
   _adLastSavedAt = null;
   try{
-    const res = await fetch(WORKER+'?mode=dayview');
+    const res = await fetch(WORKER+'?mode=adresult');
     const j   = await res.json();
     if(!j.ok) throw new Error(j.error || 'Worker error');
-    const results = j.results || [];
-    if(results.length) _adLastSavedAt = results[results.length-1].savedAt;
-    renderAD(results, body, sub);
+    if(!j.result){
+      body.innerHTML = '<div class="ad-empty">📭 Abhi tak koi A/D data nahi. Market hours mein aayega.</div>';
+      sub.textContent = 'No data yet';
+      return;
+    }
+    _adLastSavedAt = j.result.savedAt;
+    renderAD(j.result, body, sub);
   } catch(e){
     body.innerHTML = `<div class="ad-empty">⚠️ Failed: ${e.message}</div>`;
     sub.textContent = 'Error';
@@ -68,96 +69,43 @@ async function loadAD(){
 
 async function loadADSmart(){
   try{
-    const res = await fetch(WORKER+'?mode=dayview');
+    const res = await fetch(WORKER+'?mode=adresult');
     const j   = await res.json();
-    if(!j.ok) return;
-    const results = j.results || [];
-    if(!results.length) return;
-    const latest = results[results.length-1].savedAt;
-    if(latest === _adLastSavedAt) return; // same data — skip
-    _adLastSavedAt = latest;
+    if(!j.ok || !j.result) return;
+    if(j.result.savedAt === _adLastSavedAt) return;
+    _adLastSavedAt = j.result.savedAt;
     const body = document.getElementById('ad-body');
     const sub  = document.getElementById('ad-subtitle');
-    renderAD(results, body, sub);
+    renderAD(j.result, body, sub);
   } catch(e){ /* silent */ }
 }
 
-function renderAD(results, body, sub){
-  if(!results.length){
-    body.innerHTML = '<div class="ad-empty">📭 Aaj ka koi data nahi mila abhi.</div>';
-    sub.textContent = 'No data yet';
+function renderAD(result, body, sub){
+  const accSignals  = result.accSignals  || [];
+  const distSignals = result.distSignals || [];
+
+  sub.textContent = `Scan: ${result.timeStr} · Base: ${result.baseTimeStr} · ${accSignals.length} Acc · ${distSignals.length} Dist`;
+
+  if(!accSignals.length && !distSignals.length){
+    body.innerHTML = '<div class="ad-empty">📭 Is scan mein koi Accumulation ya Distribution signal nahi mila.</div>';
     return;
   }
 
-  // Count total acc/dist across all scans
-  const totalAcc  = results.reduce((a,r) => a + (r.accCount||0), 0);
-  const totalDist = results.reduce((a,r) => a + (r.distCount||0), 0);
-  sub.textContent = `${results.length} scans · ${totalAcc} Acc signals · ${totalDist} Dist signals today`;
-
-  // Timeline newest first
-  const sorted = [...results].reverse();
   let html = '';
 
-  sorted.forEach((r, idx) => {
-    const accSyms  = (r.accSyms  || []);
-    const distSyms = (r.distSyms || []);
-    if(!accSyms.length && !distSyms.length) return; // skip scans with no acc/dist
-
-    const uid = 'ad_tl_' + idx;
-    const totalCount = accSyms.length + distSyms.length;
-
-    html += `<div class="ad-tl-item" id="${uid}">
-      <div class="ad-tl-head" onclick="adTlToggle('${uid}')">
-        <div class="ad-tl-row1">
-          <span class="ad-tl-time">🕐 ${r.timeStr}</span>
-          <span class="ad-tl-counts">
-            <span class="ad-tl-acc">${accSyms.length} Acc</span>
-            &nbsp;·&nbsp;
-            <span class="ad-tl-dist">${distSyms.length} Dist</span>
-          </span>
-        </div>
-        <div class="ad-tl-chips">
-          ${accSyms.slice(0,4).map(s => `<span class="ad-chip acc">◆ ${s.split(':')[0]}</span>`).join('')}
-          ${distSyms.slice(0,4).map(s => `<span class="ad-chip dist">◆ ${s.split(':')[0]}</span>`).join('')}
-        </div>
-      </div>
-      <div class="ad-tl-detail" id="${uid}_det">
-        ${buildADDetail(accSyms, distSyms)}
-      </div>
-    </div>`;
-  });
-
-  if(!html){
-    body.innerHTML = '<div class="ad-empty">📭 Aaj koi Accumulation ya Distribution signal nahi mila abhi.</div>';
-    return;
-  }
-
-  body.innerHTML = '<div class="ad-sec">📅 Scan Timeline — newest first</div>' + html;
-}
-
-function buildADDetail(accSyms, distSyms){
-  let html = '<div class="ad-detail-inner">';
-
-  if(accSyms.length){
-    html += '<div class="ad-detail-sec acc-sec">◆ Accumulation</div><div class="ad-grid">';
-    accSyms.forEach(s => {
-      const [sym, pricePct, oiPct, priceNow] = s.split(':');
-      html += buildADCard({symbol:sym, pricePct, oiPct, priceNow}, 'acc');
-    });
+  if(accSignals.length){
+    html += '<div class="ad-sec">◆ Accumulation</div><div class="ad-grid">';
+    accSignals.forEach(s => { html += buildADCard(s, 'acc'); });
     html += '</div>';
   }
 
-  if(distSyms.length){
-    html += '<div class="ad-detail-sec dist-sec">◆ Distribution</div><div class="ad-grid">';
-    distSyms.forEach(s => {
-      const [sym, pricePct, oiPct, priceNow] = s.split(':');
-      html += buildADCard({symbol:sym, pricePct, oiPct, priceNow}, 'dist');
-    });
+  if(distSignals.length){
+    html += '<div class="ad-sec">◆ Distribution</div><div class="ad-grid">';
+    distSignals.forEach(s => { html += buildADCard(s, 'dist'); });
     html += '</div>';
   }
 
-  html += '</div>';
-  return html;
+  body.innerHTML = html;
 }
 
 function buildADCard(r, type){
@@ -189,19 +137,6 @@ function buildADCard(r, type){
       </div>
     </div>
   </div>`;
-}
-
-function adTlToggle(uid){
-  const item = document.getElementById(uid);
-  const det  = document.getElementById(uid+'_det');
-  const isOpen = det.classList.contains('open');
-  document.querySelectorAll('.ad-tl-detail.open').forEach(el=>el.classList.remove('open'));
-  document.querySelectorAll('.ad-tl-item.expanded').forEach(el=>el.classList.remove('expanded'));
-  if(!isOpen){
-    det.classList.add('open');
-    item.classList.add('expanded');
-    setTimeout(()=>item.scrollIntoView({behavior:'smooth',block:'nearest'}),50);
-  }
 }
 
 </script>
@@ -304,8 +239,11 @@ header{background:var(--card);border-bottom:1px solid var(--border);
 .hbtn.dayv:hover{background:var(--purple-mid);}
 .hbtn.loading{opacity:.5;pointer-events:none;}
 
-.hbtn.ad{background:var(--teal-dim);color:var(--teal-text);border-color:var(--teal-mid);}
+.hbtn.ad{background:var(--teal-dim);color:var(--teal-text);border-color:var(--teal-mid);gap:3px;}
 .hbtn.ad:hover{background:var(--teal-mid);}
+.ad-btn-text{font-weight:800;font-size:.78rem;letter-spacing:.5px;color:var(--teal-text);}
+.ad-btn-icon{font-size:.85rem;line-height:1;}
+@media(max-width:640px){.ad-btn-text{display:inline!important;}}
 
 /* AD Modal */
 #ad-modal{display:none;position:fixed;inset:0;z-index:999;
@@ -847,7 +785,7 @@ tr.nodata td{text-align:center;color:var(--ink3);padding:16px;font-size:.75rem;}
     <div class="hdr-right">
       <span id="badge">Ready</span>
       <button class="hbtn sq" onclick="cycleTheme()" id="theme-btn" title="Change theme">🌙</button>
-      <button class="hbtn ad" onclick="openAD()">ⒶⒹ <span>🧱</span></button>
+      <button class="hbtn ad" onclick="openAD()"><span class="ad-btn-text">A/D</span> <span class="ad-btn-icon">🧱</span></button>
       <button class="hbtn dayv" onclick="openDayView()">📶 <span>Day View</span></button>
       <button class="hbtn cmp" id="cmp-btn" onclick="compareAndSignal()">🆚 <span>Compare</span></button>
       <button class="hbtn manual" id="manual-btn" onclick="openPin()">🔐 <span>Set Base</span></button>

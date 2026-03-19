@@ -2,14 +2,9 @@ export async function onRequest(context) {
   const request = context.request;
   const referer = request.headers.get("Referer") || "";
 
-  // ✅ Allowed origins — jo index.html wale domains hain
-  const ALLOWED_ORIGINS = [
-    "https://screener-epd.pages.dev",
-  ];
-
-  const isAllowed = ALLOWED_ORIGINS.some(origin => referer.startsWith(origin));
-
-  if (isAllowed) {
+  // Agar koi bhi referer hai — allow karo (iframe se aaya hai)
+  // Sirf completely empty referer block karo (direct URL type)
+  if (referer.length > 0) {
     return context.next();
   }
 

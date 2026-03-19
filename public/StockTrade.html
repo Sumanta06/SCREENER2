@@ -1492,11 +1492,11 @@ function renderDayView(results){
 function buildDvTable(r){
   // t1 = pichla scan, t2 = uska pichla scan
   const t1Map = {}, t2Map = {};
-  (r.t1Syms||[]).forEach(s=>{
+  (r.t10Syms||[]).forEach(s=>{
     const [sym,type,pct,oiPct,priceNow] = s.split(':');
     t1Map[sym] = {type, pct, oiPct, priceNow};
   });
-  (r.t2Syms||[]).forEach(s=>{
+  (r.t20Syms||[]).forEach(s=>{
     const [sym,type,pct,oiPct,priceNow] = s.split(':');
     t2Map[sym] = {type, pct, oiPct, priceNow};
   });

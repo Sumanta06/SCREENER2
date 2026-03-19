@@ -761,6 +761,7 @@ tr.nodata td{text-align:center;color:var(--ink3);padding:16px;font-size:.75rem;}
   .dv-header{padding:12px 14px;}
   .dv-body{padding:10px 10px 40px;}
   .dv-detail table{min-width:360px;}
+  .pc-only{display:none !important;}
 }
 </style>
 </head>
@@ -832,7 +833,11 @@ tr.nodata td{text-align:center;color:var(--ink3);padding:16px;font-size:.75rem;}
   <div class="hdr-row2">
     <div class="base-wrap">
       <span class="ctrl-label">Baseline</span>
-      <select id="base-select"><option value="">— select baseline —</option></select>
+      <select id="base-select" onchange="onBaseChange()"><option value="">— select baseline —</option></select>
+    </div>
+    <div class="base-wrap pc-only" id="cmp2-wrap">
+      <span class="ctrl-label">Compare With</span>
+      <select id="cmp2-select"><option value="">— live (latest) —</option></select>
     </div>
     <div class="thresh-wrap">
       <span class="ctrl-label">Price Δ Min</span>
@@ -1519,23 +1524,66 @@ function dvToggle(uid){
 /* ════════════════════════════════════════
    BASELINE DROPDOWN
 ════════════════════════════════════════ */
+let _allBaselines = []; // saari baselines store karo
+
 async function loadBaselines(){
   try{
     const res=await fetch(WORKER+'?mode=list');
     const j=await res.json();
     if(!j.ok) return;
+    _allBaselines = j.baselines || [];
     const sel=document.getElementById('base-select');
+    const prevVal = sel.value;
     while(sel.options.length>1) sel.remove(1);
-    if(!j.baselines.length){sel.options[0].text='— no baselines yet —';return;}
+    if(!_allBaselines.length){sel.options[0].text='— no baselines yet —';return;}
     sel.options[0].text='— select baseline —';
-    j.baselines.forEach((b,i)=>{
+    _allBaselines.forEach((b,i)=>{
       const opt=document.createElement('option');
       opt.value=b.key; opt.text=b.timeStr+(i===0?' (latest)':'');
       sel.appendChild(opt);
     });
-    if(j.baselines.length) sel.value=j.baselines[0].key;
+    // Previous selection restore karo, warna latest select karo
+    if(prevVal && [...sel.options].some(o=>o.value===prevVal)){
+      sel.value = prevVal;
+    } else if(_allBaselines.length){
+      sel.value = _allBaselines[0].key;
+    }
+    onBaseChange();
   } catch(e){console.error('List failed:',e);}
 }
+
+function onBaseChange(){
+  const baseKey = document.getElementById('base-select').value;
+  const sel2    = document.getElementById('cmp2-select');
+  if(!sel2) return;
+
+  // Dusra dropdown reset karo
+  while(sel2.options.length>1) sel2.remove(1);
+
+  if(!baseKey){
+    sel2.options[0].text='— live (latest) —';
+    return;
+  }
+
+  // Baseline ka timestamp nikalo
+  const baseTs = parseInt(baseKey.split('_').pop());
+
+  // Sirf wo baselines dikhao jo IS baseline ke BAAD ke hain
+  const after = _allBaselines.filter(b => b.ts > baseTs);
+
+  if(!after.length){
+    sel2.options[0].text='— live (latest) —';
+    return;
+  }
+
+  sel2.options[0].text='— live (latest) —';
+  after.forEach((b,i)=>{
+    const opt=document.createElement('option');
+    opt.value=b.key; opt.text=b.timeStr+(i===0?' (latest after base)':'');
+    sel2.appendChild(opt);
+  });
+}
+
 loadBaselines();
 setInterval(()=>{ loadBaselines(); },5*60*1000);
 
@@ -1576,23 +1624,52 @@ async function manualBase(pin){
    COMPARE
 ════════════════════════════════════════ */
 async function compareAndSignal(){
-  const key=document.getElementById('base-select').value;
-  if(!key){alert('Please select a baseline from the dropdown first.');return;}
+  const baseKey = document.getElementById('base-select').value;
+  if(!baseKey){alert('Please select a baseline from the dropdown first.');return;}
+
+  const sel2    = document.getElementById('cmp2-select');
+  const cmp2Key = sel2 ? sel2.value : '';
+
   const btn=document.getElementById('cmp-btn');
   btn.classList.add('loading'); btn.innerHTML='<span class="spin"></span> <span>Comparing…</span>';
   setBadge('','Comparing...');
+
   try{
-    const res=await fetch(`${WORKER}?mode=compare&key=${encodeURIComponent(key)}`);
-    const j=await res.json();
-    if(!j.ok) throw new Error(j.error||'Worker error');
-    const freshData=j.data, baseData=j.baseData;
-    const baseTimeIso=j.baseTime, scanTimeIso=j.scanTime;
-    document.getElementById('st-cnt').textContent=j.count+' symbols';
-    setBadge('ready','● Live · Base: '+fmtTime(baseTimeIso));
-    _lastFresh=freshData; _lastBaseMap=toMap(baseData);
-    _lastBaseTime=baseTimeIso; _lastScanTime=scanTimeIso;
-    const sig=genSignals(_lastFresh,_lastBaseMap,baseTimeIso,scanTimeIso);
-    renderSignals(sig,fmtTime(baseTimeIso),fmtTime(scanTimeIso));
+    if(cmp2Key){
+      // Dono baselines ke beech compare — worker se dono ka data lo
+      const [r1, r2] = await Promise.all([
+        fetch(`${WORKER}?mode=compare&key=${encodeURIComponent(baseKey)}`).then(r=>r.json()),
+        fetch(`${WORKER}?mode=compare&key=${encodeURIComponent(cmp2Key)}`).then(r=>r.json()),
+      ]);
+      if(!r1.ok) throw new Error(r1.error||'Baseline fetch error');
+      if(!r2.ok) throw new Error(r2.error||'Compare-with fetch error');
+
+      // r2 ka data = "fresh", r1 ka data = "base"
+      const freshData   = r2.baseData;   // cmp2 baseline ka stored data
+      const baseData    = r1.baseData;   // base baseline ka stored data
+      const baseTimeIso = r1.baseTime;
+      const scanTimeIso = r2.baseTime;
+
+      document.getElementById('st-cnt').textContent=(freshData||[]).length+' symbols';
+      setBadge('ready','● Stored · Base: '+fmtTime(baseTimeIso));
+      _lastFresh=freshData; _lastBaseMap=toMap(baseData);
+      _lastBaseTime=baseTimeIso; _lastScanTime=scanTimeIso;
+      const sig=genSignals(_lastFresh,_lastBaseMap,baseTimeIso,scanTimeIso);
+      renderSignals(sig,fmtTime(baseTimeIso),fmtTime(scanTimeIso));
+    } else {
+      // Pehle jaisa — live NSE data se compare
+      const res=await fetch(`${WORKER}?mode=compare&key=${encodeURIComponent(baseKey)}`);
+      const j=await res.json();
+      if(!j.ok) throw new Error(j.error||'Worker error');
+      const freshData=j.data, baseData=j.baseData;
+      const baseTimeIso=j.baseTime, scanTimeIso=j.scanTime;
+      document.getElementById('st-cnt').textContent=j.count+' symbols';
+      setBadge('ready','● Live · Base: '+fmtTime(baseTimeIso));
+      _lastFresh=freshData; _lastBaseMap=toMap(baseData);
+      _lastBaseTime=baseTimeIso; _lastScanTime=scanTimeIso;
+      const sig=genSignals(_lastFresh,_lastBaseMap,baseTimeIso,scanTimeIso);
+      renderSignals(sig,fmtTime(baseTimeIso),fmtTime(scanTimeIso));
+    }
   } catch(e){ setBadge('err','Error'); alert('Compare failed: '+e.message); }
   btn.classList.remove('loading'); btn.innerHTML='🔄 <span>Compare</span>';
 }

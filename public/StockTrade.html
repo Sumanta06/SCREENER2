@@ -642,6 +642,8 @@ input#pin-input:focus{border-color:var(--b);}
 [data-theme="dark"] .dv-tl-item.expanded .dv-comp-body th { color:#5a7a96 !important; }
 [data-theme="dark"] .ad-tl-item.expanded .ad-card { background:#fff !important; border-color:#c8d8ec !important; }
 [data-theme="dark"] .ad-tl-item.expanded .ad-sym { color:#07090f !important; }
+[data-theme="dark"] .dv-tl-item.expanded .dv-flat-table-wrap .sym-col {color:#07090f !important;}
+[data-theme="dark"] .dv-tl-item.expanded .dv-flat-table-wrap td {color:#07090f !important;}
 [data-theme="dark"] .dv-tl-item.expanded .dv-comp-arrow,
 [data-theme="dark"] .ad-tl-item.expanded .ad-comp-arrow { color:#1565c0 !important; }
 
@@ -666,6 +668,8 @@ input#pin-input:focus{border-color:var(--b);}
 [data-theme="light"] .dv-tl-item.expanded .dv-comp-body th { color:#7a9ab8 !important; }
 [data-theme="light"] .ad-tl-item.expanded .ad-card { background:#111c2e !important; border-color:#1e2f48 !important; }
 [data-theme="light"] .ad-tl-item.expanded .ad-sym { color:#e8f0fa !important; }
+[data-theme="light"] .dv-tl-item.expanded .dv-flat-table-wrap .sym-col {color:#e8f0fa !important;}
+[data-theme="light"] .dv-tl-item.expanded .dv-flat-table-wrap td {color:#e8f0fa !important;}
 [data-theme="light"] .dv-tl-item.expanded .dv-comp-arrow,
 [data-theme="light"] .ad-tl-item.expanded .ad-comp-arrow { color:#6aa3ff !important; }
 
@@ -690,6 +694,8 @@ input#pin-input:focus{border-color:var(--b);}
 [data-theme="teal"] .dv-tl-item.expanded .dv-comp-body th { color:#3d9ea4 !important; }
 [data-theme="teal"] .ad-tl-item.expanded .ad-card { background:#fff !important; border-color:#7ecfd4 !important; }
 [data-theme="teal"] .ad-tl-item.expanded .ad-sym { color:#021f24 !important; }
+[data-theme="teal"] .dv-tl-item.expanded .dv-flat-table-wrap .sym-col {color:#021f24 !important;}
+[data-theme="teal"] .dv-tl-item.expanded .dv-flat-table-wrap td {color:#021f24 !important;}
 [data-theme="teal"] .dv-tl-item.expanded .dv-comp-arrow,
 [data-theme="teal"] .ad-tl-item.expanded .ad-comp-arrow { color:#065e6a !important; }
 
@@ -718,6 +724,34 @@ input#pin-input:focus{border-color:var(--b);}
   background:var(--bg2);cursor:pointer;transition:background .12s;}
 .dv-prev-chip:hover{background:var(--bg3);}
 .dv-prev-sym{font-size:.68rem;font-weight:700;color:var(--ink);}
+
+/* ── Flat table wrapper ── */
+.dv-flat-table-wrap{overflow-x:auto;}
+.dv-flat-table-wrap table{width:100%;border-collapse:collapse;min-width:560px;table-layout:fixed;}
+.dv-flat-table-wrap thead tr{background:var(--thead);}
+.dv-flat-table-wrap th{font-size:.58rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.8px;color:var(--ink3);padding:7px 10px;text-align:left;white-space:nowrap;overflow:hidden;}
+.dv-flat-table-wrap td{padding:7px 10px;font-size:.72rem;
+  border-top:1px solid var(--border);vertical-align:middle;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+/* Column widths */
+.dv-flat-table-wrap th:nth-child(1),.dv-flat-table-wrap td:nth-child(1){width:72px;}   /* TIME */
+.dv-flat-table-wrap th:nth-child(2),.dv-flat-table-wrap td:nth-child(2){width:130px;}  /* SYMBOL */
+.dv-flat-table-wrap th:nth-child(3),.dv-flat-table-wrap td:nth-child(3){width:130px;}  /* SIGNAL */
+.dv-flat-table-wrap th:nth-child(4),.dv-flat-table-wrap td:nth-child(4){width:72px;text-align:right;}  /* PRICE Δ */
+.dv-flat-table-wrap th:nth-child(5),.dv-flat-table-wrap td:nth-child(5){width:72px;text-align:right;}  /* OI Δ */
+.dv-flat-table-wrap th:nth-child(6),.dv-flat-table-wrap td:nth-child(6){width:90px;text-align:right;}  /* PRICE NOW */
+.dv-flat-table-wrap th:nth-child(7),.dv-flat-table-wrap td:nth-child(7){width:auto;}   /* AGE */
+/* Symbol — always visible regardless of invert */
+.dv-flat-table-wrap .sym-col{font-weight:700;font-size:.75rem;white-space:nowrap;color:inherit;}
+
+/* ── Staleness tags ── */
+.stale-tag{display:inline-flex;align-items:center;gap:3px;
+  font-size:.6rem;font-weight:700;padding:2px 7px;border-radius:4px;
+  white-space:nowrap;margin-right:4px;}
+.stale-fresh{background:var(--g-dim);   color:var(--g-text);   border:1px solid var(--g-mid);}
+.stale-watch{background:var(--gold-dim);color:var(--gold);     border:1px solid var(--gold-mid);}
+.stale-old  {background:var(--orange-dim);color:var(--orange-text);border:1px solid var(--orange-mid);}
+.stale-vold {background:var(--r-dim);   color:var(--r-text);   border:1px solid var(--r-mid);}
 
 /* STRONG / CAUTION badges — NEW */
 .dv-strong-badge{display:inline-flex;align-items:center;gap:3px;
@@ -1889,7 +1923,14 @@ function renderDayView(results){
   requestAnimationFrame(()=>setupChipOverflow(body));
 }
 
-/* ── buildDvDetail: strong summary + one panel per comparison ── */
+/* ── buildDvDetail: flat table with TIME + STALENESS columns ── */
+function staleConfig(gapMins){
+  if(gapMins <  20) return { icon:'●', label:'Fresh',   cls:'stale-fresh',  opacity:1.0  };
+  if(gapMins <  40) return { icon:'◐', label:'Watch',   cls:'stale-watch',  opacity:0.90 };
+  if(gapMins <  60) return { icon:'⚠', label:'Stale',   cls:'stale-old',    opacity:0.75 };
+  return               { icon:'⛔', label:'Very Old', cls:'stale-vold',   opacity:0.50 };
+}
+
 function buildDvDetail(r){
   const comparisons = r.comparisons || [];
   if(!comparisons.length){
@@ -1897,101 +1938,86 @@ function buildDvDetail(r){
   }
 
   // Parse strong signals
-  const strongMap = {}; // sym -> { strength, confirmCount }
+  const strongMap = {};
   (r.strong || []).forEach(s => {
     const [sym, type, strength, cnt] = s.split(':');
     strongMap[sym] = { type, strength: strength||'STRONG', confirmCount: parseInt(cnt)||2 };
   });
 
-  let html = '';
+  // Collect ALL rows from ALL comparisons — flat
+  const allRows = [];
+  const scanTime = r.savedAt ? new Date(r.savedAt).getTime() : Date.now();
 
-  // Strong summary bar
-  if(Object.keys(strongMap).length){
-    html += '<div class="dv-strong-bar">';
-    Object.entries(strongMap).forEach(([sym, info]) => {
-      const badge = info.strength === 'CAUTION'
-        ? `<span class="dv-caution-badge">⚠️ CAUTION</span>`
-        : `<span class="dv-strong-badge">🔥 STRONG</span>`;
-      html += `<div class="dv-strong-item">${sym} ${badge} <span style="font-size:.62rem;color:var(--ink3);">(${info.confirmCount}/${comparisons.length})</span></div>`;
-    });
-    html += '</div>';
-  }
-
-  // One panel per comparison — hide 0-signal, auto-open first with signals
-  let dvFirstOpen = false;
-  comparisons.forEach((comp, idx) => {
+  comparisons.forEach((comp, cidx) => {
     const signals = comp.signals || [];
-    if(!signals.length) return; // hide 0-signal panels
-    const panelId  = 'dvcp_' + Math.random().toString(36).slice(2,8) + '_' + idx;
-    const autoOpen = !dvFirstOpen;
-    dvFirstOpen    = true;
+    if(!signals.length) return;
+    // Estimate base time from baseTimeStr — use scan time minus index*10min as fallback
+    // Better: parse baseTimeStr hh:mm AM/PM
+    let gapMins = (cidx + 1) * 10; // fallback
+    if(comp.baseTimeStr){
+      try{
+        const [hhmm, ap] = comp.baseTimeStr.split(' ');
+        let [hh, mm]     = hhmm.split(':').map(Number);
+        if(ap === 'PM' && hh !== 12) hh += 12;
+        if(ap === 'AM' && hh === 12) hh = 0;
+        const baseMs = new Date(new Date(scanTime).toDateString() + ' ' + hh+':'+mm).getTime();
+        gapMins      = Math.round((scanTime - baseMs) / 60000);
+        if(gapMins < 0) gapMins = 0;
+      } catch(e){ gapMins = (cidx+1)*10; }
+    }
+    const stale = staleConfig(gapMins);
 
-    html += `<div class="dv-comp-panel">
-      <div class="dv-comp-head" onclick="dvCompToggle('${panelId}')">
-        <div class="dv-comp-head-left">
-          <span class="dv-comp-arrow" id="${panelId}_arr">${autoOpen?'▼':'▶'}</span>
-          <span class="dv-comp-vs">vs <strong>${comp.baseTimeStr}</strong></span>
-          <span class="dv-comp-cnt">${signals.length} signal${signals.length!==1?'s':''}</span>
-        </div>
-      </div>
-      <div class="dv-comp-body${autoOpen?' open':''}" id="${panelId}">
-        ${buildDvCompTable(signals, strongMap, comp.baseTimeStr)}
-      </div>
-    </div>`;
+    signals.forEach(s => {
+      const [sym,type,pricePct,oiPct,priceNow] = s.split(':');
+      allRows.push({
+        sym, type,
+        pricePct : parseFloat(pricePct)||0,
+        oiPct    : parseFloat(oiPct)||0,
+        priceNow : parseFloat(priceNow)||0,
+        baseTimeStr: comp.baseTimeStr || '—',
+        gapMins, stale,
+        cidx,
+      });
+    });
   });
 
-  return html;
-}
+  if(!allRows.length)
+    return '<div style="padding:12px;color:var(--ink3);font-size:.75rem;text-align:center;">No signals</div>';
 
-/* ── buildDvCompTable: table for one comparison's signals ── */
-function buildDvCompTable(signals, strongMap, baseTimeStr){
-  if(!signals.length){
-    return '<div style="padding:10px 12px;color:var(--ink3);font-size:.75rem;font-style:italic;">No signals vs this baseline.</div>';
-  }
+  // Sort: closest time first (smallest gapMins), then by |pricePct| desc
+  allRows.sort((a,b) => a.gapMins - b.gapMins || Math.abs(b.pricePct) - Math.abs(a.pricePct));
 
-  // Parse signals: "SYM:TYPE:PRICEPCT:OIPCT:PRICENOW:OINOW"
-  const parsed = signals.map(s => {
-    const [sym,type,pricePct,oiPct,priceNow,oiNow] = s.split(':');
-    return { sym, type, pricePct: parseFloat(pricePct)||0, oiPct: parseFloat(oiPct)||0, priceNow: parseFloat(priceNow)||0, oiNow };
-  });
-
-  const rows = parsed.map(p => {
-    const isStrong = !!strongMap[p.sym];
-    const sInfo    = strongMap[p.sym] || {};
-    const priceStr = p.priceNow ? `₹${p.priceNow.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}` : '—';
-    const pCls     = p.pricePct >= 0 ? 'pct-g' : 'pct-r';
-    const oiCls    = p.oiPct    >= 0 ? 'pct-g' : 'pct-r';
-    const pSign    = p.pricePct >= 0 ? '+' : '';
-    const oSign    = p.oiPct    >= 0 ? '+' : '';
-
+  const rows = allRows.map(p => {
+    const isStrong  = !!strongMap[p.sym];
+    const sInfo     = strongMap[p.sym] || {};
+    const priceStr  = p.priceNow ? `₹${p.priceNow.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}` : '—';
+    const pCls      = p.pricePct >= 0 ? 'pct-g' : 'pct-r';
+    const oiCls     = p.oiPct    >= 0 ? 'pct-g' : 'pct-r';
+    const pSign     = p.pricePct >= 0 ? '+' : '';
     let strengthBadge = '';
     if(isStrong){
       strengthBadge = sInfo.strength === 'CAUTION'
         ? `<span class="dv-caution-badge">⚠️ CAUTION</span>`
         : `<span class="dv-strong-badge">🔥 STRONG</span>`;
     }
-
-    return `<tr>
-      <td class="sym-col">${p.sym}${isStrong?'<span class="strong-fire"> 🔥</span>':''}</td>
+    return `<tr style="opacity:${p.stale.opacity};">
+      <td style="font-family:'JetBrains Mono',monospace;font-size:.68rem;color:var(--ink3);white-space:nowrap;">${p.baseTimeStr}</td>
+      <td class="sym-col" style="color:inherit;">${p.sym}${isStrong?'<span class="strong-fire"> 🔥</span>':''}</td>
       <td><span class="sig-pill ${p.type}">${SIG_LABELS[p.type]||p.type}</span></td>
       <td><span class="${pCls}" style="font-family:'JetBrains Mono',monospace;font-size:.72rem;">${pSign}${p.pricePct.toFixed(2)}%</span></td>
-      <td><span class="${oiCls}" style="font-family:'JetBrains Mono',monospace;font-size:.72rem;">${oSign}${p.oiPct.toFixed(2)}%</span></td>
+      <td><span class="${oiCls}" style="font-family:'JetBrains Mono',monospace;font-size:.72rem;">${p.oiPct>=0?'+':''}${p.oiPct.toFixed(2)}%</span></td>
       <td style="font-family:'JetBrains Mono',monospace;font-size:.72rem;">${priceStr}</td>
-      <td>${strengthBadge}</td>
+      <td><span class="stale-tag ${p.stale.cls}">${p.stale.icon} ${p.stale.label}</span>${strengthBadge}</td>
     </tr>`;
   });
 
-  return `<table>
+  return `<div class="dv-flat-table-wrap"><table>
     <thead><tr>
-      <th>Symbol</th>
-      <th>Signal</th>
-      <th>Price Δ</th>
-      <th>OI Δ</th>
-      <th>Price Now</th>
-      <th>Strength</th>
+      <th>Time</th><th>Symbol</th><th>Signal</th>
+      <th>Price Δ</th><th>OI Δ</th><th>Price Now</th><th>Age</th>
     </tr></thead>
     <tbody>${rows.join('')}</tbody>
-  </table>`;
+  </table></div>`;
 }
 
 function dvCompToggle(panelId){

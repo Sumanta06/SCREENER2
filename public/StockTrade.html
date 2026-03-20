@@ -13,7 +13,6 @@ const WORKER = 'https://spurts-ul.21aoips3531a1zi.workers.dev/';
     const x = c.getContext('2d');
     x.fillStyle = '#1565C0';
     x.beginPath();
-    /* roundRect not supported in all Chromium builds — safe fallback */
     if(typeof x.roundRect === 'function'){
       x.roundRect(0, 0, 64, 64, 12);
     } else {
@@ -35,7 +34,7 @@ const WORKER = 'https://spurts-ul.21aoips3531a1zi.workers.dev/';
     l.rel = 'icon'; l.type = 'image/png';
     l.href = c.toDataURL('image/png');
     document.head.appendChild(l);
-  }catch(e){/* favicon silently fails — harmless */}
+  }catch(e){}
 })();
 
 /* ════════════════════════════════════════
@@ -56,9 +55,9 @@ async function loadAD(){
     if(!j.ok) throw new Error(j.error || 'Worker error');
     const results = j.results || [];
     if(!results.length){
-      const debug = j.debug || {};
+      const debug    = j.debug || {};
       const baseCount = debug.baseCount ?? '?';
-      const msg = debug.message || 'A/D data abhi tak nahi aaya.';
+      const msg      = debug.message || 'A/D data abhi tak nahi aaya.';
       body.innerHTML = `<div class="ad-empty" style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:32px 16px;">
         <div style="font-size:2rem;">📭</div>
         <div style="font-size:.9rem;font-weight:600;color:var(--ink2);">A/D Data Ready Nahi</div>
@@ -94,19 +93,42 @@ async function loadADSmart(){
   } catch(e){ /* silent */ }
 }
 
+/* ── renderAD: updated for comparisons[] array ── */
 function renderAD(results, body, sub){
-  const totalAcc  = results.reduce((a,r) => a + (r.accCount||0), 0);
-  const totalDist = results.reduce((a,r) => a + (r.distCount||0), 0);
+  // Total counts from all results, first comparison of each
+  let totalAcc = 0, totalDist = 0;
+  results.forEach(r => {
+    const first = (r.comparisons || [])[0] || r;
+    totalAcc  += first.accCount  || 0;
+    totalDist += first.distCount || 0;
+  });
   sub.textContent = `${results.length} scans · ${totalAcc} Acc · ${totalDist} Dist today`;
 
   const sorted = [...results].reverse(); // newest first
   let html = '<div class="ad-sec">📅 Scan History — newest first</div>';
 
   sorted.forEach((r, idx) => {
-    const accSignals  = r.accSignals  || [];
-    const distSignals = r.distSignals || [];
-    const uid = 'ad_tl_' + idx;
-    const hasSignals = accSignals.length || distSignals.length;
+    const comparisons = r.comparisons || [];
+    // Fallback for old-format results that don't have comparisons[]
+    if(!comparisons.length && (r.accSignals || r.distSignals)){
+      comparisons.push({
+        baseTimeStr: r.baseTimeStr || '—',
+        accSignals : r.accSignals  || [],
+        distSignals: r.distSignals || [],
+        accCount   : r.accCount    || 0,
+        distCount  : r.distCount   || 0,
+      });
+    }
+
+    const totalAccInScan  = comparisons.reduce((a,c)=>a+(c.accCount||0),0);
+    const totalDistInScan = comparisons.reduce((a,c)=>a+(c.distCount||0),0);
+    const hasSignals      = totalAccInScan > 0 || totalDistInScan > 0;
+    const uid             = 'ad_tl_' + idx;
+
+    // Chip preview — from first comparison
+    const firstComp   = comparisons[0] || {};
+    const previewAcc  = (firstComp.accSignals  || []).slice(0,3);
+    const previewDist = (firstComp.distSignals || []).slice(0,3);
 
     html += `<div class="ad-tl-item${hasSignals ? '' : ' no-sig'}" id="${uid}">
       <div class="ad-tl-head" onclick="adTlToggle('${uid}')">
@@ -114,21 +136,22 @@ function renderAD(results, body, sub){
           <div style="display:flex;align-items:center;gap:8px;">
             <span class="ad-status-dot ${hasSignals ? 'active' : 'idle'}" style="flex-shrink:0;"></span>
             <span class="ad-tl-time">🕐 ${r.timeStr}</span>
-            <span style="font-size:.62rem;color:var(--ink3);">Base: ${r.baseTimeStr}</span>
+            <span style="font-size:.6rem;color:var(--ink3);">${comparisons.length} comparison${comparisons.length>1?'s':''}</span>
           </div>
           <span class="ad-tl-counts">
-            <span class="ad-tl-acc">${accSignals.length} Acc</span>
+            <span class="ad-tl-acc">${totalAccInScan} Acc</span>
             &nbsp;·&nbsp;
-            <span class="ad-tl-dist">${distSignals.length} Dist</span>
+            <span class="ad-tl-dist">${totalDistInScan} Dist</span>
           </span>
         </div>
         ${hasSignals ? `<div class="ad-tl-chips">
-          ${accSignals.slice(0,4).map(s=>`<span class="ad-chip acc">◆ ${s.symbol}</span>`).join('')}
-          ${distSignals.slice(0,4).map(s=>`<span class="ad-chip dist">◆ ${s.symbol}</span>`).join('')}
+          ${previewAcc.map(s=>`<span class="ad-chip acc">◆ ${s.symbol}</span>`).join('')}
+          ${previewDist.map(s=>`<span class="ad-chip dist">◆ ${s.symbol}</span>`).join('')}
+          ${comparisons.length > 1 ? `<span class="ad-chip-more">+${comparisons.length-1} more scan${comparisons.length>2?'s':''}</span>` : ''}
         </div>` : `<div style="font-size:.68rem;color:var(--ink3);font-style:italic;padding-top:2px;">No signals in this scan</div>`}
       </div>
       <div class="ad-tl-detail" id="${uid}_det">
-        ${hasSignals ? buildADDetail(accSignals, distSignals) : ''}
+        ${hasSignals ? buildADDetail(comparisons) : ''}
       </div>
     </div>`;
   });
@@ -136,26 +159,65 @@ function renderAD(results, body, sub){
   body.innerHTML = html;
 }
 
-function buildADDetail(accSignals, distSignals){
+/* ── buildADDetail: one panel per comparison ── */
+function buildADDetail(comparisons){
   let html = '<div class="ad-detail-inner">';
-  if(accSignals.length){
-    html += '<div class="ad-detail-sec acc-sec">◆ Accumulation</div><div class="ad-grid">';
-    accSignals.forEach(s => { html += buildADCard(s, 'acc'); });
-    html += '</div>';
-  }
-  if(distSignals.length){
-    html += '<div class="ad-detail-sec dist-sec">◆ Distribution</div><div class="ad-grid">';
-    distSignals.forEach(s => { html += buildADCard(s, 'dist'); });
-    html += '</div>';
-  }
+
+  comparisons.forEach((comp, idx) => {
+    const accSignals  = comp.accSignals  || [];
+    const distSignals = comp.distSignals || [];
+    const hasAny      = accSignals.length > 0 || distSignals.length > 0;
+    const panelId     = 'adcp_' + Math.random().toString(36).slice(2,8) + '_' + idx;
+
+    html += `<div class="ad-comp-panel">
+      <div class="ad-comp-head" onclick="adCompToggle('${panelId}')">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="ad-comp-arrow" id="${panelId}_arr">▶</span>
+          <span class="ad-comp-label">vs <strong>${comp.baseTimeStr}</strong></span>
+        </div>
+        <span class="ad-comp-counts">
+          <span class="ad-tl-acc">${accSignals.length} Acc</span>
+          &nbsp;·&nbsp;
+          <span class="ad-tl-dist">${distSignals.length} Dist</span>
+        </span>
+      </div>
+      <div class="ad-comp-body" id="${panelId}">`;
+
+    if(!hasAny){
+      html += `<div class="ad-empty-sec">No signals vs this baseline.</div>`;
+    } else {
+      if(accSignals.length){
+        html += '<div class="ad-detail-sec acc-sec">◆ Accumulation</div><div class="ad-grid">';
+        accSignals.forEach(s => { html += buildADCard(s, 'acc'); });
+        html += '</div>';
+      }
+      if(distSignals.length){
+        html += '<div class="ad-detail-sec dist-sec">◆ Distribution</div><div class="ad-grid">';
+        distSignals.forEach(s => { html += buildADCard(s, 'dist'); });
+        html += '</div>';
+      }
+    }
+
+    html += `</div></div>`; // close ad-comp-body + ad-comp-panel
+  });
+
   html += '</div>';
   return html;
+}
+
+function adCompToggle(panelId){
+  const body = document.getElementById(panelId);
+  const arr  = document.getElementById(panelId + '_arr');
+  if(!body) return;
+  const isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  if(arr) arr.textContent = isOpen ? '▶' : '▼';
 }
 
 function adTlToggle(uid){
   const item = document.getElementById(uid);
   const det  = document.getElementById(uid+'_det');
-  if(!det.innerHTML.trim()) return; // no signals — toggle nahi
+  if(!det || !det.innerHTML.trim()) return;
   const isOpen = det.classList.contains('open');
   document.querySelectorAll('.ad-tl-detail.open').forEach(el=>el.classList.remove('open'));
   document.querySelectorAll('.ad-tl-item.expanded').forEach(el=>el.classList.remove('expanded'));
@@ -296,21 +358,19 @@ header{background:var(--card);border-bottom:1px solid var(--border);
 .hbtn.dayv{background:var(--purple-dim);color:var(--purple-text);border-color:var(--purple-mid);}
 .hbtn.dayv:hover{background:var(--purple-mid);}
 .hbtn.loading{opacity:.5;pointer-events:none;}
-
 .hbtn.ad{background:var(--teal-dim);color:var(--teal-text);border-color:var(--teal-mid);gap:3px;}
 .hbtn.ad:hover{background:var(--teal-mid);}
 .ad-btn-text{font-weight:800;font-size:.78rem;letter-spacing:.5px;color:var(--teal-text);}
 .ad-btn-icon{font-size:.85rem;line-height:1;}
 @media(max-width:640px){.ad-btn-text{display:inline!important;}}
 
-/* AD Modal */
+/* ════════════════════════════════════════ AD MODAL */
 #ad-modal{display:none;position:fixed;
   top:0;left:0;right:0;bottom:0;
   z-index:9999;
   background:var(--modal-bg);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
   flex-direction:column;overflow:hidden;}
 #ad-modal.open{display:flex;}
-
 .ad-header{
   display:-webkit-flex;display:flex;
   -webkit-align-items:center;align-items:center;
@@ -342,7 +402,7 @@ header{background:var(--card);border-bottom:1px solid var(--border);
   font-size:.58rem;font-weight:700;text-transform:uppercase;
   letter-spacing:1.1px;color:var(--ink3);margin:0 0 10px;}
 .ad-sec::after{content:'';flex:1;height:1px;background:var(--border);}
-.ad-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;margin-bottom:24px;}
+.ad-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;margin-bottom:16px;}
 .ad-card{background:var(--card);border:1px solid var(--border);border-radius:9px;
   padding:12px 14px;display:flex;flex-direction:column;gap:6px;}
 .ad-card.acc{border-left:3px solid var(--teal);}
@@ -361,7 +421,7 @@ header{background:var(--card);border-bottom:1px solid var(--border);
 .ad-stat-val.teal{color:var(--teal-text);}
 .ad-empty-sec{color:var(--ink3);font-size:.75rem;padding:10px 0 16px;font-style:italic;}
 
-/* AD Status Card */
+/* AD Timeline */
 .ad-status-card{background:var(--card);border:1px solid var(--border);
   border-radius:9px;padding:14px 16px;margin-bottom:16px;
   display:flex;flex-direction:column;gap:8px;}
@@ -370,12 +430,6 @@ header{background:var(--card);border-bottom:1px solid var(--border);
 .ad-status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
 .ad-status-dot.active{background:var(--teal);box-shadow:0 0 6px var(--teal);}
 .ad-status-dot.idle{background:var(--ink3);}
-.ad-status-label{font-size:.78rem;font-weight:700;color:var(--ink);}
-.ad-status-meta{display:flex;gap:16px;font-size:.72rem;color:var(--ink2);}
-.ad-status-meta strong{color:var(--ink);font-weight:600;}
-.ad-status-none{font-size:.72rem;color:var(--ink3);font-style:italic;padding-top:2px;}
-
-/* AD Timeline */
 .ad-tl-item{background:var(--card);border:1px solid var(--border);
   border-radius:9px;margin-bottom:6px;overflow:hidden;cursor:pointer;transition:border-color .15s;}
 .ad-tl-item:hover{border-color:var(--teal);}
@@ -390,6 +444,8 @@ header{background:var(--card);border-bottom:1px solid var(--border);
 .ad-chip{font-size:.62rem;font-weight:600;padding:2px 7px;border-radius:4px;}
 .ad-chip.acc{background:var(--teal-dim);color:var(--teal-text);border:1px solid var(--teal-mid);}
 .ad-chip.dist{background:var(--orange-dim);color:var(--orange-text);border:1px solid var(--orange-mid);}
+.ad-chip-more{font-size:.62rem;font-weight:600;padding:2px 7px;border-radius:4px;
+  background:var(--bg3);color:var(--ink3);border:1px solid var(--border2);}
 .ad-tl-detail{display:none;border-top:1px solid var(--border);}
 .ad-tl-detail.open{display:block;}
 .ad-detail-inner{padding:12px 14px;}
@@ -398,25 +454,16 @@ header{background:var(--card);border-bottom:1px solid var(--border);
 .ad-detail-sec.acc-sec{color:var(--teal-text);}
 .ad-detail-sec.dist-sec{color:var(--orange-text);}
 
-
-.base-wrap{display:flex;align-items:center;gap:6px;padding:0 14px;
-  border-right:1px solid var(--border);height:36px;}
-.ctrl-label{font-size:.56rem;font-weight:700;text-transform:uppercase;
-  letter-spacing:1px;color:var(--ink3);white-space:nowrap;}
-select#base-select{font-family:'JetBrains Mono',monospace;font-size:.68rem;
-  background:var(--bg2);color:var(--ink);border:1px solid var(--border2);
-  border-radius:6px;padding:3px 8px;cursor:pointer;outline:none;max-width:170px;
-  transition:border-color .15s;}
-select#base-select:focus{border-color:var(--b);}
-.thresh-wrap{display:flex;align-items:center;gap:7px;padding:0 14px;
-  border-right:1px solid var(--border);height:36px;}
-.thresh-val{font-family:'JetBrains Mono',monospace;font-size:.68rem;
-  color:var(--gold);font-weight:600;min-width:34px;text-align:right;}
-input[type=range].tslider{-webkit-appearance:none;appearance:none;
-  width:68px;height:3px;border-radius:2px;background:var(--border2);
-  outline:none;cursor:pointer;}
-input[type=range].tslider::-webkit-slider-thumb{-webkit-appearance:none;
-  width:11px;height:11px;border-radius:50%;background:var(--gold);cursor:pointer;}
+/* A/D Comparison Panels — NEW */
+.ad-comp-panel{border:1px solid var(--border);border-radius:8px;margin-bottom:8px;overflow:hidden;}
+.ad-comp-head{display:flex;align-items:center;justify-content:space-between;
+  padding:8px 12px;background:var(--bg2);cursor:pointer;transition:background .15s;}
+.ad-comp-head:hover{background:var(--bg3);}
+.ad-comp-arrow{font-size:.6rem;color:var(--teal-text);transition:transform .2s;width:10px;}
+.ad-comp-label{font-size:.74rem;font-weight:600;color:var(--ink2);}
+.ad-comp-counts{font-size:.7rem;font-weight:600;}
+.ad-comp-body{display:none;padding:10px 12px 4px;}
+.ad-comp-body.open{display:block;}
 
 /* ════════════════════════════════════════ PIN MODAL */
 #pin-modal{display:none;position:fixed;inset:0;z-index:999;
@@ -464,7 +511,6 @@ input#pin-input:focus{border-color:var(--b);}
   background:var(--modal-bg);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
   flex-direction:column;overflow:hidden;}
 #dv-modal.open{display:flex;}
-
 .dv-header{
   display:-webkit-flex;display:flex;
   -webkit-align-items:center;align-items:center;
@@ -481,10 +527,7 @@ input#pin-input:focus{border-color:var(--b);}
   -webkit-justify-content:center;justify-content:center;transition:all .15s;
   flex-shrink:0;margin-left:12px;line-height:1;padding:0;}
 .dv-close:hover{background:var(--bg3);color:var(--ink);}
-
 .dv-body{flex:1;overflow-y:auto;padding:14px 16px 40px;}
-
-/* Loading / empty */
 .dv-loading{display:flex;align-items:center;justify-content:center;
   gap:10px;padding:40px;color:var(--ink3);font-size:.8rem;}
 .dv-spin{width:18px;height:18px;border:2px solid var(--border2);
@@ -493,8 +536,6 @@ input#pin-input:focus{border-color:var(--b);}
 @keyframes spin{to{transform:rotate(360deg);}}
 .dv-empty{text-align:center;padding:48px 20px;color:var(--ink3);font-size:.82rem;}
 .dv-empty-icon{font-size:2rem;margin-bottom:10px;}
-
-/* Section label */
 .dv-sec-label{font-size:.58rem;font-weight:700;text-transform:uppercase;
   letter-spacing:1.1px;color:var(--ink3);margin:16px 0 8px;
   display:flex;align-items:center;gap:8px;}
@@ -511,7 +552,6 @@ input#pin-input:focus{border-color:var(--b);}
 .dv-tl-item.bull-dom{border-left:3px solid var(--g);}
 .dv-tl-item.bear-dom{border-left:3px solid var(--r);}
 .dv-tl-item.mixed   {border-left:3px solid var(--border2);}
-
 .dv-tl-head{padding:10px 14px;}
 .dv-tl-row1{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
 .dv-tl-time{font-size:.82rem;font-weight:700;color:var(--ink);}
@@ -527,20 +567,58 @@ input#pin-input:focus{border-color:var(--b);}
 .dv-tl-chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:7px;}
 .dv-chip{font-size:.62rem;font-weight:600;padding:2px 7px;border-radius:4px;
   background:var(--gold-dim);color:var(--gold);border:1px solid var(--gold-mid);}
+.dv-chip.caution{background:var(--orange-dim);color:var(--orange-text);border:1px solid var(--orange-mid);}
 
-/* Expanded detail table */
+/* Preview chips on card — NEW */
+.dv-preview-row{display:flex;flex-wrap:wrap;gap:5px;padding:5px 0 4px;}
+.dv-prev-chip{display:inline-flex;align-items:center;gap:4px;
+  padding:3px 8px;border-radius:5px;border:1px solid var(--border);
+  background:var(--bg2);cursor:pointer;transition:background .12s;}
+.dv-prev-chip:hover{background:var(--bg3);}
+.dv-prev-sym{font-size:.68rem;font-weight:700;color:var(--ink);}
+
+/* STRONG / CAUTION badges — NEW */
+.dv-strong-badge{display:inline-flex;align-items:center;gap:3px;
+  font-size:.6rem;font-weight:700;padding:2px 7px;border-radius:4px;
+  background:var(--gold-dim);color:var(--gold);border:1px solid var(--gold-mid);}
+.dv-caution-badge{display:inline-flex;align-items:center;gap:3px;
+  font-size:.6rem;font-weight:700;padding:2px 7px;border-radius:4px;
+  background:var(--orange-dim);color:var(--orange-text);border:1px solid var(--orange-mid);}
+
+/* Strong summary bar */
+.dv-strong-bar{display:flex;flex-wrap:wrap;gap:5px;
+  padding:8px 12px;background:var(--bg2);border-bottom:1px solid var(--border);}
+.dv-strong-item{display:flex;align-items:center;gap:4px;
+  font-size:.7rem;font-weight:700;color:var(--ink2);}
+
+/* Expanded detail */
 .dv-detail{display:none;border-top:1px solid var(--border);overflow-x:auto;}
 .dv-detail.open{display:block;}
-.dv-detail table{width:100%;border-collapse:collapse;min-width:380px;}
-.dv-detail thead tr{background:var(--thead);}
-.dv-detail th{font-size:.58rem;font-weight:700;text-transform:uppercase;
-  letter-spacing:.8px;color:var(--ink3);padding:7px 12px;text-align:left;
-  white-space:nowrap;}
-.dv-detail td{padding:7px 12px;font-size:.72rem;border-top:1px solid var(--border);
+
+/* Day View Comparison Panels — NEW */
+.dv-comp-panel{border-bottom:1px solid var(--border);}
+.dv-comp-panel:last-child{border-bottom:none;}
+.dv-comp-head{display:flex;align-items:center;justify-content:space-between;
+  padding:7px 12px;background:var(--bg2);cursor:pointer;transition:background .15s;}
+.dv-comp-head:hover{background:var(--bg3);}
+.dv-comp-head-left{display:flex;align-items:center;gap:6px;}
+.dv-comp-arrow{font-size:.6rem;color:var(--purple-text);width:10px;}
+.dv-comp-vs{font-size:.72rem;font-weight:600;color:var(--ink2);}
+.dv-comp-cnt{font-size:.65rem;color:var(--ink3);margin-left:4px;}
+.dv-comp-body{display:none;overflow-x:auto;}
+.dv-comp-body.open{display:block;}
+.dv-comp-body table{width:100%;border-collapse:collapse;min-width:360px;}
+.dv-comp-body thead tr{background:var(--thead);}
+.dv-comp-body th{font-size:.58rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.8px;color:var(--ink3);padding:7px 12px;text-align:left;white-space:nowrap;}
+.dv-comp-body td{padding:7px 12px;font-size:.72rem;border-top:1px solid var(--border);
   vertical-align:middle;}
-.dv-detail .sym-col{font-weight:700;color:var(--ink);font-size:.75rem;}
-.dv-detail .sig-cell{display:flex;align-items:center;gap:5px;font-size:.72rem;}
-.dv-detail .sig-pill{display:inline-flex;align-items:center;gap:3px;
+.dv-comp-body .sym-col{font-weight:700;color:var(--ink);font-size:.75rem;white-space:nowrap;}
+.dv-comp-body .sig-cell{display:flex;align-items:center;gap:5px;font-size:.72rem;flex-wrap:wrap;}
+.dv-comp-body .dim{color:var(--ink3);}
+
+/* Signal pills */
+.sig-pill{display:inline-flex;align-items:center;gap:3px;
   font-size:.6rem;font-weight:700;padding:2px 7px;border-radius:4px;white-space:nowrap;}
 .sig-pill.long   {background:var(--g-dim);   color:var(--g-text);  border:1px solid var(--g-mid);}
 .sig-pill.cover  {background:var(--teal-dim);color:var(--teal-text);border:1px solid var(--teal-mid);}
@@ -552,7 +630,6 @@ input#pin-input:focus{border-color:var(--b);}
 .strong-fire{font-size:.75rem;}
 .pct-g{color:var(--g-text);}
 .pct-r{color:var(--r-text);}
-.dv-detail .dim{color:var(--ink3);}
 
 /* Leaderboard */
 .dv-lb-item{display:flex;align-items:center;gap:10px;
@@ -587,8 +664,6 @@ main{max-width:1440px;margin:0 auto;padding:18px 24px 60px;}
 
 /* ════════════════════════════════════════ DASHBOARD */
 #dash{display:none;}
-
-/* ── LEVEL 1: Status Bar ── */
 .status-bar{
   display:flex;align-items:center;gap:0;
   background:var(--bg);
@@ -613,12 +688,7 @@ main{max-width:1440px;margin:0 auto;padding:18px 24px 60px;}
 .mood-pill.bull{background:var(--g-dim);color:var(--g-text);border:1px solid var(--g-mid);}
 .mood-pill.bear{background:var(--r-dim);color:var(--r-text);border:1px solid var(--r-mid);}
 .mood-pill.mix {background:var(--bg3);color:var(--ink2);border:1px solid var(--border2);}
-
-/* ── Signal Card Grid (2-col, 3 rows) ── */
-.card-grid{
-  display:grid;grid-template-columns:1fr 1fr;
-  gap:8px;margin-bottom:14px;
-}
+.card-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
 .row-label{
   grid-column:1/-1;
   display:flex;align-items:center;gap:8px;
@@ -628,7 +698,6 @@ main{max-width:1440px;margin:0 auto;padding:18px 24px 60px;}
 }
 .row-label::after{content:'';flex:1;height:1px;background:var(--border);}
 .row-label-pip{width:5px;height:5px;border-radius:50%;flex-shrink:0;}
-
 .action-card{
   background:var(--card);border:1px solid var(--border);
   border-radius:9px;padding:13px 16px 11px;
@@ -647,11 +716,7 @@ main{max-width:1440px;margin:0 auto;padding:18px 24px 60px;}
 .ac-count.r     {color:var(--r-text);}
 .ac-count.teal  {color:var(--teal-text);}
 .ac-count.orange{color:var(--orange-text);}
-
-.watch-card{
-  background:var(--card);border:1px solid var(--border);
-  border-radius:9px;overflow:hidden;
-}
+.watch-card{background:var(--card);border:1px solid var(--border);border-radius:9px;overflow:hidden;}
 .watch-head{
   display:flex;align-items:center;justify-content:space-between;
   padding:10px 16px;cursor:pointer;user-select:none;
@@ -673,7 +738,7 @@ main{max-width:1440px;margin:0 auto;padding:18px 24px 60px;}
 .watch-head.purple-head{border-left:3px solid var(--purple);}
 .watch-head.wh-active{background:var(--bg2);}
 
-/* ── Signal Card (shared) ── */
+/* Signal Card */
 .scard{background:var(--card);border:1px solid var(--border);
   border-radius:9px;overflow:hidden;box-shadow:0 1px 4px var(--shadow);
   margin-bottom:10px;display:none;}
@@ -764,10 +829,28 @@ tr.nodata td{text-align:center;color:var(--ink3);padding:16px;font-size:.75rem;}
 .guide-tip{font-size:.7rem;color:var(--ink2);line-height:1.6;
   background:var(--bg3);border-radius:7px;padding:8px 11px;margin-top:4px;}
 
-/* Mobile row2 btns — PC pe hide */
-.mobile-row2-btns{display:none;}
+/* Baseline select row */
+.base-wrap{display:flex;align-items:center;gap:6px;padding:0 14px;
+  border-right:1px solid var(--border);height:36px;}
+.ctrl-label{font-size:.56rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:1px;color:var(--ink3);white-space:nowrap;}
+select#base-select{font-family:'JetBrains Mono',monospace;font-size:.68rem;
+  background:var(--bg2);color:var(--ink);border:1px solid var(--border2);
+  border-radius:6px;padding:3px 8px;cursor:pointer;outline:none;max-width:170px;
+  transition:border-color .15s;}
+select#base-select:focus{border-color:var(--b);}
+.thresh-wrap{display:flex;align-items:center;gap:7px;padding:0 14px;
+  border-right:1px solid var(--border);height:36px;}
+.thresh-val{font-family:'JetBrains Mono',monospace;font-size:.68rem;
+  color:var(--gold);font-weight:600;min-width:34px;text-align:right;}
+input[type=range].tslider{-webkit-appearance:none;appearance:none;
+  width:68px;height:3px;border-radius:2px;background:var(--border2);
+  outline:none;cursor:pointer;}
+input[type=range].tslider::-webkit-slider-thumb{-webkit-appearance:none;
+  width:11px;height:11px;border-radius:50%;background:var(--gold);cursor:pointer;}
 
-/* PC row2 right side A/D + Day View */
+/* Mobile row2 btns */
+.mobile-row2-btns{display:none;}
 .pc-row2-btns{
   display:flex;align-items:center;gap:10px;
   margin-left:auto;
@@ -780,7 +863,6 @@ tr.nodata td{text-align:center;color:var(--ink3);padding:16px;font-size:.75rem;}
   border-width:1.5px;
   letter-spacing:.3px;
 }
-/* Row1 se A/D aur DayView PC pe hide */
 .row1-ad-hide{display:none;}
 .row1-dayv-hide{display:none;}
 
@@ -794,10 +876,8 @@ tr.nodata td{text-align:center;color:var(--ink3);padding:16px;font-size:.75rem;}
   .hbtn{padding:0 7px;height:28px;font-size:.68rem;}
   .hbtn span{display:none;}
   .hbtn.sq{width:28px;}
-  /* Row1 mein A/D aur Day View hide karo */
   .hdr-right .hbtn.ad{display:none;}
   .hdr-right .hbtn.dayv{display:none;}
-  /* Compare button hide karo */
   .hbtn.cmp{display:none;}
   #badge{font-size:.58rem;padding:2px 6px;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .hbtn.manual{order:1;}
@@ -813,14 +893,9 @@ tr.nodata td{text-align:center;color:var(--ink3);padding:16px;font-size:.75rem;}
   table{min-width:480px;}
   .status-bar{flex-wrap:wrap;}
   .sb-item{min-width:50%;border-right:none;border-bottom:1px solid var(--border2);}
-
-  /* Day view mobile */
   .dv-header{padding:12px 14px;}
   .dv-body{padding:10px 10px 40px;}
-  .dv-detail table{min-width:360px;}
   .pc-only{display:none !important;}
-
-  /* Row2 mobile btns dikho */
   .mobile-row2-btns{display:flex;gap:6px;align-items:center;width:100%;margin-top:4px;}
   .mobile-row2-btns .hbtn{flex:1;justify-content:center;height:32px;padding:0;font-size:.72rem;}
   .mobile-row2-btns .hbtn span{display:inline;}
@@ -867,7 +942,7 @@ tr.nodata td{text-align:center;color:var(--ink3);padding:16px;font-size:.75rem;}
           <rect x="14" y="3" width="4" height="15" rx="1.5" fill="white"/>
         </svg>
       </div>
-      <div class="b-name">STOCK TRADE <em>F&O</em></div>
+      <div class="b-name">STOCK TRADE <em>F&amp;O</em></div>
     </div>
     <div class="st-strip">
       <div class="st-item">
@@ -907,12 +982,10 @@ tr.nodata td{text-align:center;color:var(--ink3);padding:16px;font-size:.75rem;}
         min="0.05" max="1.0" step="0.05" value="0.20" oninput="updateThresh(this.value)">
       <span class="thresh-val" id="thresh-disp">0.20%</span>
     </div>
-    <!-- PC only: A/D + Day View right side -->
     <div class="pc-row2-btns pc-only">
       <button class="hbtn ad" onclick="openAD()"><span class="ad-btn-text">A/D</span> <span class="ad-btn-icon">🧱</span></button>
       <button class="hbtn dayv" onclick="openDayView()">📶 <span>Day View</span></button>
     </div>
-    <!-- Mobile only: A/D + Day View -->
     <div class="mobile-row2-btns">
       <button class="hbtn ad" onclick="openAD()"><span class="ad-btn-text">A/D</span> <span class="ad-btn-icon">🧱</span></button>
       <button class="hbtn dayv" onclick="openDayView()">📶 <span>Day View</span></button>
@@ -921,7 +994,6 @@ tr.nodata td{text-align:center;color:var(--ink3);padding:16px;font-size:.75rem;}
 </header>
 
 <main>
-
   <!-- ═══ EMPTY ═══ -->
   <div id="empty">
     <div class="empty-icon">📊</div>
@@ -936,8 +1008,7 @@ tr.nodata td{text-align:center;color:var(--ink3);padding:16px;font-size:.75rem;}
 
   <!-- ═══ DASHBOARD ═══ -->
   <div id="dash">
-
-    <!-- LEVEL 1 — Status Bar -->
+    <!-- Status Bar -->
     <div class="status-bar">
       <div class="sb-item">
         <div>
@@ -1096,7 +1167,6 @@ tr.nodata td{text-align:center;color:var(--ink3);padding:16px;font-size:.75rem;}
 <script>
 'use strict';
 
-/* WORKER is defined in the <head> script block above — do not redefine */
 const TOP_N       = 10;
 const TOP_HL      = 3;
 const THEMES      = ['dark','light','teal'];
@@ -1111,7 +1181,7 @@ let _lastBaseTime = null;
 let _lastScanTime = null;
 let _activeSection = null;
 
-/* ── Theme ─────────────────────────────────── */
+/* ── Theme ── */
 (function(){
   const t = localStorage.getItem(K.th)||'dark';
   document.documentElement.setAttribute('data-theme',t);
@@ -1125,7 +1195,7 @@ function cycleTheme(){
   localStorage.setItem(K.th,next);
 }
 
-/* ── Helpers ───────────────────────────────── */
+/* ── Helpers ── */
 function setBadge(cls,txt){ const e=document.getElementById('badge'); e.className=cls; e.id='badge'; e.textContent=txt; }
 function fmtN(n){ return (+n).toLocaleString('en-IN'); }
 function fmtP(v){ const n=parseFloat(v); return isNaN(n)?'—':(n>=0?'+':'')+n.toFixed(2)+'%'; }
@@ -1389,9 +1459,7 @@ function openDayView(){
   document.getElementById('dv-modal').classList.add('open');
   if(_dvRefreshTimer){ clearInterval(_dvRefreshTimer); _dvRefreshTimer = null; }
   loadDayView();
-  _dvRefreshTimer = setInterval(async ()=>{
-    await loadDayViewSmart();
-  }, 60 * 1000);
+  _dvRefreshTimer = setInterval(loadDayViewSmart, 60 * 1000);
 }
 function closeDayView(){
   document.getElementById('dv-modal').classList.remove('open');
@@ -1404,7 +1472,6 @@ async function loadDayView(){
   body.innerHTML = '<div class="dv-loading"><div class="dv-spin"></div> Loading today\'s signals…</div>';
   sub.textContent = 'Loading…';
   _dvLastSavedAt = null;
-
   try{
     const res = await fetch(WORKER+'?mode=dayview');
     const j   = await res.json();
@@ -1427,21 +1494,22 @@ async function loadDayViewSmart(){
     const results = j.results||[];
     if(!results.length) return;
     const latestSavedAt = results[results.length-1].savedAt;
-    // Sirf naya data aane par re-render karo
     if(latestSavedAt === _dvLastSavedAt) return;
     _dvLastSavedAt = latestSavedAt;
     renderDayView(results);
-  } catch(e){ /* silent fail */ }
+  } catch(e){ /* silent */ }
 }
 
+/* ── renderDayView: updated for comparisons + STRONG/CAUTION ── */
 function renderDayView(results){
   const body = document.getElementById('dv-body');
   const sub  = document.getElementById('dv-subtitle');
 
   if(!results.length){
-    const debug = (window._dvDebug) || {};
-    const baseCount = debug.baseCount ?? '?';
-    const msg = debug.message || 'Rolling results abhi tak nahi aaye.';    body.innerHTML = `<div class="dv-empty" style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:32px 16px;">
+    const debug      = (window._dvDebug) || {};
+    const baseCount  = debug.baseCount ?? '?';
+    const msg        = debug.message || 'Rolling results abhi tak nahi aaye.';
+    body.innerHTML = `<div class="dv-empty" style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:32px 16px;">
       <div style="font-size:2rem;">📭</div>
       <div style="font-size:.9rem;font-weight:600;color:var(--ink2);">Day View Ready Nahi</div>
       <div style="font-size:.78rem;color:var(--ink3);text-align:center;">${msg}</div>
@@ -1455,68 +1523,106 @@ function renderDayView(results){
 
   sub.textContent = `${results.length} scan${results.length>1?'s':''} today`;
 
-  // Build leaderboard data + first-seen time
-  const symCount = {};
-  const symFirstTime = {};
+  // Leaderboard: count STRONG appearances per symbol
+  const symCount    = {};
+  const symStrength = {}; // latest strength label
+  const symFirstTime= {};
   for(const r of results){
     for(const s of (r.strong||[])){
-      const sym = s.split(':')[0];
-      symCount[sym] = (symCount[sym]||0)+1;
+      const parts    = s.split(':');
+      const sym      = parts[0];
+      const strength = parts[2] || 'STRONG';
+      symCount[sym]     = (symCount[sym]||0)+1;
+      symStrength[sym]  = strength;
       if(!symFirstTime[sym]) symFirstTime[sym] = r.timeStr;
     }
   }
   const lbData   = Object.entries(symCount).sort((a,b)=>b[1]-a[1]).slice(0,10);
   const maxCount = lbData[0]?.[1]||1;
-  const maxBull  = Math.max(...results.map(r=>r.bullCount),1);
-  const maxBear  = Math.max(...results.map(r=>r.bearCount),1);
+  const maxBull  = Math.max(...results.map(r=>r.bullCount||0),1);
+  const maxBear  = Math.max(...results.map(r=>r.bearCount||0),1);
 
   let html = '';
-
   html += '<div class="dv-sec-label">📅 Scan Timeline — newest first</div>';
 
   const sorted = [...results].reverse();
 
   sorted.forEach((r,idx)=>{
-    const dom      = r.bullCount > r.bearCount ? 'bull-dom' : r.bearCount > r.bullCount ? 'bear-dom' : 'mixed';
-    const bw       = Math.round(r.bullCount/maxBull*80);
-    const rw       = Math.round(r.bearCount/maxBear*80);
-    const strongSyms = (r.strong||[]).slice(0,6);
-    const uid      = 'tl_'+idx;
+    const dom  = (r.bullCount||0) > (r.bearCount||0) ? 'bull-dom' : (r.bearCount||0) > (r.bullCount||0) ? 'bear-dom' : 'mixed';
+    const bw   = Math.round((r.bullCount||0)/maxBull*80);
+    const rw   = Math.round((r.bearCount||0)/maxBear*80);
+    const uid  = 'tl_'+idx;
+    const cmpCount = (r.comparisons||[]).length || 0;
+
+    // Parse strong signals: "SYM:TYPE:STRENGTH:COUNT"
+    const strongItems = (r.strong||[]).map(s=>{
+      const [sym,type,strength,cnt] = s.split(':');
+      return { sym, type, strength: strength||'STRONG', cnt: parseInt(cnt)||2 };
+    });
+    const strongCount = strongItems.length;
+
+    // Build quick-preview: top signals from ALL comparisons (deduped by symbol)
+    const previewMap = {};
+    const SIG_ICON = { long:'▲', short:'▼', cover:'↑', unwind:'↓', acc:'◆', dist:'◆' };
+    const SIG_COLOR= { long:'var(--g-text)', short:'var(--r-text)', cover:'var(--teal-text)',
+                       unwind:'var(--orange-text)', acc:'var(--b-text)', dist:'var(--purple-text)' };
+    for(const comp of (r.comparisons||[])){
+      for(const s of (comp.signals||[])){
+        const [sym,type,pricePct] = s.split(':');
+        if(!previewMap[sym]) previewMap[sym] = { sym, type, pricePct: parseFloat(pricePct)||0 };
+      }
+    }
+    const previewItems = Object.values(previewMap).slice(0,8);
+
+    const previewHtml = previewItems.length ? `
+      <div class="dv-preview-row">
+        ${previewItems.map(p => {
+          const icon  = SIG_ICON[p.type]  || '·';
+          const col   = SIG_COLOR[p.type] || 'var(--ink2)';
+          const sign  = p.pricePct >= 0 ? '+' : '';
+          const pCls  = p.pricePct >= 0 ? 'var(--g-text)' : 'var(--r-text)';
+          const isStr = strongItems.some(si=>si.sym===p.sym);
+          return `<span class="dv-prev-chip" style="border-color:${col}20;">
+            <span style="color:${col};font-weight:700;">${icon}</span>
+            <span class="dv-prev-sym">${p.sym}${isStr?'🔥':''}</span>
+            <span style="color:${pCls};font-family:'JetBrains Mono',monospace;font-size:.58rem;">${sign}${p.pricePct.toFixed(1)}%</span>
+          </span>`;
+        }).join('')}
+      </div>` : `<div style="padding:2px 0 4px;font-size:.68rem;color:var(--ink3);font-style:italic;">No signals in this scan</div>`;
 
     html += `<div class="dv-tl-item ${dom}" id="${uid}">
       <div class="dv-tl-head" onclick="dvToggle('${uid}')">
         <div class="dv-tl-row1">
           <span class="dv-tl-time">🕐 ${r.timeStr}</span>
-          ${r.strongCount>0?`<span class="dv-tl-strong">🔥 ${r.strongCount} Strong</span>`:''}
-        </div>
-        <div class="dv-tl-row2">
-          <div class="dv-bars">
-            <div class="dv-bar-g" style="width:${bw}px"></div>
-            <div class="dv-bar-r" style="width:${rw}px"></div>
+          <span style="font-size:.6rem;color:var(--ink3);padding:1px 6px;background:var(--bg2);border-radius:4px;border:1px solid var(--border);">${cmpCount} cmp</span>
+          ${strongCount>0?`<span class="dv-tl-strong">🔥 ${strongCount} Strong</span>`:''}
+          <div style="margin-left:auto;display:flex;align-items:center;gap:6px;">
+            <span style="font-size:.7rem;font-weight:700;color:var(--g-text);">▲${r.bullCount||0}</span>
+            <span style="font-size:.7rem;font-weight:700;color:var(--r-text);">▼${r.bearCount||0}</span>
           </div>
-          <span class="dv-tl-counts">
-            <span class="gc">▲${r.bullCount}</span>&nbsp;
-            <span class="rc">▼${r.bearCount}</span>
-          </span>
         </div>
-        ${strongSyms.length?`<div class="dv-tl-chips">${strongSyms.map(s=>`<span class="dv-chip">${s.split(':')[0]}</span>`).join('')}</div>`:''}
+        ${previewHtml}
       </div>
       <div class="dv-detail" id="${uid}_det">
-        ${buildDvTable(r)}
+        ${buildDvDetail(r)}
       </div>
     </div>`;
   });
 
-  // ── Leaderboard ──
+  // Leaderboard
   if(lbData.length){
     html += '<div class="dv-sec-label" style="margin-top:20px;">🏆 Symbol Leaderboard — Strong signal count</div>';
     lbData.forEach(([sym,cnt],i)=>{
       const firstTime = symFirstTime[sym] || '';
+      const strength  = symStrength[sym]  || 'STRONG';
       html += `<div class="dv-lb-item">
         <span class="dv-lb-rank">${i+1}</span>
         <div style="flex:1;min-width:0;">
           <div style="display:flex;align-items:center;gap:8px;">
             <span class="dv-lb-sym">${sym}</span>
+            ${strength==='CAUTION'
+              ? `<span class="dv-caution-badge">⚠️ WITH CAUTION</span>`
+              : `<span class="dv-strong-badge">🔥 STRONG</span>`}
             ${firstTime?`<span style="font-size:.6rem;color:var(--ink3);white-space:nowrap;">🕐 First: ${firstTime}</span>`:''}
           </div>
         </div>
@@ -1531,69 +1637,121 @@ function renderDayView(results){
   body.innerHTML = html;
 }
 
-function buildDvTable(r){
-  // t1 = pichla scan, t2 = uska pichla scan
-  const t1Map = {}, t2Map = {};
-  (r.t10Syms||[]).forEach(s=>{
-    const [sym,type,pct,oiPct,priceNow] = s.split(':');
-    t1Map[sym] = {type, pct, oiPct, priceNow};
+/* ── buildDvDetail: strong summary + one panel per comparison ── */
+function buildDvDetail(r){
+  const comparisons = r.comparisons || [];
+  if(!comparisons.length){
+    return '<div style="padding:12px;color:var(--ink3);font-size:.75rem;text-align:center;">No comparison data in this scan</div>';
+  }
+
+  // Parse strong signals
+  const strongMap = {}; // sym -> { strength, confirmCount }
+  (r.strong || []).forEach(s => {
+    const [sym, type, strength, cnt] = s.split(':');
+    strongMap[sym] = { type, strength: strength||'STRONG', confirmCount: parseInt(cnt)||2 };
   });
-  (r.t20Syms||[]).forEach(s=>{
-    const [sym,type,pct,oiPct,priceNow] = s.split(':');
-    t2Map[sym] = {type, pct, oiPct, priceNow};
+
+  let html = '';
+
+  // Strong summary bar
+  if(Object.keys(strongMap).length){
+    html += '<div class="dv-strong-bar">';
+    Object.entries(strongMap).forEach(([sym, info]) => {
+      const badge = info.strength === 'CAUTION'
+        ? `<span class="dv-caution-badge">⚠️ CAUTION</span>`
+        : `<span class="dv-strong-badge">🔥 STRONG</span>`;
+      html += `<div class="dv-strong-item">${sym} ${badge} <span style="font-size:.62rem;color:var(--ink3);">(${info.confirmCount}/${comparisons.length})</span></div>`;
+    });
+    html += '</div>';
+  }
+
+  // One panel per comparison
+  comparisons.forEach((comp, idx) => {
+    const signals   = comp.signals || [];
+    const panelId   = 'dvcp_' + Math.random().toString(36).slice(2,8) + '_' + idx;
+    const isFirst   = idx === 0;
+
+    html += `<div class="dv-comp-panel">
+      <div class="dv-comp-head" onclick="dvCompToggle('${panelId}')">
+        <div class="dv-comp-head-left">
+          <span class="dv-comp-arrow" id="${panelId}_arr">${isFirst?'▼':'▶'}</span>
+          <span class="dv-comp-vs">vs <strong>${comp.baseTimeStr}</strong></span>
+          <span class="dv-comp-cnt">${signals.length} signal${signals.length!==1?'s':''}</span>
+        </div>
+      </div>
+      <div class="dv-comp-body${isFirst?' open':''}" id="${panelId}">
+        ${buildDvCompTable(signals, strongMap, comp.baseTimeStr)}
+      </div>
+    </div>`;
   });
 
-  const strongSet = new Set((r.strong||[]).map(s=>s.split(':')[0]));
-  const allSyms   = [...new Set([...Object.keys(t1Map),...Object.keys(t2Map)])].sort();
+  return html;
+}
 
-  if(!allSyms.length) return '<div style="padding:12px;color:var(--ink3);font-size:.75rem;text-align:center;">No signals in this scan</div>';
+/* ── buildDvCompTable: table for one comparison's signals ── */
+function buildDvCompTable(signals, strongMap, baseTimeStr){
+  if(!signals.length){
+    return '<div style="padding:10px 12px;color:var(--ink3);font-size:.75rem;font-style:italic;">No signals vs this baseline.</div>';
+  }
 
-  let rows = allSyms.map(sym=>{
-    const s1 = t1Map[sym];
-    const s2 = t2Map[sym];
-    const isStrong = strongSet.has(sym);
+  // Parse signals: "SYM:TYPE:PRICEPCT:OIPCT:PRICENOW:OINOW"
+  const parsed = signals.map(s => {
+    const [sym,type,pricePct,oiPct,priceNow,oiNow] = s.split(':');
+    return { sym, type, pricePct: parseFloat(pricePct)||0, oiPct: parseFloat(oiPct)||0, priceNow: parseFloat(priceNow)||0, oiNow };
+  });
 
-    const ltp     = s1?.priceNow || s2?.priceNow;
-    const ltpCell = ltp ? `<span style="font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:600;color:var(--ink);">₹${parseFloat(ltp).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}</span>` : `<span class="dim">—</span>`;
+  const rows = parsed.map(p => {
+    const isStrong = !!strongMap[p.sym];
+    const sInfo    = strongMap[p.sym] || {};
+    const priceStr = p.priceNow ? `₹${p.priceNow.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}` : '—';
+    const pCls     = p.pricePct >= 0 ? 'pct-g' : 'pct-r';
+    const oiCls    = p.oiPct    >= 0 ? 'pct-g' : 'pct-r';
+    const pSign    = p.pricePct >= 0 ? '+' : '';
+    const oSign    = p.oiPct    >= 0 ? '+' : '';
 
-    const oiVal  = s1?.oiPct ?? s2?.oiPct;
-    const oiCell = oiVal!=null && oiVal!=='' && oiVal!=='undefined'
-      ? `<span class="${parseFloat(oiVal)>=0?'pct-g':'pct-r'}" style="font-family:'JetBrains Mono',monospace;font-size:.72rem;">${parseFloat(oiVal)>=0?'+':''}${parseFloat(oiVal).toFixed(2)}%</span>`
-      : `<span class="dim">—</span>`;
-
-    const cell1 = s1 ? `<span class="sig-pill ${s1.type}">${SIG_LABELS[s1.type]||s1.type}</span> <span class="${parseFloat(s1.pct)>=0?'pct-g':'pct-r'}">${parseFloat(s1.pct)>=0?'+':''}${s1.pct}%</span>` : `<span class="sig-pill none">—</span>`;
-    const cell2 = s2 ? `<span class="sig-pill ${s2.type}">${SIG_LABELS[s2.type]||s2.type}</span> <span class="${parseFloat(s2.pct)>=0?'pct-g':'pct-r'}">${parseFloat(s2.pct)>=0?'+':''}${s2.pct}%</span>` : `<span class="sig-pill none">—</span>`;
+    let strengthBadge = '';
+    if(isStrong){
+      strengthBadge = sInfo.strength === 'CAUTION'
+        ? `<span class="dv-caution-badge">⚠️ CAUTION</span>`
+        : `<span class="dv-strong-badge">🔥 STRONG</span>`;
+    }
 
     return `<tr>
-      <td class="sym-col">${sym}${isStrong?'<span class="strong-fire">🔥</span>':''}</td>
-      <td>${ltpCell}</td>
-      <td>${oiCell}</td>
-      <td><div class="sig-cell">${cell1}</div></td>
-      <td><div class="sig-cell">${cell2}</div></td>
+      <td class="sym-col">${p.sym}${isStrong?'<span class="strong-fire"> 🔥</span>':''}</td>
+      <td><span class="sig-pill ${p.type}">${SIG_LABELS[p.type]||p.type}</span></td>
+      <td><span class="${pCls}" style="font-family:'JetBrains Mono',monospace;font-size:.72rem;">${pSign}${p.pricePct.toFixed(2)}%</span></td>
+      <td><span class="${oiCls}" style="font-family:'JetBrains Mono',monospace;font-size:.72rem;">${oSign}${p.oiPct.toFixed(2)}%</span></td>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:.72rem;">${priceStr}</td>
+      <td>${strengthBadge}</td>
     </tr>`;
   });
-
-  // t1/t2 ke base times header mein dikhao
-  const t1Time = r.t1BaseTimeStr || 'Previous';
-  const t2Time = r.t2BaseTimeStr || null;
 
   return `<table>
     <thead><tr>
       <th>Symbol</th>
-      <th>LTP</th>
-      <th>OI Change</th>
-      <th>vs ${t1Time}</th>
-      ${t2Time ? `<th>vs ${t2Time}</th>` : '<th>2nd Scan Pending</th>'}
+      <th>Signal</th>
+      <th>Price Δ</th>
+      <th>OI Δ</th>
+      <th>Price Now</th>
+      <th>Strength</th>
     </tr></thead>
     <tbody>${rows.join('')}</tbody>
   </table>`;
+}
+
+function dvCompToggle(panelId){
+  const body = document.getElementById(panelId);
+  const arr  = document.getElementById(panelId + '_arr');
+  if(!body) return;
+  const isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  if(arr) arr.textContent = isOpen ? '▶' : '▼';
 }
 
 function dvToggle(uid){
   const item = document.getElementById(uid);
   const det  = document.getElementById(uid+'_det');
   const isOpen = det.classList.contains('open');
-  // close all
   document.querySelectorAll('.dv-detail.open').forEach(el=>el.classList.remove('open'));
   document.querySelectorAll('.dv-tl-item.expanded').forEach(el=>el.classList.remove('expanded'));
   if(!isOpen){
@@ -1606,7 +1764,7 @@ function dvToggle(uid){
 /* ════════════════════════════════════════
    BASELINE DROPDOWN
 ════════════════════════════════════════ */
-let _allBaselines = []; // saari baselines store karo
+let _allBaselines = [];
 
 async function loadBaselines(){
   try{
@@ -1624,7 +1782,6 @@ async function loadBaselines(){
       opt.value=b.key; opt.text=b.timeStr+(b.label==='manual'?' 📌':'')+( i===0?' (latest)':'');
       sel.appendChild(opt);
     });
-    // Previous selection restore karo, warna latest select karo
     if(prevVal && [...sel.options].some(o=>o.value===prevVal)){
       sel.value = prevVal;
     } else if(_allBaselines.length){
@@ -1638,26 +1795,17 @@ function onBaseChange(){
   const baseKey = document.getElementById('base-select').value;
   const sel2    = document.getElementById('cmp2-select');
   if(!sel2) return;
-
-  // Dusra dropdown reset karo
   while(sel2.options.length>1) sel2.remove(1);
-
   if(!baseKey){
     sel2.options[0].text='— live (latest) —';
     return;
   }
-
-  // Baseline ka timestamp nikalo
   const baseTs = parseInt(baseKey.split('_').pop());
-
-  // Sirf wo baselines dikhao jo IS baseline ke BAAD ke hain
-  const after = _allBaselines.filter(b => b.ts > baseTs);
-
+  const after  = _allBaselines.filter(b => b.ts > baseTs);
   if(!after.length){
     sel2.options[0].text='— live (latest) —';
     return;
   }
-
   sel2.options[0].text='— live (latest) —';
   after.forEach((b,i)=>{
     const opt=document.createElement('option');
@@ -1708,30 +1856,23 @@ async function manualBase(pin){
 async function compareAndSignal(){
   const baseKey = document.getElementById('base-select').value;
   if(!baseKey){alert('Please select a baseline from the dropdown first.');return;}
-
   const sel2    = document.getElementById('cmp2-select');
   const cmp2Key = sel2 ? sel2.value : '';
-
   const btn=document.getElementById('cmp-btn');
   btn.classList.add('loading'); btn.innerHTML='<span class="spin"></span> <span>Comparing…</span>';
   setBadge('','Comparing...');
-
   try{
     if(cmp2Key){
-      // Dono baselines ke beech compare — worker se dono ka data lo
       const [r1, r2] = await Promise.all([
         fetch(`${WORKER}?mode=compare&key=${encodeURIComponent(baseKey)}`).then(r=>r.json()),
         fetch(`${WORKER}?mode=compare&key=${encodeURIComponent(cmp2Key)}`).then(r=>r.json()),
       ]);
       if(!r1.ok) throw new Error(r1.error||'Baseline fetch error');
       if(!r2.ok) throw new Error(r2.error||'Compare-with fetch error');
-
-      // r2 ka data = "fresh", r1 ka data = "base"
-      const freshData   = r2.baseData;   // cmp2 baseline ka stored data
-      const baseData    = r1.baseData;   // base baseline ka stored data
+      const freshData   = r2.baseData;
+      const baseData    = r1.baseData;
       const baseTimeIso = r1.baseTime;
       const scanTimeIso = r2.baseTime;
-
       document.getElementById('st-cnt').textContent=(freshData||[]).length+' symbols';
       setBadge('ready','● Stored · Base: '+fmtTime(baseTimeIso));
       _lastFresh=freshData; _lastBaseMap=toMap(baseData);
@@ -1739,7 +1880,6 @@ async function compareAndSignal(){
       const sig=genSignals(_lastFresh,_lastBaseMap,baseTimeIso,scanTimeIso);
       renderSignals(sig,fmtTime(baseTimeIso),fmtTime(scanTimeIso));
     } else {
-      // Pehle jaisa — live NSE data se compare
       const res=await fetch(`${WORKER}?mode=compare&key=${encodeURIComponent(baseKey)}`);
       const j=await res.json();
       if(!j.ok) throw new Error(j.error||'Worker error');
@@ -1755,7 +1895,6 @@ async function compareAndSignal(){
   } catch(e){ setBadge('err','Error'); alert('Compare failed: '+e.message); }
   btn.classList.remove('loading'); btn.innerHTML='🔄 <span>Compare</span>';
 }
-
 
 </script>
 

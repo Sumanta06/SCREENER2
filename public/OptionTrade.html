@@ -1163,8 +1163,9 @@ function buildDvDetail(r){
       const oiChngPct=parseFloat(parts[4])||0;
       const ltp=parseFloat(parts[5])||0;
       const strike=parts[6]||'';
-      const dir=parts[7]||'BULL';
-      allRows.push({sym,type,signalType,ltpChngPct,oiChngPct,ltp,strike,dir,baseTimeStr:comp.baseTimeStr,gapMins,stale});
+      const expiry=parts[7]||'';
+	  const dir=parts[8]||'BULL';
+      allRows.push({sym,type,signalType,ltpChngPct,oiChngPct,ltp,strike,dir,expiry,baseTimeStr:comp.baseTimeStr,gapMins,stale});
     });
   });
 
@@ -1173,7 +1174,23 @@ function buildDvDetail(r){
 
   allRows.sort((a,b)=>a.gapMins-b.gapMins||Math.abs(b.ltpChngPct)-Math.abs(a.ltpChngPct));
 
-  const rows=allRows.map(p=>{
+  // Nearest expiry filter — har sym+type ka sirf nearest expiry rakho
+  const MON_FE={Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+  function expiryMsFE(s){
+    if(!s) return Infinity;
+    const [d,m,y]=s.split('-');
+    return new Date(+y,MON_FE[m],+d).getTime();
+  }
+  const nearestExp={};
+  for(const r of allRows){
+    const key=r.sym+'|'+r.type;
+    if(!nearestExp[key]||expiryMsFE(r.expiry)<expiryMsFE(nearestExp[key])){
+      nearestExp[key]=r.expiry;
+    }
+  }
+  const filteredRows=allRows.filter(r=>!r.expiry||r.expiry===nearestExp[r.sym+'|'+r.type]);
+
+  const rows=filteredRows.map(p=>{
     const isStrong=!!strongMap[p.sym];
     const sInfo=strongMap[p.sym]||{};
     const isBull=p.dir==='BULL';
@@ -1200,6 +1217,7 @@ function buildDvDetail(r){
     return `<tr style="opacity:${p.stale.opacity};">
       <td style="font-family:'JetBrains Mono',monospace;font-size:.68rem;color:inherit;white-space:nowrap;">${p.baseTimeStr}</td>
       <td style="font-weight:700;font-size:.75rem;white-space:nowrap;color:inherit;">${p.sym}${strikeDisp}${isStrong?'<span class="strong-fire"> 🔥</span>':''}</td>
+      <td style="font-size:.65rem;color:var(--gold);font-family:'JetBrains Mono',monospace;white-space:nowrap;">${p.expiry||'—'}</td>
       <td><span class="${typeCls}">${p.type}</span></td>
       <td><span class="pill ${isBull?'bull':'bear'}" style="font-size:.6rem;">${p.signalType}</span></td>
       <td style="text-align:right;"><span class="${pCls}" style="font-family:'JetBrains Mono',monospace;font-size:.72rem;">${pSign}${p.ltpChngPct.toFixed(2)}%</span></td>
@@ -1212,7 +1230,7 @@ function buildDvDetail(r){
   return `<div class="dv-flat-table-wrap">
     <table>
       <thead><tr>
-        <th>Time</th><th>Symbol</th><th>Type</th><th>Signal</th>
+        <th>Time</th><th>Symbol</th><th>Expiry</th><th>Type</th><th>Signal</th>
         <th style="text-align:right;">LTP%</th>
         <th style="text-align:right;">OI%</th>
         <th style="text-align:right;">LTP</th>
@@ -1302,3 +1320,4 @@ setInterval(loadSnapshotList, 5 * 60 * 1000);
 </script>
 </body>
 </html>
+

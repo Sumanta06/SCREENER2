@@ -1621,7 +1621,7 @@ async function loadBaselines(){
     sel.options[0].text='— select baseline —';
     _allBaselines.forEach((b,i)=>{
       const opt=document.createElement('option');
-      opt.value=b.key; opt.text=b.timeStr+(i===0?' (latest)':'');
+      opt.value=b.key; opt.text=b.timeStr+(b.label==='manual'?' 📌':'')+( i===0?' (latest)':'');
       sel.appendChild(opt);
     });
     // Previous selection restore karo, warna latest select karo

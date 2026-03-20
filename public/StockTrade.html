@@ -746,20 +746,23 @@ input#pin-input:focus{border-color:var(--b);}
 
 /* ── Staleness tags ── */
 .stale-tag{display:inline-flex;align-items:center;gap:3px;
-  font-size:.6rem;font-weight:700;padding:2px 7px;border-radius:4px;
-  white-space:nowrap;margin-right:4px;}
-.stale-fresh{background:var(--g-dim);   color:var(--g-text);   border:1px solid var(--g-mid);}
-.stale-watch{background:var(--gold-dim);color:var(--gold);     border:1px solid var(--gold-mid);}
-.stale-old  {background:var(--orange-dim);color:var(--orange-text);border:1px solid var(--orange-mid);}
-.stale-vold {background:var(--r-dim);   color:var(--r-text);   border:1px solid var(--r-mid);}
+  font-size:.62rem;font-weight:800;padding:3px 8px;border-radius:5px;
+  white-space:nowrap;margin-right:4px;flex-shrink:0;}
+/* Hard-coded colors so invert/theme never breaks visibility */
+.stale-fresh{background:#003d20;color:#00ff88;border:1.5px solid #00cc6a;}
+.stale-watch{background:#3d2e00;color:#ffc233;border:1.5px solid #cc9900;}
+.stale-old  {background:#3d1800;color:#ff8c42;border:1.5px solid #cc5500;}
+.stale-vold {background:#3d0010;color:#ff6680;border:1.5px solid #cc0033;}
+/* AGE cell — no wrap, fits both badges */
+.dv-flat-table-wrap td:nth-child(7){white-space:nowrap;overflow:visible;}
 
 /* STRONG / CAUTION badges — NEW */
 .dv-strong-badge{display:inline-flex;align-items:center;gap:3px;
-  font-size:.6rem;font-weight:700;padding:2px 7px;border-radius:4px;
-  background:var(--gold-dim);color:var(--gold);border:1px solid var(--gold-mid);}
+  font-size:.62rem;font-weight:800;padding:3px 8px;border-radius:5px;flex-shrink:0;
+  background:#3d2e00;color:#ffc233;border:1.5px solid #cc9900;}
 .dv-caution-badge{display:inline-flex;align-items:center;gap:3px;
-  font-size:.6rem;font-weight:700;padding:2px 7px;border-radius:4px;
-  background:var(--orange-dim);color:var(--orange-text);border:1px solid var(--orange-mid);}
+  font-size:.62rem;font-weight:800;padding:3px 8px;border-radius:5px;flex-shrink:0;
+  background:#3d1800;color:#ff8c42;border:1.5px solid #cc5500;}
 
 /* Strong summary bar */
 .dv-strong-bar{display:flex;flex-wrap:wrap;gap:5px;

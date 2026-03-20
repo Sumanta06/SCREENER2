@@ -1122,7 +1122,7 @@ function renderDayView(results){
   requestAnimationFrame(()=>setupChipOverflow(body));
 }
 
-/* ── buildDvDetail: flat table ── */
+/* ── buildDvDetail: symbol-grouped table ── */
 function buildDvDetail(r){
   const comparisons=r.comparisons||[];
   if(!comparisons.length)
@@ -1135,12 +1135,26 @@ function buildDvDetail(r){
   });
 
   const scanMs=r.savedAt?new Date(r.savedAt).getTime():Date.now();
-  const allRows=[];
 
+  // Collect all time labels (newest snapshot time + comparison times)
+  const allTimes=[];
+  comparisons.forEach(comp=>{ if(comp.baseTimeStr) allTimes.push(comp.baseTimeStr); });
+
+  // sym+strike+type => { meta, seenAt: Set of timeStr }
+  const groupMap={};
+
+  const MON_FE={Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+  function expiryMsFE(s){
+    if(!s) return Infinity;
+    const [d,m,y]=s.split('-');
+    return new Date(+y,MON_FE[m],+d).getTime();
+  }
+
+  // First pass — collect all rows, find nearest expiry per sym+type
+  const allRows=[];
   comparisons.forEach((comp,cidx)=>{
     const signals=comp.signals||[];
     if(!signals.length) return;
-
     let gapMins=(cidx+1)*10;
     if(comp.baseTimeStr){
       try{
@@ -1153,44 +1167,67 @@ function buildDvDetail(r){
         if(gapMins<0) gapMins=0;
       } catch(e){ gapMins=(cidx+1)*10; }
     }
-    const stale=staleConfig(gapMins);
-
-    // Signals format: "SYM|TYPE|SIGNALTYPE|LTPCHNG|OICHNG|LTP|STRIKE|DIR"
     signals.forEach(s=>{
       const parts=s.split('|');
       const sym=parts[0], type=parts[1], signalType=parts[2];
       const ltpChngPct=parseFloat(parts[3])||0;
       const oiChngPct=parseFloat(parts[4])||0;
       const ltp=parseFloat(parts[5])||0;
-      const strike=parts[6]||'';
+      const strike=parseFloat(parts[6])||0;
       const expiry=parts[7]||'';
-	  const dir=parts[8]||'BULL';
-      allRows.push({sym,type,signalType,ltpChngPct,oiChngPct,ltp,strike,dir,expiry,baseTimeStr:comp.baseTimeStr,gapMins,stale});
+      const underlying=parseFloat(parts[8])||0;
+      const dir=parts[9]||'BULL';
+      allRows.push({sym,type,signalType,ltpChngPct,oiChngPct,ltp,strike,dir,expiry,underlying,baseTimeStr:comp.baseTimeStr,gapMins});
     });
   });
 
   if(!allRows.length)
     return '<div style="padding:12px;color:var(--ink3);font-size:.75rem;text-align:center;">No signals</div>';
 
-  allRows.sort((a,b)=>a.gapMins-b.gapMins||Math.abs(b.ltpChngPct)-Math.abs(a.ltpChngPct));
-
-  // Nearest expiry filter — har sym+type ka sirf nearest expiry rakho
-  const MON_FE={Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
-  function expiryMsFE(s){
-    if(!s) return Infinity;
-    const [d,m,y]=s.split('-');
-    return new Date(+y,MON_FE[m],+d).getTime();
-  }
+  // Nearest expiry per sym+type
   const nearestExp={};
-  for(const r of allRows){
-    const key=r.sym+'|'+r.type;
-    if(!nearestExp[key]||expiryMsFE(r.expiry)<expiryMsFE(nearestExp[key])){
-      nearestExp[key]=r.expiry;
-    }
+  for(const row of allRows){
+    const key=row.sym+'|'+row.type;
+    if(!nearestExp[key]||expiryMsFE(row.expiry)<expiryMsFE(nearestExp[key]))
+      nearestExp[key]=row.expiry;
   }
-  const filteredRows=allRows.filter(r=>!r.expiry||r.expiry===nearestExp[r.sym+'|'+r.type]);
 
-  const rows=filteredRows.map(p=>{
+  // ATM filter for index symbols
+  const ATM_INTERVALS={'NIFTY':50,'BANKNIFTY':100,'FINNIFTY':50};
+  const ATM_RANGE=5;
+
+  // Second pass — group by sym+strike+type
+  for(const row of allRows){
+    const key=row.sym+'|'+row.type;
+    // nearest expiry filter
+    if(row.expiry && row.expiry!==nearestExp[key]) continue;
+    // ATM filter
+    const interval=ATM_INTERVALS[row.sym];
+    if(interval&&row.strike&&row.underlying){
+      if(Math.abs(row.strike-row.underlying)>interval*ATM_RANGE) continue;
+    }
+    const gkey=row.sym+'|'+row.strike+'|'+row.type+'|'+row.dir;
+    if(!groupMap[gkey]){
+      groupMap[gkey]={
+        sym:row.sym, type:row.type, strike:row.strike,
+        signalType:row.signalType, expiry:row.expiry,
+        dir:row.dir, ltpChngPct:row.ltpChngPct,
+        oiChngPct:row.oiChngPct, ltp:row.ltp,
+        seenAt:new Set(), minGap:row.gapMins,
+      };
+    }
+    if(row.baseTimeStr) groupMap[gkey].seenAt.add(row.baseTimeStr);
+    if(row.gapMins<groupMap[gkey].minGap) groupMap[gkey].minGap=row.gapMins;
+  }
+
+  const grouped=Object.values(groupMap);
+  if(!grouped.length)
+    return '<div style="padding:12px;color:var(--ink3);font-size:.75rem;text-align:center;">No signals after filter</div>';
+
+  // Sort: most seen first, then by ltpChngPct
+  grouped.sort((a,b)=>b.seenAt.size-a.seenAt.size||Math.abs(b.ltpChngPct)-Math.abs(a.ltpChngPct));
+
+  const rows=grouped.map(p=>{
     const isStrong=!!strongMap[p.sym];
     const sInfo=strongMap[p.sym]||{};
     const isBull=p.dir==='BULL';
@@ -1199,23 +1236,31 @@ function buildDvDetail(r){
     const pSign=p.ltpChngPct>=0?'+':'';
     const oSign=p.oiChngPct>=0?'+':'';
     const ltpStr=p.ltp?`₹${p.ltp.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}`:'—';
-    const sc=p.stale.cls;
-    const staleStyle=sc==='stale-fresh'
-      ?'color:#00ff88;background:#003d20;border:1.5px solid #00cc6a;'
-      :sc==='stale-watch'
-      ?'color:#ffd666;background:#4a3800;border:1.5px solid #cc9900;'
-      :'color:#ff8899;background:#4a0010;border:1.5px solid #cc0033;';
+    const typeCls=p.type==='FUT'?'type-fut':p.type==='CE'?'type-ce':'type-pe';
+    const strikeDisp=p.strike?`<span style="font-size:.65rem;color:var(--gold);font-family:'JetBrains Mono',monospace;"> ${p.strike}</span>`:'';
+
+    // Seen-at time chips
+    const seenChips=[...p.seenAt].sort().map(t=>`
+      <span style="font-size:.58rem;font-weight:700;padding:2px 5px;border-radius:4px;
+        background:${isBull?'rgba(46,220,138,.15)':'rgba(255,77,106,.15)'};
+        color:${isBull?'var(--bull)':'var(--bear)'};
+        border:1px solid ${isBull?'var(--bull-bd)':'var(--bear-bd)'};
+        white-space:nowrap;">✓ ${t}</span>`).join('');
+
+    // Strength badge
     let strengthBadge='';
     if(isStrong){
       strengthBadge=sInfo.strength==='CAUTION'
         ?`<span class="dv-caution-badge" style="color:#ffaa66;background:#4a2200;border:1.5px solid #cc5500;">⚠️ CAUTION</span>`
         :`<span class="dv-strong-badge" style="color:#ffd666;background:#4a3800;border:1.5px solid #cc9900;">🔥 STRONG</span>`;
     }
-    const typeCls=p.type==='FUT'?'type-fut':p.type==='CE'?'type-ce':'type-pe';
-    const strikeDisp=p.strike?`<span style="font-size:.65rem;color:var(--gold);font-family:'JetBrains Mono',monospace;"> ${p.strike}</span>`:'';
 
-    return `<tr style="opacity:${p.stale.opacity};">
-      <td style="font-family:'JetBrains Mono',monospace;font-size:.68rem;color:inherit;white-space:nowrap;">${p.baseTimeStr}</td>
+    // Seen count badge
+    const seenCount=p.seenAt.size;
+    const seenBadgeColor=seenCount>=3?'#ffd666':seenCount>=2?'#00d0d8':'var(--ink3)';
+    const seenBadgeBg=seenCount>=3?'#4a3800':seenCount>=2?'rgba(0,208,216,.12)':'var(--bg2)';
+
+    return `<tr>
       <td style="font-weight:700;font-size:.75rem;white-space:nowrap;color:inherit;">${p.sym}${strikeDisp}${isStrong?'<span class="strong-fire"> 🔥</span>':''}</td>
       <td style="font-size:.65rem;color:var(--gold);font-family:'JetBrains Mono',monospace;white-space:nowrap;">${p.expiry||'—'}</td>
       <td><span class="${typeCls}">${p.type}</span></td>
@@ -1223,18 +1268,22 @@ function buildDvDetail(r){
       <td style="text-align:right;"><span class="${pCls}" style="font-family:'JetBrains Mono',monospace;font-size:.72rem;">${pSign}${p.ltpChngPct.toFixed(2)}%</span></td>
       <td style="text-align:right;"><span class="${oiCls}" style="font-family:'JetBrains Mono',monospace;font-size:.72rem;">${oSign}${p.oiChngPct.toFixed(2)}%</span></td>
       <td style="font-family:'JetBrains Mono',monospace;font-size:.72rem;text-align:right;color:inherit;">${ltpStr}</td>
-      <td><span class="stale-tag" style="${staleStyle}">${p.stale.icon} ${p.stale.label}</span>${strengthBadge}</td>
+      <td>
+        <span style="font-size:.62rem;font-weight:800;padding:2px 7px;border-radius:4px;background:${seenBadgeBg};color:${seenBadgeColor};border:1px solid ${seenBadgeColor};white-space:nowrap;margin-right:4px;">${seenCount}×</span>
+        <div style="display:inline-flex;gap:3px;flex-wrap:wrap;">${seenChips}</div>
+        ${strengthBadge}
+      </td>
     </tr>`;
   });
 
   return `<div class="dv-flat-table-wrap">
     <table>
       <thead><tr>
-        <th>Time</th><th>Symbol</th><th>Expiry</th><th>Type</th><th>Signal</th>
+        <th>Symbol</th><th>Expiry</th><th>Type</th><th>Signal</th>
         <th style="text-align:right;">LTP%</th>
         <th style="text-align:right;">OI%</th>
         <th style="text-align:right;">LTP</th>
-        <th>Age</th>
+        <th>Seen In</th>
       </tr></thead>
       <tbody>${rows.join('')}</tbody>
     </table>
@@ -1320,4 +1369,3 @@ setInterval(loadSnapshotList, 5 * 60 * 1000);
 </script>
 </body>
 </html>
-

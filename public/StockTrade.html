@@ -1441,8 +1441,7 @@ function renderDayView(results){
   if(!results.length){
     const debug = (window._dvDebug) || {};
     const baseCount = debug.baseCount ?? '?';
-    const msg = debug.message || 'Rolling results abhi tak nahi aaye.';
-    body.innerHTML = `<div class="dv-empty" style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:32px 16px;">
+    const msg = debug.message || 'Rolling results abhi tak nahi aaye.';    body.innerHTML = `<div class="dv-empty" style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:32px 16px;">
       <div style="font-size:2rem;">📭</div>
       <div style="font-size:.9rem;font-weight:600;color:var(--ink2);">Day View Ready Nahi</div>
       <div style="font-size:.78rem;color:var(--ink3);text-align:center;">${msg}</div>
@@ -1576,7 +1575,7 @@ function buildDvTable(r){
 
   // t1/t2 ke base times header mein dikhao
   const t1Time = r.t1BaseTimeStr || 'Previous';
-  const t2Time = r.t2BaseTimeStr || '2nd Previous';
+  const t2Time = r.t2BaseTimeStr || null;
 
   return `<table>
     <thead><tr>
@@ -1584,7 +1583,7 @@ function buildDvTable(r){
       <th>LTP</th>
       <th>OI Change</th>
       <th>vs ${t1Time}</th>
-      <th>vs ${t2Time}</th>
+      ${t2Time ? `<th>vs ${t2Time}</th>` : '<th>2nd Scan Pending</th>'}
     </tr></thead>
     <tbody>${rows.join('')}</tbody>
   </table>`;

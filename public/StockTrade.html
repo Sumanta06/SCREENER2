@@ -155,7 +155,7 @@ function renderAD(results, body, sub){
         </div>` : `<div style="font-size:.68rem;color:var(--ink3);font-style:italic;padding-top:2px;">No signals in this scan</div>`}
       </div>
       <div class="ad-tl-detail" id="${uid}_det">
-        ${hasSignals ? buildADDetail(comparisons) : ''}
+        ${hasSignals ? buildADDetail(comparisons, r.savedAt) : ''}
       </div>
     </div>`;
   });
@@ -164,46 +164,86 @@ function renderAD(results, body, sub){
   requestAnimationFrame(()=>setupChipOverflow(body));
 }
 
-/* ── buildADDetail: one panel per comparison ── */
-function buildADDetail(comparisons){
-  let html = '<div class="ad-detail-inner">';
+/* ── buildADDetail: flat table with TIME + AGE columns ── */
+function buildADDetail(comparisons, scanTimeIso){
+  const allRows = [];
+  const scanMs  = scanTimeIso ? new Date(scanTimeIso).getTime() : Date.now();
 
-  let adFirstOpen = false;
-  comparisons.forEach((comp, idx) => {
+  comparisons.forEach((comp, cidx) => {
     const accSignals  = comp.accSignals  || [];
     const distSignals = comp.distSignals || [];
-    const hasAny      = accSignals.length > 0 || distSignals.length > 0;
-    if(!hasAny) return; // hide 0-signal panels
-    const panelId   = 'adcp_' + Math.random().toString(36).slice(2,8) + '_' + idx;
-    const autoOpen  = !adFirstOpen; // first signals panel = auto open
-    adFirstOpen     = true;
+    if(!accSignals.length && !distSignals.length) return;
 
-    html += `<div class="ad-comp-panel">
-      <div class="ad-comp-head" onclick="adCompToggle('${panelId}')">
-        <div style="display:flex;align-items:center;gap:8px;">
-          <span class="ad-comp-arrow" id="${panelId}_arr">${autoOpen?'▼':'▶'}</span>
-          <span class="ad-comp-label">vs <strong>${comp.baseTimeStr}</strong></span>
-          <span style="font-size:.62rem;color:var(--ink3);">${accSignals.length+distSignals.length} signals</span>
-        </div>
-      </div>
-      <div class="ad-comp-body${autoOpen?' open':''}" id="${panelId}">`;
-
-    if(accSignals.length){
-      html += '<div class="ad-detail-sec acc-sec">◆ Accumulation</div><div class="ad-grid">';
-      accSignals.forEach(s => { html += buildADCard(s, 'acc'); });
-      html += '</div>';
+    // Gap = scan time minus base time
+    let gapMins = (cidx + 1) * 10;
+    if(comp.baseTimeStr){
+      try{
+        const [hhmm, ap] = comp.baseTimeStr.split(' ');
+        let [hh, mm]     = hhmm.split(':').map(Number);
+        if(ap === 'PM' && hh !== 12) hh += 12;
+        if(ap === 'AM' && hh === 12) hh = 0;
+        const baseMs = new Date(new Date(scanMs).toDateString() + ' ' + hh+':'+mm).getTime();
+        gapMins      = Math.round((scanMs - baseMs) / 60000);
+        if(gapMins < 0) gapMins = 0;
+      } catch(e){ gapMins = (cidx+1)*10; }
     }
-    if(distSignals.length){
-      html += '<div class="ad-detail-sec dist-sec">◆ Distribution</div><div class="ad-grid">';
-      distSignals.forEach(s => { html += buildADCard(s, 'dist'); });
-      html += '</div>';
-    }
+    const stale = staleConfig(gapMins);
 
-    html += `</div></div>`;
+    accSignals.forEach(s => allRows.push({ ...s, adType:'acc', baseTimeStr: comp.baseTimeStr, gapMins, stale }));
+    distSignals.forEach(s => allRows.push({ ...s, adType:'dist', baseTimeStr: comp.baseTimeStr, gapMins, stale }));
   });
 
-  html += '</div>';
-  return html;
+  if(!allRows.length)
+    return '<div style="padding:12px;color:var(--ink3);font-size:.75rem;text-align:center;">No signals</div>';
+
+  // Sort: closest time first
+  allRows.sort((a,b) => a.gapMins - b.gapMins);
+
+  const rows = allRows.map(s => {
+    const pPct   = parseFloat(s.pricePct) || 0;
+    const oiPct  = parseFloat(s.oiPct)    || 0;
+    const pCls   = pPct  >= 0 ? 'pct-g' : 'pct-r';
+    const oiCls  = oiPct >= 0 ? 'pct-g' : 'pct-r';
+    const pSign  = pPct  >= 0 ? '+' : '';
+    const oSign  = oiPct >= 0 ? '+' : '';
+    const baseP  = (s.priceBase && parseFloat(s.priceBase) > 0) ? parseFloat(s.priceBase) : parseFloat(s.priceNow)||0;
+    const price  = baseP ? `₹${baseP.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}` : '—';
+    const sc2    = s.stale.cls;
+    const stSty  = sc2==='stale-fresh'
+      ? 'color:#00ff88;background:#003d20;border:1.5px solid #00cc6a;'
+      : sc2==='stale-watch'
+      ? 'color:#ffd666;background:#4a3800;border:1.5px solid #cc9900;'
+      : 'color:#ff8899;background:#4a0010;border:1.5px solid #cc0033;';
+    const typeLbl = s.adType === 'acc' ? '◆ Acc' : '◆ Dist';
+    const typeClr = s.adType === 'acc' ? 'var(--teal-text)' : 'var(--orange-text)';
+    const typeBg  = s.adType === 'acc' ? 'var(--teal-dim)'  : 'var(--orange-dim)';
+    const typeBdr = s.adType === 'acc' ? 'var(--teal-mid)'  : 'var(--orange-mid)';
+
+    return `<tr style="opacity:${s.stale.opacity};">
+      <td style="font-family:'JetBrains Mono',monospace;font-size:.68rem;white-space:nowrap;color:inherit;">${s.baseTimeStr}</td>
+      <td style="font-weight:700;font-size:.75rem;white-space:nowrap;color:inherit;">${s.symbol}</td>
+      <td><span style="display:inline-flex;align-items:center;gap:3px;font-size:.62rem;font-weight:700;
+        padding:2px 8px;border-radius:4px;white-space:nowrap;
+        color:${typeClr};background:${typeBg};border:1px solid ${typeBdr};">${typeLbl}</span></td>
+      <td style="text-align:right;"><span class="${pCls}" style="font-family:'JetBrains Mono',monospace;font-size:.72rem;">${pSign}${pPct.toFixed(2)}%</span></td>
+      <td style="text-align:right;"><span class="${oiCls}" style="font-family:'JetBrains Mono',monospace;font-size:.72rem;">${oSign}${oiPct.toFixed(2)}%</span></td>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:.72rem;text-align:right;color:inherit;">${price}</td>
+      <td><span class="stale-tag" style="${stSty}">${s.stale.icon} ${s.stale.label}</span></td>
+    </tr>`;
+  });
+
+  return `<div class="dv-flat-table-wrap" style="padding:8px 0;">
+    <table>
+      <thead><tr>
+        <th>Time</th><th>Symbol</th><th>Type</th>
+        <th style="text-align:right;">Price Δ</th>
+        <th style="text-align:right;">OI Δ</th>
+        <th style="text-align:right;">Base Price</th>
+        <th>Age</th>
+      </tr></thead>
+      <tbody>${rows.join('')}</tbody>
+    </table>
+  </div>`;
 }
 
 function adCompToggle(panelId){
@@ -748,21 +788,20 @@ input#pin-input:focus{border-color:var(--b);}
 .stale-tag{display:inline-flex;align-items:center;gap:3px;
   font-size:.62rem;font-weight:800;padding:3px 8px;border-radius:5px;
   white-space:nowrap;margin-right:4px;flex-shrink:0;}
-/* Hard-coded colors so invert/theme never breaks visibility */
-.stale-fresh{background:#003d20;color:#00ff88;border:1.5px solid #00cc6a;}
-.stale-watch{background:#3d2e00;color:#ffc233;border:1.5px solid #cc9900;}
-.stale-old  {background:#3d1800;color:#ff8c42;border:1.5px solid #cc5500;}
-.stale-vold {background:#3d0010;color:#ff6680;border:1.5px solid #cc0033;}
-/* AGE cell — no wrap, fits both badges */
-.dv-flat-table-wrap td:nth-child(7){white-space:nowrap;overflow:visible;}
+/* Stale colors — inline via JS, CSS here as fallback */
+.stale-fresh{background:#003d20;color:#00ff88 !important;border:1.5px solid #00cc6a;}
+.stale-watch{background:#4a3800;color:#ffd666 !important;border:1.5px solid #cc9900;}
+.stale-vold {background:#4a0010;color:#ff8899 !important;border:1.5px solid #cc0033;}
+/* AGE cell — no wrap */
+.dv-flat-table-wrap td:last-child{white-space:nowrap;overflow:visible;}
 
 /* STRONG / CAUTION badges — NEW */
 .dv-strong-badge{display:inline-flex;align-items:center;gap:3px;
   font-size:.62rem;font-weight:800;padding:3px 8px;border-radius:5px;flex-shrink:0;
-  background:#3d2e00;color:#ffc233;border:1.5px solid #cc9900;}
+  background:#4a3800;color:#ffd666 !important;border:1.5px solid #cc9900;}
 .dv-caution-badge{display:inline-flex;align-items:center;gap:3px;
   font-size:.62rem;font-weight:800;padding:3px 8px;border-radius:5px;flex-shrink:0;
-  background:#3d1800;color:#ff8c42;border:1.5px solid #cc5500;}
+  background:#4a2200;color:#ffaa66 !important;border:1.5px solid #cc5500;}
 
 /* Strong summary bar */
 .dv-strong-bar{display:flex;flex-wrap:wrap;gap:5px;
@@ -1929,9 +1968,8 @@ function renderDayView(results){
 /* ── buildDvDetail: flat table with TIME + STALENESS columns ── */
 function staleConfig(gapMins){
   if(gapMins <  20) return { icon:'●', label:'Fresh',   cls:'stale-fresh',  opacity:1.0  };
-  if(gapMins <  40) return { icon:'◐', label:'Watch',   cls:'stale-watch',  opacity:0.90 };
-  if(gapMins <  60) return { icon:'⚠', label:'Stale',   cls:'stale-old',    opacity:0.75 };
-  return               { icon:'⛔', label:'Very Old', cls:'stale-vold',   opacity:0.50 };
+  if(gapMins <  40) return { icon:'◐', label:'Watch',   cls:'stale-watch',  opacity:0.85 };
+  return               { icon:'⛔', label:'Very Old', cls:'stale-vold',   opacity:0.55 };
 }
 
 function buildDvDetail(r){
@@ -1949,34 +1987,34 @@ function buildDvDetail(r){
 
   // Collect ALL rows from ALL comparisons — flat
   const allRows = [];
-  const scanTime = r.savedAt ? new Date(r.savedAt).getTime() : Date.now();
+  const scanMs  = r.savedAt ? new Date(r.savedAt).getTime() : Date.now();
 
   comparisons.forEach((comp, cidx) => {
     const signals = comp.signals || [];
     if(!signals.length) return;
-    // Estimate base time from baseTimeStr — use scan time minus index*10min as fallback
-    // Better: parse baseTimeStr hh:mm AM/PM
-    let gapMins = (cidx + 1) * 10; // fallback
+    // Gap = scan time minus base time
+    let gapMins = (cidx + 1) * 10;
     if(comp.baseTimeStr){
       try{
         const [hhmm, ap] = comp.baseTimeStr.split(' ');
         let [hh, mm]     = hhmm.split(':').map(Number);
         if(ap === 'PM' && hh !== 12) hh += 12;
         if(ap === 'AM' && hh === 12) hh = 0;
-        const baseMs = new Date(new Date(scanTime).toDateString() + ' ' + hh+':'+mm).getTime();
-        gapMins      = Math.round((scanTime - baseMs) / 60000);
+        const baseMs = new Date(new Date(scanMs).toDateString() + ' ' + hh+':'+mm).getTime();
+        gapMins      = Math.round((scanMs - baseMs) / 60000);
         if(gapMins < 0) gapMins = 0;
       } catch(e){ gapMins = (cidx+1)*10; }
     }
     const stale = staleConfig(gapMins);
 
     signals.forEach(s => {
-      const [sym,type,pricePct,oiPct,priceNow] = s.split(':');
+      const [sym,type,pricePct,oiPct,priceNow,oiNow,priceBase] = s.split(':');
       allRows.push({
         sym, type,
-        pricePct : parseFloat(pricePct)||0,
-        oiPct    : parseFloat(oiPct)||0,
-        priceNow : parseFloat(priceNow)||0,
+        pricePct  : parseFloat(pricePct)||0,
+        oiPct     : parseFloat(oiPct)||0,
+        priceNow  : parseFloat(priceNow)||0,
+        priceBase : parseFloat(priceBase)||0,
         baseTimeStr: comp.baseTimeStr || '—',
         gapMins, stale,
         cidx,
@@ -1993,31 +2031,41 @@ function buildDvDetail(r){
   const rows = allRows.map(p => {
     const isStrong  = !!strongMap[p.sym];
     const sInfo     = strongMap[p.sym] || {};
-    const priceStr  = p.priceNow ? `₹${p.priceNow.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}` : '—';
+    const basePrice = (p.priceBase && p.priceBase > 0) ? p.priceBase : p.priceNow;
+    const priceStr  = basePrice ? `₹${basePrice.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}` : '—';
     const pCls      = p.pricePct >= 0 ? 'pct-g' : 'pct-r';
     const oiCls     = p.oiPct    >= 0 ? 'pct-g' : 'pct-r';
     const pSign     = p.pricePct >= 0 ? '+' : '';
+    const sc        = p.stale.cls;
+    const staleStyle= sc==='stale-fresh'
+      ? 'color:#00ff88;background:#003d20;border:1.5px solid #00cc6a;'
+      : sc==='stale-watch'
+      ? 'color:#ffd666;background:#4a3800;border:1.5px solid #cc9900;'
+      : 'color:#ff8899;background:#4a0010;border:1.5px solid #cc0033;';
     let strengthBadge = '';
     if(isStrong){
       strengthBadge = sInfo.strength === 'CAUTION'
-        ? `<span class="dv-caution-badge">⚠️ CAUTION</span>`
-        : `<span class="dv-strong-badge">🔥 STRONG</span>`;
+        ? `<span class="dv-caution-badge" style="color:#ffaa66;background:#4a2200;border:1.5px solid #cc5500;">⚠️ CAUTION</span>`
+        : `<span class="dv-strong-badge" style="color:#ffd666;background:#4a3800;border:1.5px solid #cc9900;">🔥 STRONG</span>`;
     }
     return `<tr style="opacity:${p.stale.opacity};">
-      <td style="font-family:'JetBrains Mono',monospace;font-size:.68rem;color:var(--ink3);white-space:nowrap;">${p.baseTimeStr}</td>
-      <td class="sym-col" style="color:inherit;">${p.sym}${isStrong?'<span class="strong-fire"> 🔥</span>':''}</td>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:.68rem;color:inherit;white-space:nowrap;">${p.baseTimeStr}</td>
+      <td style="font-weight:700;font-size:.75rem;white-space:nowrap;color:inherit;">${p.sym}${isStrong?'<span class="strong-fire"> 🔥</span>':''}</td>
       <td><span class="sig-pill ${p.type}">${SIG_LABELS[p.type]||p.type}</span></td>
-      <td><span class="${pCls}" style="font-family:'JetBrains Mono',monospace;font-size:.72rem;">${pSign}${p.pricePct.toFixed(2)}%</span></td>
-      <td><span class="${oiCls}" style="font-family:'JetBrains Mono',monospace;font-size:.72rem;">${p.oiPct>=0?'+':''}${p.oiPct.toFixed(2)}%</span></td>
-      <td style="font-family:'JetBrains Mono',monospace;font-size:.72rem;">${priceStr}</td>
-      <td><span class="stale-tag ${p.stale.cls}">${p.stale.icon} ${p.stale.label}</span>${strengthBadge}</td>
+      <td style="text-align:right;"><span class="${pCls}" style="font-family:'JetBrains Mono',monospace;font-size:.72rem;">${pSign}${p.pricePct.toFixed(2)}%</span></td>
+      <td style="text-align:right;"><span class="${oiCls}" style="font-family:'JetBrains Mono',monospace;font-size:.72rem;">${p.oiPct>=0?'+':''}${p.oiPct.toFixed(2)}%</span></td>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:.72rem;text-align:right;color:inherit;">${priceStr}</td>
+      <td><span class="stale-tag" style="${staleStyle}">${p.stale.icon} ${p.stale.label}</span>${strengthBadge}</td>
     </tr>`;
   });
 
   return `<div class="dv-flat-table-wrap"><table>
     <thead><tr>
       <th>Time</th><th>Symbol</th><th>Signal</th>
-      <th>Price Δ</th><th>OI Δ</th><th>Price Now</th><th>Age</th>
+      <th style="text-align:right;">Price Δ</th>
+      <th style="text-align:right;">OI Δ</th>
+      <th style="text-align:right;">Base Price</th>
+      <th>Age</th>
     </tr></thead>
     <tbody>${rows.join('')}</tbody>
   </table></div>`;

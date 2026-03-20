@@ -364,23 +364,21 @@ td.gold-c{color:var(--gold);}
 .type-pe {display:inline-flex;align-items:center;padding:2px 7px;border-radius:20px;font-size:11px;font-weight:600;background:rgba(245,166,35,.12);color:var(--gold);}
 
 /* Invert expanded card — Blue theme → light */
-[data-theme="blue"] .dv-tl-item.expanded{background:#d4f0f2 !important;border-color:#7ecfd4 !important;color:#021f24 !important;}
-[data-theme="blue"] .dv-tl-item.expanded .dv-tl-time{color:#021f24 !important;}
-[data-theme="blue"] .dv-tl-item.expanded .dv-tl-strong{color:#b87010 !important;}
-[data-theme="blue"] .dv-tl-item.expanded .dv-flat-table-wrap td{color:#021f24 !important;}
-[data-theme="blue"] .dv-tl-item.expanded .dv-flat-table-wrap .sym-col{color:#021f24 !important;}
-[data-theme="blue"] .dv-tl-item.expanded .dv-flat-table-wrap thead tr{background:#aaebee !important;}
-[data-theme="blue"] .dv-tl-item.expanded .dv-flat-table-wrap th{color:#3d9ea4 !important;}
-[data-theme="blue"] .dv-tl-item.expanded .dv-flat-table-wrap td{border-color:#7ecfd4 !important;}
+/* Expanded card — simple plain light grey, both themes */
+.dv-tl-item.expanded .dv-tl-time{color:#1a1a1a !important;}
+.dv-tl-item.expanded .dv-tl-strong{color:#b87010 !important;}
+.dv-tl-item.expanded .dv-detail{background:#f5f5f5 !important;}
+.dv-tl-item.expanded .dv-detail td{color:#1a1a1a !important;border-color:#ddd !important;}
+.dv-tl-item.expanded .dv-detail th{color:#555 !important;background:#e0e0e0 !important;}
+.dv-tl-item.expanded .dv-detail table{background:#f5f5f5 !important;}
+.dv-tl-item.expanded .dv-detail tr{background:#f5f5f5 !important;}
+.dv-tl-item.expanded .dv-detail tr:hover{background:#ececec !important;}
+.dv-tl-item.expanded .dv-detail .dv-sec-label{color:#666 !important;}
+.dv-tl-item.expanded .dv-detail .dv-sec-label::after{background:#ccc !important;}
 
-[data-theme="white"] .dv-tl-item.expanded{background:#111c2e !important;border-color:#243654 !important;color:#e8f0fa !important;}
-[data-theme="white"] .dv-tl-item.expanded .dv-tl-time{color:#e8f0fa !important;}
-[data-theme="white"] .dv-tl-item.expanded .dv-tl-strong{color:#f5a623 !important;}
-[data-theme="white"] .dv-tl-item.expanded .dv-flat-table-wrap td{color:#e8f0fa !important;}
-[data-theme="white"] .dv-tl-item.expanded .dv-flat-table-wrap .sym-col{color:#e8f0fa !important;}
-[data-theme="white"] .dv-tl-item.expanded .dv-flat-table-wrap thead tr{background:#08101a !important;}
-[data-theme="white"] .dv-tl-item.expanded .dv-flat-table-wrap th{color:#7a9ab8 !important;}
-[data-theme="white"] .dv-tl-item.expanded .dv-flat-table-wrap td{border-color:#1e2f48 !important;}
+/* Stock Options symbol header readable in both themes */
+.dv-stock-opt-header{color:var(--ink) !important;}
+[data-theme="white"] .dv-stock-opt-header{color:#1a2540 !important;}
 
 /* Section-dimmed leaderboard */
 .section-dimmed{opacity:.28;filter:brightness(.55);transition:opacity .2s,filter .2s;pointer-events:none;}
@@ -507,6 +505,7 @@ td.gold-c{color:var(--gold);}
 <script>
 'use strict';
 const WORKER = 'https://spurts.sumantasahoo.workers.dev/';
+const WORKER_OLD = 'https://spurt-b.21aoips3531a1zi.workers.dev/';
 const INDEX_SYMS = new Set(['NIFTY','BANKNIFTY','FINNIFTY','MIDCPNIFTY','SENSEX','BANKEX','NIFTYNXT50']);
 
 let _data   = null;
@@ -1122,7 +1121,7 @@ function renderDayView(results){
   requestAnimationFrame(()=>setupChipOverflow(body));
 }
 
-/* ── buildDvDetail: symbol-grouped table ── */
+/* ── buildDvDetail: sectioned grouped view ── */
 function buildDvDetail(r){
   const comparisons=r.comparisons||[];
   if(!comparisons.length)
@@ -1135,14 +1134,6 @@ function buildDvDetail(r){
   });
 
   const scanMs=r.savedAt?new Date(r.savedAt).getTime():Date.now();
-
-  // Collect all time labels (newest snapshot time + comparison times)
-  const allTimes=[];
-  comparisons.forEach(comp=>{ if(comp.baseTimeStr) allTimes.push(comp.baseTimeStr); });
-
-  // sym+strike+type => { meta, seenAt: Set of timeStr }
-  const groupMap={};
-
   const MON_FE={Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
   function expiryMsFE(s){
     if(!s) return Infinity;
@@ -1150,7 +1141,6 @@ function buildDvDetail(r){
     return new Date(+y,MON_FE[m],+d).getTime();
   }
 
-  // First pass — collect all rows, find nearest expiry per sym+type
   const allRows=[];
   comparisons.forEach((comp,cidx)=>{
     const signals=comp.signals||[];
@@ -1169,7 +1159,7 @@ function buildDvDetail(r){
     }
     signals.forEach(s=>{
       const parts=s.split('|');
-      const sym=parts[0], type=parts[1], signalType=parts[2];
+      const sym=parts[0],type=parts[1],signalType=parts[2];
       const ltpChngPct=parseFloat(parts[3])||0;
       const oiChngPct=parseFloat(parts[4])||0;
       const ltp=parseFloat(parts[5])||0;
@@ -1184,7 +1174,6 @@ function buildDvDetail(r){
   if(!allRows.length)
     return '<div style="padding:12px;color:var(--ink3);font-size:.75rem;text-align:center;">No signals</div>';
 
-  // Nearest expiry per sym+type
   const nearestExp={};
   for(const row of allRows){
     const key=row.sym+'|'+row.type;
@@ -1192,101 +1181,165 @@ function buildDvDetail(r){
       nearestExp[key]=row.expiry;
   }
 
-  // ATM filter for index symbols
   const ATM_INTERVALS={'NIFTY':50,'BANKNIFTY':100,'FINNIFTY':50};
   const ATM_RANGE=5;
-
-  // Second pass — group by sym+strike+type
+  const groupMap={};
   for(const row of allRows){
     const key=row.sym+'|'+row.type;
-    // nearest expiry filter
-    if(row.expiry && row.expiry!==nearestExp[key]) continue;
-    // ATM filter
+    if(row.expiry&&row.expiry!==nearestExp[key]) continue;
     const interval=ATM_INTERVALS[row.sym];
     if(interval&&row.strike&&row.underlying){
       if(Math.abs(row.strike-row.underlying)>interval*ATM_RANGE) continue;
     }
     const gkey=row.sym+'|'+row.strike+'|'+row.type+'|'+row.dir;
     if(!groupMap[gkey]){
-      groupMap[gkey]={
-        sym:row.sym, type:row.type, strike:row.strike,
-        signalType:row.signalType, expiry:row.expiry,
-        dir:row.dir, ltpChngPct:row.ltpChngPct,
-        oiChngPct:row.oiChngPct, ltp:row.ltp,
-        seenAt:new Set(), minGap:row.gapMins,
-      };
+      groupMap[gkey]={sym:row.sym,type:row.type,strike:row.strike,signalType:row.signalType,expiry:row.expiry,dir:row.dir,ltpChngPct:row.ltpChngPct,oiChngPct:row.oiChngPct,ltp:row.ltp,seenAt:new Set()};
     }
     if(row.baseTimeStr) groupMap[gkey].seenAt.add(row.baseTimeStr);
-    if(row.gapMins<groupMap[gkey].minGap) groupMap[gkey].minGap=row.gapMins;
   }
 
   const grouped=Object.values(groupMap);
   if(!grouped.length)
     return '<div style="padding:12px;color:var(--ink3);font-size:.75rem;text-align:center;">No signals after filter</div>';
 
-  // Sort: most seen first, then by ltpChngPct
-  grouped.sort((a,b)=>b.seenAt.size-a.seenAt.size||Math.abs(b.ltpChngPct)-Math.abs(a.ltpChngPct));
+  const idxOpt=[], stockFut=[], stockOpt=[];
+  for(const p of grouped){
+    if(INDEX_SYMS.has(p.sym)) idxOpt.push(p);
+    else if(p.type==='FUT') stockFut.push(p);
+    else stockOpt.push(p);
+  }
 
-  const rows=grouped.map(p=>{
-    const isStrong=!!strongMap[p.sym];
-    const sInfo=strongMap[p.sym]||{};
+  function makeSeenChips(p){
     const isBull=p.dir==='BULL';
-    const pCls=p.ltpChngPct>=0?'bull-c':'bear-c';
-    const oiCls=p.oiChngPct>=0?'bull-c':'bear-c';
-    const pSign=p.ltpChngPct>=0?'+':'';
-    const oSign=p.oiChngPct>=0?'+':'';
-    const ltpStr=p.ltp?`₹${p.ltp.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}`:'—';
-    const typeCls=p.type==='FUT'?'type-fut':p.type==='CE'?'type-ce':'type-pe';
-    const strikeDisp=p.strike?`<span style="font-size:.65rem;color:var(--gold);font-family:'JetBrains Mono',monospace;"> ${p.strike}</span>`:'';
-
-    // Seen-at time chips
-    const seenChips=[...p.seenAt].sort().map(t=>`
-      <span style="font-size:.58rem;font-weight:700;padding:2px 5px;border-radius:4px;
-        background:${isBull?'rgba(46,220,138,.15)':'rgba(255,77,106,.15)'};
-        color:${isBull?'var(--bull)':'var(--bear)'};
-        border:1px solid ${isBull?'var(--bull-bd)':'var(--bear-bd)'};
-        white-space:nowrap;">✓ ${t}</span>`).join('');
-
-    // Strength badge
-    let strengthBadge='';
-    if(isStrong){
-      strengthBadge=sInfo.strength==='CAUTION'
-        ?`<span class="dv-caution-badge" style="color:#ffaa66;background:#4a2200;border:1.5px solid #cc5500;">⚠️ CAUTION</span>`
-        :`<span class="dv-strong-badge" style="color:#ffd666;background:#4a3800;border:1.5px solid #cc9900;">🔥 STRONG</span>`;
-    }
-
-    // Seen count badge
-    const seenCount=p.seenAt.size;
-    const seenBadgeColor=seenCount>=3?'#ffd666':seenCount>=2?'#00d0d8':'var(--ink3)';
-    const seenBadgeBg=seenCount>=3?'#4a3800':seenCount>=2?'rgba(0,208,216,.12)':'var(--bg2)';
-
-    return `<tr>
-      <td style="font-weight:700;font-size:.75rem;white-space:nowrap;color:inherit;">${p.sym}${strikeDisp}${isStrong?'<span class="strong-fire"> 🔥</span>':''}</td>
-      <td style="font-size:.65rem;color:var(--gold);font-family:'JetBrains Mono',monospace;white-space:nowrap;">${p.expiry||'—'}</td>
-      <td><span class="${typeCls}">${p.type}</span></td>
-      <td><span class="pill ${isBull?'bull':'bear'}" style="font-size:.6rem;">${p.signalType}</span></td>
-      <td style="text-align:right;"><span class="${pCls}" style="font-family:'JetBrains Mono',monospace;font-size:.72rem;">${pSign}${p.ltpChngPct.toFixed(2)}%</span></td>
-      <td style="text-align:right;"><span class="${oiCls}" style="font-family:'JetBrains Mono',monospace;font-size:.72rem;">${oSign}${p.oiChngPct.toFixed(2)}%</span></td>
-      <td style="font-family:'JetBrains Mono',monospace;font-size:.72rem;text-align:right;color:inherit;">${ltpStr}</td>
-      <td>
-        <span style="font-size:.62rem;font-weight:800;padding:2px 7px;border-radius:4px;background:${seenBadgeBg};color:${seenBadgeColor};border:1px solid ${seenBadgeColor};white-space:nowrap;margin-right:4px;">${seenCount}×</span>
-        <div style="display:inline-flex;gap:3px;flex-wrap:wrap;">${seenChips}</div>
-        ${strengthBadge}
-      </td>
-    </tr>`;
-  });
-
-  return `<div class="dv-flat-table-wrap">
-    <table>
+    return [...p.seenAt].sort().map(t=>`<span style="font-size:.58rem;font-weight:700;padding:2px 5px;border-radius:4px;background:${isBull?'rgba(46,220,138,.15)':'rgba(255,77,106,.15)'};color:${isBull?'var(--bull)':'var(--bear)'};border:1px solid ${isBull?'var(--bull-bd)':'var(--bear-bd)'};white-space:nowrap;">&#10003; ${t}</span>`).join('');
+  }
+  function makeStrengthBadge(sym){
+    const sInfo=strongMap[sym];
+    if(!sInfo) return '';
+    return sInfo.strength==='CAUTION'?`<span class="dv-caution-badge">&#9888;&#65039; CAUTION</span>`:`<span class="dv-strong-badge">&#128293; STRONG</span>`;
+  }
+  function seenBadge(p){
+    const n=p.seenAt.size;
+    const c=n>=3?'#ffd666':n>=2?'#00d0d8':'var(--ink3)';
+    const bg=n>=3?'#4a3800':n>=2?'rgba(0,208,216,.12)':'var(--bg2)';
+    return `<span style="font-size:.62rem;font-weight:800;padding:2px 7px;border-radius:4px;background:${bg};color:${c};border:1px solid ${c};white-space:nowrap;margin-right:4px;">${n}x</span>`;
+  }
+  function makeOptRows(optRows,optType,sym){
+    if(!optRows.length) return '';
+    optRows.sort((a,b)=>b.seenAt.size-a.seenAt.size||Math.abs(b.ltpChngPct)-Math.abs(a.ltpChngPct));
+    const typeCls=optType==='CE'?'type-ce':'type-pe';
+    const expiry=optRows[0]?.expiry||'';
+    let h=`<div style="padding:5px 12px;border-bottom:1px solid var(--border);background:var(--card);cursor:pointer;display:flex;align-items:center;gap:8px;user-select:none;" onclick="(function(el){var t=el.nextElementSibling;var open=t.style.display!=='none';t.style.display=open?'none':'';el.querySelector('.dv-toggle-icon').textContent=open?'▶':'▼';})(this)">
+      <span class="${typeCls}">${optType}</span>
+      <span style="font-size:.6rem;color:var(--ink3);">${optRows.length} signals</span>
+      ${expiry?`<span style="font-size:.6rem;color:var(--gold);font-family:'JetBrains Mono',monospace;">${expiry}</span>`:''}
+      <span class="dv-toggle-icon" style="font-size:.6rem;color:var(--ink3);margin-left:auto;">▶</span>
+    </div>
+    <div style="display:none;">
+    <div class="dv-flat-table-wrap" style="margin:0;">
+    <table style="table-layout:fixed;width:100%;min-width:620px;">
+      <colgroup>
+        <col style="width:80px;">
+        <col style="width:100px;">
+        <col style="width:155px;">
+        <col style="width:80px;">
+        <col style="width:80px;">
+        <col style="width:80px;">
+        <col>
+      </colgroup>
       <thead><tr>
-        <th>Symbol</th><th>Expiry</th><th>Type</th><th>Signal</th>
+        <th>Strike</th>
+        <th>Expiry</th>
+        <th>Signal</th>
         <th style="text-align:right;">LTP%</th>
         <th style="text-align:right;">OI%</th>
         <th style="text-align:right;">LTP</th>
         <th>Seen In</th>
-      </tr></thead>
-      <tbody>${rows.join('')}</tbody>
-    </table>
+      </tr></thead><tbody>`;
+    for(const p of optRows){
+      const isBull=p.dir==='BULL';
+      const pCls=p.ltpChngPct>=0?'bull-c':'bear-c';
+      const oiCls=p.oiChngPct>=0?'bull-c':'bear-c';
+      h+=`<tr>
+        <td style="font-weight:700;font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--gold);">${p.strike||'&mdash;'}</td>
+        <td style="font-size:.65rem;color:var(--ink2);font-family:'JetBrains Mono',monospace;">${p.expiry||'&mdash;'}</td>
+        <td><span class="pill ${isBull?'bull':'bear'}" style="font-size:.6rem;">${p.signalType}</span></td>
+        <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:.72rem;"><span class="${pCls}">${p.ltpChngPct>=0?'+':''}${p.ltpChngPct.toFixed(2)}%</span></td>
+        <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:.72rem;"><span class="${oiCls}">${p.oiChngPct>=0?'+':''}${p.oiChngPct.toFixed(2)}%</span></td>
+        <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:.72rem;">&#8377;${p.ltp.toFixed(2)}</td>
+        <td style="white-space:nowrap;">${seenBadge(p)}<span style="display:inline-flex;gap:3px;flex-wrap:wrap;">${makeSeenChips(p)}</span>${makeStrengthBadge(p.sym)}</td>
+      </tr>`;
+    }
+    return h+'</tbody></table></div></div>';
+  }
+
+  function buildIndexSection(rows){
+    if(!rows.length) return '';
+    const bySym={};
+    for(const p of rows){ if(!bySym[p.sym]) bySym[p.sym]={CE:[],PE:[]}; if(p.type==='CE') bySym[p.sym].CE.push(p); else if(p.type==='PE') bySym[p.sym].PE.push(p); }
+    let h=`<div class="dv-sec-label" style="margin:10px 0 6px;">&#128202; Index Options</div>`;
+    for(const [sym,{CE,PE}] of Object.entries(bySym)){
+      // Index card — accent border left, distinct background
+      h+=`<div style="background:var(--bg2);border:1px solid var(--acc-bd);border-left:4px solid var(--accent);border-radius:8px;margin-bottom:8px;overflow:hidden;">
+        <div style="padding:8px 12px;font-weight:700;font-size:.85rem;border-bottom:1px solid var(--border);color:var(--accent);background:var(--acc-bg);letter-spacing:.5px;">&#128208; ${sym}</div>
+        ${makeOptRows(CE,'CE',sym)}${makeOptRows(PE,'PE',sym)}
+      </div>`;
+    }
+    return h;
+  }
+
+  function buildFutSection(rows){
+    if(!rows.length) return '';
+    rows.sort((a,b)=>b.seenAt.size-a.seenAt.size||Math.abs(b.ltpChngPct)-Math.abs(a.ltpChngPct));
+    // Futures — collapsible, purple left border
+    const uid='dvfut_'+Math.random().toString(36).slice(2,6);
+    let h=`<div class="dv-sec-label" style="margin:10px 0 6px;">&#128200; Stock Futures</div>
+    <div style="background:var(--bg2);border:1px solid var(--border);border-left:4px solid #a855f7;border-radius:8px;margin-bottom:8px;overflow:hidden;">
+      <div style="padding:7px 12px;font-weight:700;font-size:.78rem;border-bottom:1px solid var(--border);color:#a855f7;background:rgba(168,85,247,.08);cursor:pointer;display:flex;align-items:center;gap:8px;user-select:none;" onclick="(function(el){var t=el.nextElementSibling;var open=t.style.display!=='none';t.style.display=open?'none':'';el.querySelector('.dv-toggle-icon').textContent=open?'▶':'▼';})(this)">
+        <span>&#9654; Futures</span>
+        <span style="font-size:.6rem;color:var(--ink3);">${rows.length} symbols</span>
+        <span class="dv-toggle-icon" style="font-size:.6rem;color:var(--ink3);margin-left:auto;">▶</span>
+      </div>
+      <div style="display:none;">
+      <div class="dv-flat-table-wrap"><table style="table-layout:fixed;width:100%;min-width:600px;"><colgroup><col style="width:110px;"><col style="width:110px;"><col style="width:150px;"><col style="width:80px;"><col style="width:80px;"><col style="width:80px;"><col></colgroup>
+      <thead><tr><th>Symbol</th><th>Expiry</th><th>Signal</th><th style="text-align:right;">LTP%</th><th style="text-align:right;">OI%</th><th style="text-align:right;">LTP</th><th>Seen In</th></tr></thead><tbody>`;
+    for(const p of rows){
+      const isStrong=!!strongMap[p.sym];
+      const isBull=p.dir==='BULL';
+      const pCls=p.ltpChngPct>=0?'bull-c':'bear-c';
+      const oiCls=p.oiChngPct>=0?'bull-c':'bear-c';
+      h+=`<tr><td style="font-weight:700;font-size:.75rem;white-space:nowrap;">${p.sym}${isStrong?'<span class="strong-fire"> &#128293;</span>':''}</td><td style="font-size:.65rem;color:var(--gold);font-family:'JetBrains Mono',monospace;">${p.expiry||'&mdash;'}</td><td><span class="pill ${isBull?'bull':'bear'}" style="font-size:.6rem;">${p.signalType}</span></td><td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:.72rem;"><span class="${pCls}">${p.ltpChngPct>=0?'+':''}${p.ltpChngPct.toFixed(2)}%</span></td><td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:.72rem;"><span class="${oiCls}">${p.oiChngPct>=0?'+':''}${p.oiChngPct.toFixed(2)}%</span></td><td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:.72rem;">&#8377;${p.ltp.toFixed(2)}</td><td style="white-space:nowrap;">${seenBadge(p)}<span style="display:inline-flex;gap:3px;flex-wrap:wrap;">${makeSeenChips(p)}</span>${makeStrengthBadge(p.sym)}</td></tr>`;
+    }
+    return h+'</tbody></table></div></div></div>';
+  }
+
+  function buildStockOptSection(rows){
+    if(!rows.length) return '';
+    const bySym={};
+    for(const p of rows){ if(!bySym[p.sym]) bySym[p.sym]={CE:[],PE:[]}; if(p.type==='CE') bySym[p.sym].CE.push(p); else if(p.type==='PE') bySym[p.sym].PE.push(p); }
+    let h=`<div class="dv-sec-label" style="margin:10px 0 6px;">&#128203; Stock Options</div>`;
+    for(const [sym,{CE,PE}] of Object.entries(bySym)){
+      const isStrong=!!strongMap[sym];
+      const expiry=CE[0]?.expiry||PE[0]?.expiry||'';
+      // Stock options — gold left border, distinct from futures
+      h+=`<div style="background:var(--bg2);border:1px solid var(--border);border-left:4px solid var(--gold);border-radius:8px;margin-bottom:8px;overflow:hidden;">
+        <div class="dv-stock-opt-header" style="padding:7px 12px;font-weight:700;font-size:.78rem;border-bottom:1px solid var(--border);background:var(--gold-dim);">
+          ${sym}${isStrong?'<span class="strong-fire"> &#128293;</span>':''}${makeStrengthBadge(sym)}
+          ${expiry?`<span style="font-size:.62rem;color:var(--gold);font-weight:500;margin-left:8px;font-family:'JetBrains Mono',monospace;">${expiry}</span>`:''}
+        </div>
+        ${makeOptRows(CE,'CE',sym)}${makeOptRows(PE,'PE',sym)}
+      </div>`;
+    }
+    return h;
+  }
+
+  return `<div style="padding:0;">
+    <div style="position:sticky;top:0;z-index:10;background:var(--card);border-bottom:2px solid #a855f7;padding:7px 14px;display:flex;align-items:center;gap:10px;">
+      <span style="font-size:.75rem;font-weight:700;color:#a855f7;">🕐 ${r.timeStr12||''}</span>
+      <span style="font-size:.65rem;color:var(--ink3);">${r.savedAt?new Date(r.savedAt).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit'}):''}</span>
+      <span style="font-size:.62rem;color:var(--ink3);margin-left:4px;">· ${r.bullCount||0} Bull · ${r.bearCount||0} Bear</span>
+    </div>
+    <div style="padding:10px 12px;">${buildIndexSection(idxOpt)}${buildFutSection(stockFut)}${buildStockOptSection(stockOpt)}</div>
   </div>`;
 }
 
@@ -1311,7 +1364,7 @@ function dvToggle(uid){
 /* ════════════════════════════════════════
    SNAPSHOT LIST + FETCH OLD
 ════════════════════════════════════════ */
-const WORKER_OLD = 'https://spurt-b.21aoips3531a1zi.workers.dev/';
+// WORKER_OLD moved to top
 
 async function loadSnapshotList(){
   try{

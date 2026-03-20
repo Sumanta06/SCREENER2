@@ -224,11 +224,17 @@ function adTlToggle(uid){
   const det  = document.getElementById(uid+'_det');
   if(!det || !det.innerHTML.trim()) return;
   const isOpen = det.classList.contains('open');
+  // Close all + remove dim
   document.querySelectorAll('.ad-tl-detail.open').forEach(el=>el.classList.remove('open'));
   document.querySelectorAll('.ad-tl-item.expanded').forEach(el=>el.classList.remove('expanded'));
+  document.querySelectorAll('.ad-tl-item.dimmed').forEach(el=>el.classList.remove('dimmed'));
   if(!isOpen){
     det.classList.add('open');
     item.classList.add('expanded');
+    // Dim all other items
+    document.querySelectorAll('.ad-tl-item').forEach(el=>{
+      if(el.id !== uid) el.classList.add('dimmed');
+    });
     setTimeout(()=>item.scrollIntoView({behavior:'smooth',block:'nearest'}),50);
   }
 }
@@ -573,6 +579,34 @@ input#pin-input:focus{border-color:var(--b);}
 .dv-chip{font-size:.62rem;font-weight:600;padding:2px 7px;border-radius:4px;
   background:var(--gold-dim);color:var(--gold);border:1px solid var(--gold-mid);}
 .dv-chip.caution{background:var(--orange-dim);color:var(--orange-text);border:1px solid var(--orange-mid);}
+
+/* ── Dimmed inactive cards ── */
+.ad-tl-item.dimmed{
+  opacity:.35;
+  filter:brightness(.7);
+  transition:opacity .2s,filter .2s;
+  pointer-events:none;
+}
+.dv-tl-item.dimmed{
+  opacity:.35;
+  filter:brightness(.7);
+  transition:opacity .2s,filter .2s;
+  pointer-events:none;
+}
+/* Allow click on dimmed to re-enable */
+.ad-tl-item.dimmed,.dv-tl-item.dimmed{pointer-events:auto;}
+
+/* ── Alternate card colors — odd/even ── */
+.ad-tl-item:nth-child(odd) { background:var(--card); }
+.ad-tl-item:nth-child(even){ background:var(--bg2);  }
+.dv-tl-item:nth-child(odd) { background:var(--card); }
+.dv-tl-item:nth-child(even){ background:var(--bg2);  }
+
+/* ── Hide reprocess button on mobile portrait ── */
+@media(max-width:640px){
+  #ad-reprocess-btn,
+  #dv-reprocess-btn{ display:none !important; }
+}
 
 /* Chip overflow wrapper — NEW */
 .chip-overflow-wrap{
@@ -1883,11 +1917,17 @@ function dvToggle(uid){
   const item = document.getElementById(uid);
   const det  = document.getElementById(uid+'_det');
   const isOpen = det.classList.contains('open');
+  // Close all + remove dim
   document.querySelectorAll('.dv-detail.open').forEach(el=>el.classList.remove('open'));
   document.querySelectorAll('.dv-tl-item.expanded').forEach(el=>el.classList.remove('expanded'));
+  document.querySelectorAll('.dv-tl-item.dimmed').forEach(el=>el.classList.remove('dimmed'));
   if(!isOpen){
     det.classList.add('open');
     item.classList.add('expanded');
+    // Dim all other items
+    document.querySelectorAll('.dv-tl-item').forEach(el=>{
+      if(el.id !== uid) el.classList.add('dimmed');
+    });
     setTimeout(()=>item.scrollIntoView({behavior:'smooth',block:'nearest'}),50);
   }
 }

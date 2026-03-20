@@ -125,10 +125,14 @@ function renderAD(results, body, sub){
     const hasSignals      = totalAccInScan > 0 || totalDistInScan > 0;
     const uid             = 'ad_tl_' + idx;
 
-    // Chip preview — from first comparison
-    const firstComp   = comparisons[0] || {};
-    const previewAcc  = (firstComp.accSignals  || []).slice(0,3);
-    const previewDist = (firstComp.distSignals || []).slice(0,3);
+    // Collect ALL unique symbols across ALL comparisons
+    const accSeen = new Map(), distSeen = new Map();
+    for(const comp of comparisons){
+      for(const s of (comp.accSignals||[]))  if(!accSeen.has(s.symbol))  accSeen.set(s.symbol, s);
+      for(const s of (comp.distSignals||[])) if(!distSeen.has(s.symbol)) distSeen.set(s.symbol, s);
+    }
+    const allAccChips  = [...accSeen.values()];
+    const allDistChips = [...distSeen.values()];
 
     html += `<div class="ad-tl-item${hasSignals ? '' : ' no-sig'}" id="${uid}">
       <div class="ad-tl-head" onclick="adTlToggle('${uid}')">
@@ -136,7 +140,7 @@ function renderAD(results, body, sub){
           <div style="display:flex;align-items:center;gap:8px;">
             <span class="ad-status-dot ${hasSignals ? 'active' : 'idle'}" style="flex-shrink:0;"></span>
             <span class="ad-tl-time">🕐 ${r.timeStr}</span>
-            <span style="font-size:.6rem;color:var(--ink3);">${comparisons.length} comparison${comparisons.length>1?'s':''}</span>
+            <span style="font-size:.6rem;color:var(--ink3);">${comparisons.length} cmp</span>
           </div>
           <span class="ad-tl-counts">
             <span class="ad-tl-acc">${totalAccInScan} Acc</span>
@@ -144,10 +148,10 @@ function renderAD(results, body, sub){
             <span class="ad-tl-dist">${totalDistInScan} Dist</span>
           </span>
         </div>
-        ${hasSignals ? `<div class="ad-tl-chips">
-          ${previewAcc.map(s=>`<span class="ad-chip acc">◆ ${s.symbol}</span>`).join('')}
-          ${previewDist.map(s=>`<span class="ad-chip dist">◆ ${s.symbol}</span>`).join('')}
-          ${comparisons.length > 1 ? `<span class="ad-chip-more">+${comparisons.length-1} more scan${comparisons.length>2?'s':''}</span>` : ''}
+        ${hasSignals ? `<div class="chip-overflow-wrap" data-uid="adchip_${uid}">
+          ${allAccChips.map(s=>`<span class="ad-chip acc" data-chip>◆ ${s.symbol}</span>`).join('')}
+          ${allDistChips.map(s=>`<span class="ad-chip dist" data-chip>◆ ${s.symbol}</span>`).join('')}
+          <span class="chip-more-btn" id="adchip_${uid}_more" style="display:none;" onclick="chipShowAll('adchip_${uid}',event)"></span>
         </div>` : `<div style="font-size:.68rem;color:var(--ink3);font-style:italic;padding-top:2px;">No signals in this scan</div>`}
       </div>
       <div class="ad-tl-detail" id="${uid}_det">
@@ -157,6 +161,7 @@ function renderAD(results, body, sub){
   });
 
   body.innerHTML = html;
+  requestAnimationFrame(()=>setupChipOverflow(body));
 }
 
 /* ── buildADDetail: one panel per comparison ── */
@@ -568,6 +573,24 @@ input#pin-input:focus{border-color:var(--b);}
 .dv-chip{font-size:.62rem;font-weight:600;padding:2px 7px;border-radius:4px;
   background:var(--gold-dim);color:var(--gold);border:1px solid var(--gold-mid);}
 .dv-chip.caution{background:var(--orange-dim);color:var(--orange-text);border:1px solid var(--orange-mid);}
+
+/* Chip overflow wrapper — NEW */
+.chip-overflow-wrap{
+  display:flex;flex-wrap:nowrap;overflow:hidden;
+  gap:5px;padding:5px 0 4px;align-items:center;
+  position:relative;
+}
+.chip-overflow-wrap.expanded{flex-wrap:wrap;}
+.chip-more-btn{
+  flex-shrink:0;cursor:pointer;
+  font-size:.65rem;font-weight:700;
+  padding:3px 8px;border-radius:5px;
+  background:var(--bg3);color:var(--ink2);
+  border:1px solid var(--border2);
+  white-space:nowrap;
+  transition:background .12s;
+}
+.chip-more-btn:hover{background:var(--border2);color:var(--ink);}
 
 /* Preview chips on card — NEW */
 .dv-preview-row{display:flex;flex-wrap:wrap;gap:5px;padding:5px 0 4px;}
@@ -1444,6 +1467,92 @@ const SIG_LABELS = {
 let _dvRefreshTimer = null;
 let _dvLastSavedAt  = null;
 
+/* ════════════════════════════════════════
+   CHIP OVERFLOW — show max chips that fit, rest as ▼+N
+════════════════════════════════════════ */
+function setupChipOverflow(container){
+  const wraps = (container||document).querySelectorAll('.chip-overflow-wrap');
+  wraps.forEach(wrap => {
+    const uid      = wrap.dataset.uid;
+    const moreBtn  = document.getElementById(uid+'_more');
+    const chips    = [...wrap.querySelectorAll('[data-chip]')];
+    if(!chips.length || !moreBtn) return;
+
+    // Reset first
+    chips.forEach(c=>{ c.style.display=''; });
+    moreBtn.style.display = 'none';
+
+    const wrapWidth = wrap.offsetWidth - 60; // 60px reserved for +N button
+    let usedWidth   = 0;
+    let hiddenCount = 0;
+    const gap       = 5;
+
+    chips.forEach(chip => {
+      const cw = chip.offsetWidth + gap;
+      if(usedWidth + cw <= wrapWidth){
+        usedWidth += cw;
+        chip.style.display = '';
+      } else {
+        chip.style.display = 'none';
+        hiddenCount++;
+      }
+    });
+
+    if(hiddenCount > 0){
+      moreBtn.style.display = '';
+      moreBtn.textContent   = '▼ +' + hiddenCount;
+    }
+  });
+}
+
+function chipShowAll(uid, e){
+  if(e) e.stopPropagation();
+  const wrap    = document.querySelector(`.chip-overflow-wrap[data-uid="${uid}"]`);
+  const moreBtn = document.getElementById(uid+'_more');
+  if(!wrap) return;
+  wrap.classList.add('expanded');
+  const chips = [...wrap.querySelectorAll('[data-chip]')];
+  chips.forEach(c=>{ c.style.display=''; });
+  if(moreBtn) moreBtn.style.display = 'none';
+}
+
+/* ════════════════════════════════════════
+   REPROCESS FUNCTIONS
+════════════════════════════════════════ */
+async function reprocessAD(){
+  const btn = document.getElementById('ad-reprocess-btn');
+  btn.classList.add('loading');
+  btn.innerHTML = '<span class="spin"></span> Processing…';
+  try{
+    const res = await fetch(`${WORKER}?mode=adreprocess`);
+    const j   = await res.json();
+    if(!j.ok){ alert('Error: ' + j.error); return; }
+    alert(`✅ Done! ${j.processed} scans processed from ${j.baselines} baselines.`);
+    loadAD(); // refresh A/D modal
+  } catch(e){ alert('Failed: ' + e.message); }
+  finally{
+    btn.classList.remove('loading');
+    btn.innerHTML = '🔄 <span>Reprocess Today</span>';
+  }
+}
+
+async function reprocessDV(){
+  const btn = document.getElementById('dv-reprocess-btn');
+  btn.classList.add('loading');
+  btn.innerHTML = '<span class="spin"></span> Processing…';
+  try{
+    const res = await fetch(`${WORKER}?mode=dvreprocess`);
+    const j   = await res.json();
+    if(!j.ok){ alert('Error: ' + j.error); return; }
+    alert(`✅ Done! ${j.processed} scans processed from ${j.baselines} baselines.`);
+    loadDayView(); // refresh Day View modal
+  } catch(e){ alert('Failed: ' + e.message); }
+  finally{
+    btn.classList.remove('loading');
+    btn.innerHTML = '🔄 <span>Reprocess Today</span>';
+  }
+}
+
 function openAD(){
   document.getElementById('ad-modal').classList.add('open');
   if(_adTimer){ clearInterval(_adTimer); _adTimer = null; }
@@ -1574,20 +1683,23 @@ function renderDayView(results){
     }
     const previewItems = Object.values(previewMap).slice(0,8);
 
-    const previewHtml = previewItems.length ? `
-      <div class="dv-preview-row">
-        ${previewItems.map(p => {
+    // All unique symbols across all comparisons for preview
+    const allPreviewItems = Object.values(previewMap);
+    const previewHtml = allPreviewItems.length ? `
+      <div class="chip-overflow-wrap" data-uid="dvchip_${uid}">
+        ${allPreviewItems.map(p => {
           const icon  = SIG_ICON[p.type]  || '·';
           const col   = SIG_COLOR[p.type] || 'var(--ink2)';
           const sign  = p.pricePct >= 0 ? '+' : '';
           const pCls  = p.pricePct >= 0 ? 'var(--g-text)' : 'var(--r-text)';
           const isStr = strongItems.some(si=>si.sym===p.sym);
-          return `<span class="dv-prev-chip" style="border-color:${col}20;">
+          return `<span class="dv-prev-chip" data-chip style="border-color:${col}20;">
             <span style="color:${col};font-weight:700;">${icon}</span>
             <span class="dv-prev-sym">${p.sym}${isStr?'🔥':''}</span>
             <span style="color:${pCls};font-family:'JetBrains Mono',monospace;font-size:.58rem;">${sign}${p.pricePct.toFixed(1)}%</span>
           </span>`;
         }).join('')}
+        <span class="chip-more-btn" id="dvchip_${uid}_more" style="display:none;" onclick="chipShowAll('dvchip_${uid}',event)"></span>
       </div>` : `<div style="padding:2px 0 4px;font-size:.68rem;color:var(--ink3);font-style:italic;">No signals in this scan</div>`;
 
     html += `<div class="dv-tl-item ${dom}" id="${uid}">
@@ -1635,6 +1747,7 @@ function renderDayView(results){
   }
 
   body.innerHTML = html;
+  requestAnimationFrame(()=>setupChipOverflow(body));
 }
 
 /* ── buildDvDetail: strong summary + one panel per comparison ── */
@@ -1905,7 +2018,10 @@ async function compareAndSignal(){
       <div class="ad-title">📊 Accumulation / Distribution</div>
       <div class="ad-subtitle" id="ad-subtitle">Loading…</div>
     </div>
-    <button class="ad-close" onclick="closeAD()">✕</button>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <button class="hbtn" id="ad-reprocess-btn" onclick="reprocessAD()" style="height:28px;font-size:.68rem;background:var(--teal-dim);color:var(--teal-text);border-color:var(--teal-mid);">🔄 <span>Reprocess Today</span></button>
+      <button class="ad-close" onclick="closeAD()">✕</button>
+    </div>
   </div>
   <div class="ad-body" id="ad-body">
     <div class="ad-loading"><div class="ad-spin"></div> Loading…</div>
@@ -1919,7 +2035,10 @@ async function compareAndSignal(){
       <div class="dv-title">📌 Day View</div>
       <div class="dv-subtitle" id="dv-subtitle">Loading today's signals…</div>
     </div>
-    <button class="dv-close" onclick="closeDayView()">✕</button>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <button class="hbtn" id="dv-reprocess-btn" onclick="reprocessDV()" style="height:28px;font-size:.68rem;background:var(--purple-dim);color:var(--purple-text);border-color:var(--purple-mid);">🔄 <span>Reprocess Today</span></button>
+      <button class="dv-close" onclick="closeDayView()">✕</button>
+    </div>
   </div>
   <div class="dv-body" id="dv-body">
     <div class="dv-loading"><div class="dv-spin"></div> Loading…</div>

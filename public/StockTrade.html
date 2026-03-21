@@ -251,10 +251,8 @@ function adCompToggle(panelId){
   const arr  = document.getElementById(panelId + '_arr');
   if(!body) return;
   const isOpen = body.classList.contains('open');
-  // Find parent detail container and dim siblings
   const parentDetail = body.closest('.ad-tl-detail');
   if(parentDetail){
-    // Close all sibling panels + remove dim
     parentDetail.querySelectorAll('.ad-comp-body').forEach(el=>el.classList.remove('open'));
     parentDetail.querySelectorAll('.ad-comp-arrow').forEach(el=>el.textContent='▶');
     parentDetail.querySelectorAll('.ad-comp-panel').forEach(el=>el.classList.remove('comp-dimmed'));
@@ -262,7 +260,6 @@ function adCompToggle(panelId){
   if(!isOpen){
     body.classList.add('open');
     if(arr) arr.textContent = '▼';
-    // Dim siblings
     if(parentDetail){
       parentDetail.querySelectorAll('.ad-comp-panel').forEach(el=>{
         if(!el.contains(body)) el.classList.add('comp-dimmed');
@@ -276,14 +273,12 @@ function adTlToggle(uid){
   const det  = document.getElementById(uid+'_det');
   if(!det || !det.innerHTML.trim()) return;
   const isOpen = det.classList.contains('open');
-  // Close all + remove dim
   document.querySelectorAll('.ad-tl-detail.open').forEach(el=>el.classList.remove('open'));
   document.querySelectorAll('.ad-tl-item.expanded').forEach(el=>el.classList.remove('expanded'));
   document.querySelectorAll('.ad-tl-item.dimmed').forEach(el=>el.classList.remove('dimmed'));
   if(!isOpen){
     det.classList.add('open');
     item.classList.add('expanded');
-    // Dim all other items
     document.querySelectorAll('.ad-tl-item').forEach(el=>{
       if(el.id !== uid) el.classList.add('dimmed');
     });
@@ -443,7 +438,7 @@ header{background:var(--card);border-bottom:1px solid var(--border);
   background:var(--card);
   border-bottom:1px solid var(--border);
   flex-shrink:0;
-  position:sticky;top:0;z-index:10;
+  position:relative;
 }
 .ad-title{font-size:.95rem;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:8px;}
 .ad-subtitle{font-size:.7rem;color:var(--ink3);margin-top:2px;}
@@ -517,7 +512,7 @@ header{background:var(--card);border-bottom:1px solid var(--border);
 .ad-detail-sec.acc-sec{color:var(--teal-text);}
 .ad-detail-sec.dist-sec{color:var(--orange-text);}
 
-/* A/D Comparison Panels — NEW */
+/* A/D Comparison Panels */
 .ad-comp-panel{border:1px solid var(--border);border-radius:8px;margin-bottom:8px;overflow:hidden;}
 .ad-comp-head{display:flex;align-items:center;justify-content:space-between;
   padding:8px 12px;background:var(--bg2);cursor:pointer;transition:background .15s;}
@@ -581,9 +576,17 @@ input#pin-input:focus{border-color:var(--b);}
   padding:14px 20px;background:var(--card);
   border-bottom:1px solid var(--border);
   flex-shrink:0;
+  position:relative;
 }
 .dv-title{font-size:.95rem;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:8px;}
 .dv-subtitle{font-size:.7rem;color:var(--ink3);margin-top:2px;}
+/* ── STOCK TRADE center label — shared for both modals ── */
+.modal-center-brand{
+  position:absolute;left:50%;transform:translateX(-50%);
+  font-size:.82rem;font-weight:800;letter-spacing:2.5px;
+  color:var(--ink3);pointer-events:none;white-space:nowrap;
+  text-transform:uppercase;
+}
 .dv-close{width:30px;height:30px;min-width:30px;border-radius:6px;border:1px solid var(--border2);
   background:var(--bg2);color:var(--ink2);cursor:pointer;font-size:1rem;
   display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;
@@ -632,7 +635,6 @@ input#pin-input:focus{border-color:var(--b);}
   background:var(--gold-dim);color:var(--gold);border:1px solid var(--gold-mid);}
 .dv-chip.caution{background:var(--orange-dim);color:var(--orange-text);border:1px solid var(--orange-mid);}
 
-/* ── Dimmed inactive cards ── */
 /* Hide empty cards */
 .ad-tl-item.no-sig{ display:none !important; }
 
@@ -644,7 +646,6 @@ input#pin-input:focus{border-color:var(--b);}
   opacity:.32;filter:brightness(.65);
   transition:opacity .2s,filter .2s;
 }
-/* ── Dimmed inner comparison panels ── */
 .ad-comp-panel.comp-dimmed{
   opacity:.3;filter:brightness(.6);
   transition:opacity .18s,filter .18s;
@@ -653,13 +654,11 @@ input#pin-input:focus{border-color:var(--b);}
   opacity:.3;filter:brightness(.6);
   transition:opacity .18s,filter .18s;
 }
-/* ── Dimmed leaderboard section ── */
 .section-dimmed{
   opacity:.28;filter:brightness(.55);
   transition:opacity .2s,filter .2s;
   pointer-events:none;
 }
-/* ── Expanded card — full invert per theme ── */
 
 [data-theme="dark"] .dv-tl-item.expanded,
 [data-theme="dark"] .ad-tl-item.expanded {
@@ -739,7 +738,7 @@ input#pin-input:focus{border-color:var(--b);}
 [data-theme="teal"] .dv-tl-item.expanded .dv-comp-arrow,
 [data-theme="teal"] .ad-tl-item.expanded .ad-comp-arrow { color:#065e6a !important; }
 
-/* Chip overflow wrapper — NEW */
+/* Chip overflow wrapper */
 .chip-overflow-wrap{
   display:flex;flex-wrap:nowrap;overflow:hidden;
   gap:5px;padding:5px 0 4px;align-items:center;
@@ -757,7 +756,7 @@ input#pin-input:focus{border-color:var(--b);}
 }
 .chip-more-btn:hover{background:var(--border2);color:var(--ink);}
 
-/* Preview chips on card — NEW */
+/* Preview chips on card */
 .dv-preview-row{display:flex;flex-wrap:wrap;gap:5px;padding:5px 0 4px;}
 .dv-prev-chip{display:inline-flex;align-items:center;gap:4px;
   padding:3px 8px;border-radius:5px;border:1px solid var(--border);
@@ -765,7 +764,7 @@ input#pin-input:focus{border-color:var(--b);}
 .dv-prev-chip:hover{background:var(--bg3);}
 .dv-prev-sym{font-size:.68rem;font-weight:700;color:var(--ink);}
 
-/* ── Flat table wrapper ── */
+/* Flat table wrapper */
 .dv-flat-table-wrap{overflow-x:auto;}
 .dv-flat-table-wrap table{width:100%;border-collapse:collapse;min-width:560px;table-layout:fixed;}
 .dv-flat-table-wrap thead tr{background:var(--thead);}
@@ -773,29 +772,25 @@ input#pin-input:focus{border-color:var(--b);}
   letter-spacing:.8px;color:var(--ink3);padding:7px 10px;text-align:left;white-space:nowrap;overflow:hidden;}
 .dv-flat-table-wrap td{padding:7px 10px;font-size:.72rem;
   border-top:1px solid var(--border);vertical-align:middle;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-/* Column widths */
-.dv-flat-table-wrap th:nth-child(1),.dv-flat-table-wrap td:nth-child(1){width:72px;}   /* TIME */
-.dv-flat-table-wrap th:nth-child(2),.dv-flat-table-wrap td:nth-child(2){width:130px;}  /* SYMBOL */
-.dv-flat-table-wrap th:nth-child(3),.dv-flat-table-wrap td:nth-child(3){width:130px;}  /* SIGNAL */
-.dv-flat-table-wrap th:nth-child(4),.dv-flat-table-wrap td:nth-child(4){width:72px;text-align:right;}  /* PRICE Δ */
-.dv-flat-table-wrap th:nth-child(5),.dv-flat-table-wrap td:nth-child(5){width:72px;text-align:right;}  /* OI Δ */
-.dv-flat-table-wrap th:nth-child(6),.dv-flat-table-wrap td:nth-child(6){width:90px;text-align:right;}  /* PRICE NOW */
-.dv-flat-table-wrap th:nth-child(7),.dv-flat-table-wrap td:nth-child(7){width:auto;}   /* AGE */
-/* Symbol — always visible regardless of invert */
+.dv-flat-table-wrap th:nth-child(1),.dv-flat-table-wrap td:nth-child(1){width:72px;}
+.dv-flat-table-wrap th:nth-child(2),.dv-flat-table-wrap td:nth-child(2){width:130px;}
+.dv-flat-table-wrap th:nth-child(3),.dv-flat-table-wrap td:nth-child(3){width:130px;}
+.dv-flat-table-wrap th:nth-child(4),.dv-flat-table-wrap td:nth-child(4){width:72px;text-align:right;}
+.dv-flat-table-wrap th:nth-child(5),.dv-flat-table-wrap td:nth-child(5){width:72px;text-align:right;}
+.dv-flat-table-wrap th:nth-child(6),.dv-flat-table-wrap td:nth-child(6){width:90px;text-align:right;}
+.dv-flat-table-wrap th:nth-child(7),.dv-flat-table-wrap td:nth-child(7){width:auto;}
 .dv-flat-table-wrap .sym-col{font-weight:700;font-size:.75rem;white-space:nowrap;color:inherit;}
 
-/* ── Staleness tags ── */
+/* Staleness tags */
 .stale-tag{display:inline-flex;align-items:center;gap:3px;
   font-size:.62rem;font-weight:800;padding:3px 8px;border-radius:5px;
   white-space:nowrap;margin-right:4px;flex-shrink:0;}
-/* Stale colors — inline via JS, CSS here as fallback */
 .stale-fresh{background:#003d20;color:#00ff88 !important;border:1.5px solid #00cc6a;}
 .stale-watch{background:#4a3800;color:#ffd666 !important;border:1.5px solid #cc9900;}
 .stale-vold {background:#4a0010;color:#ff8899 !important;border:1.5px solid #cc0033;}
-/* AGE cell — no wrap */
 .dv-flat-table-wrap td:last-child{white-space:nowrap;overflow:visible;}
 
-/* STRONG / CAUTION badges — NEW */
+/* STRONG / CAUTION badges */
 .dv-strong-badge{display:inline-flex;align-items:center;gap:3px;
   font-size:.62rem;font-weight:800;padding:3px 8px;border-radius:5px;flex-shrink:0;
   background:#4a3800;color:#ffd666 !important;border:1.5px solid #cc9900;}
@@ -813,7 +808,7 @@ input#pin-input:focus{border-color:var(--b);}
 .dv-detail{display:none;border-top:1px solid var(--border);overflow-x:auto;}
 .dv-detail.open{display:block;}
 
-/* Day View Comparison Panels — NEW */
+/* Day View Comparison Panels */
 .dv-comp-panel{border-bottom:1px solid var(--border);}
 .dv-comp-panel:last-child{border-bottom:none;}
 .dv-comp-head{display:flex;align-items:center;justify-content:space-between;
@@ -1117,6 +1112,7 @@ input[type=range].tslider::-webkit-slider-thumb{-webkit-appearance:none;
   .mobile-row2-btns{display:flex;gap:6px;align-items:center;width:100%;margin-top:4px;}
   .mobile-row2-btns .hbtn{flex:1;justify-content:center;height:32px;padding:0;font-size:.72rem;}
   .mobile-row2-btns .hbtn span{display:inline;}
+  .modal-center-brand{display:none;}
 }
 </style>
 </head>
@@ -1226,7 +1222,6 @@ input[type=range].tslider::-webkit-slider-thumb{-webkit-appearance:none;
 
   <!-- ═══ DASHBOARD ═══ -->
   <div id="dash">
-    <!-- Status Bar -->
     <div class="status-bar">
       <div class="sb-item">
         <div>
@@ -1266,7 +1261,6 @@ input[type=range].tslider::-webkit-slider-thumb{-webkit-appearance:none;
       </div>
     </div>
 
-    <!-- Signal Guide -->
     <div class="guide-panel">
       <div class="guide-hdr" onclick="toggleGuide()">
         <div class="guide-hdr-left">
@@ -1308,7 +1302,6 @@ input[type=range].tslider::-webkit-slider-thumb{-webkit-appearance:none;
       </div>
     </div>
 
-    <!-- CARD GRID -->
     <div class="card-grid">
       <div class="row-label"><div class="row-label-pip" style="background:var(--g)"></div>Bullish</div>
       <div class="action-card" onclick="showSection('long')" id="ac-long" style="--ac-color:var(--g)">
@@ -1371,7 +1364,6 @@ input[type=range].tslider::-webkit-slider-thumb{-webkit-appearance:none;
       </div>
     </div>
 
-    <!-- Signal Tables -->
     <div id="sc-long"   class="scard"><div class="scard-head g">    <div class="sh-left"><span class="sh-title g">▲ Long Buildup</span><span class="sh-desc">OI Rising · Volume Spike · Price Rising ≥ threshold</span></div><span class="sh-cnt g"      id="cnt-long">0</span></div><div class="tscroll"><table><thead><tr><th>Symbol</th><th>OI Now</th><th>OI Base</th><th>OI Δ%</th><th>Price Now</th><th>Price Base</th><th>Price Δ%</th><th>Vol Speed</th></tr></thead><tbody id="tb-long"></tbody></table></div></div>
     <div id="sc-short"  class="scard"><div class="scard-head r">    <div class="sh-left"><span class="sh-title r">▼ Short Buildup</span><span class="sh-desc">OI Rising · Volume Spike · Price Falling ≥ threshold</span></div><span class="sh-cnt r"     id="cnt-short">0</span></div><div class="tscroll"><table><thead><tr><th>Symbol</th><th>OI Now</th><th>OI Base</th><th>OI Δ%</th><th>Price Now</th><th>Price Base</th><th>Price Δ%</th><th>Vol Speed</th></tr></thead><tbody id="tb-short"></tbody></table></div></div>
     <div id="sc-cover"  class="scard"><div class="scard-head teal"> <div class="sh-left"><span class="sh-title teal">↑ Short Covering</span><span class="sh-desc">OI Falling · Price Rising — bears exiting positions</span></div><span class="sh-cnt teal"   id="cnt-cover">0</span></div><div class="tscroll"><table><thead><tr><th>Symbol</th><th>OI Now</th><th>OI Base</th><th>OI Δ%</th><th>Price Now</th><th>Price Base</th><th>Price Δ%</th><th>Vol Speed</th></tr></thead><tbody id="tb-cover"></tbody></table></div></div>
@@ -1663,7 +1655,7 @@ let _dvRefreshTimer = null;
 let _dvLastSavedAt  = null;
 
 /* ════════════════════════════════════════
-   CHIP OVERFLOW — show max chips that fit, rest as ▼+N
+   CHIP OVERFLOW
 ════════════════════════════════════════ */
 function setupChipOverflow(container){
   const wraps = (container||document).querySelectorAll('.chip-overflow-wrap');
@@ -1672,16 +1664,12 @@ function setupChipOverflow(container){
     const moreBtn  = document.getElementById(uid+'_more');
     const chips    = [...wrap.querySelectorAll('[data-chip]')];
     if(!chips.length || !moreBtn) return;
-
-    // Reset first
     chips.forEach(c=>{ c.style.display=''; });
     moreBtn.style.display = 'none';
-
-    const wrapWidth = wrap.offsetWidth - 60; // 60px reserved for +N button
+    const wrapWidth = wrap.offsetWidth - 60;
     let usedWidth   = 0;
     let hiddenCount = 0;
     const gap       = 5;
-
     chips.forEach(chip => {
       const cw = chip.offsetWidth + gap;
       if(usedWidth + cw <= wrapWidth){
@@ -1692,7 +1680,6 @@ function setupChipOverflow(container){
         hiddenCount++;
       }
     });
-
     if(hiddenCount > 0){
       moreBtn.style.display = '';
       moreBtn.textContent   = '▼ +' + hiddenCount;
@@ -1723,7 +1710,7 @@ async function reprocessAD(){
     const j   = await res.json();
     if(!j.ok){ alert('Error: ' + j.error); return; }
     alert(`✅ Done! ${j.processed} scans processed from ${j.baselines} baselines.`);
-    loadAD(); // refresh A/D modal
+    loadAD();
   } catch(e){ alert('Failed: ' + e.message); }
   finally{
     btn.classList.remove('loading');
@@ -1740,7 +1727,7 @@ async function reprocessDV(){
     const j   = await res.json();
     if(!j.ok){ alert('Error: ' + j.error); return; }
     alert(`✅ Done! ${j.processed} scans processed from ${j.baselines} baselines.`);
-    loadDayView(); // refresh Day View modal
+    loadDayView();
   } catch(e){ alert('Failed: ' + e.message); }
   finally{
     btn.classList.remove('loading');
@@ -1804,7 +1791,7 @@ async function loadDayViewSmart(){
   } catch(e){ /* silent */ }
 }
 
-/* ── renderDayView: updated for comparisons + STRONG/CAUTION ── */
+/* ── renderDayView ── */
 function renderDayView(results){
   const body = document.getElementById('dv-body');
   const sub  = document.getElementById('dv-subtitle');
@@ -1827,10 +1814,9 @@ function renderDayView(results){
 
   sub.textContent = `${results.length} scan${results.length>1?'s':''} today`;
 
-  // Leaderboard: count STRONG appearances per symbol
   const symCount    = {};
   const symStrength = {};
-  const symType     = {}; // latest type for buy/sell label
+  const symType     = {};
   const symFirstTime= {};
   for(const r of results){
     for(const s of (r.strong||[])){
@@ -1856,19 +1842,15 @@ function renderDayView(results){
 
   sorted.forEach((r,idx)=>{
     const dom  = (r.bullCount||0) > (r.bearCount||0) ? 'bull-dom' : (r.bearCount||0) > (r.bullCount||0) ? 'bear-dom' : 'mixed';
-    const bw   = Math.round((r.bullCount||0)/maxBull*80);
-    const rw   = Math.round((r.bearCount||0)/maxBear*80);
     const uid  = 'tl_'+idx;
     const cmpCount = (r.comparisons||[]).length || 0;
 
-    // Parse strong signals: "SYM:TYPE:STRENGTH:COUNT"
     const strongItems = (r.strong||[]).map(s=>{
       const [sym,type,strength,cnt] = s.split(':');
       return { sym, type, strength: strength||'STRONG', cnt: parseInt(cnt)||2 };
     });
     const strongCount = strongItems.length;
 
-    // Build quick-preview: top signals from ALL comparisons (deduped by symbol)
     const previewMap = {};
     const SIG_ICON = { long:'▲', short:'▼', cover:'↑', unwind:'↓', acc:'◆', dist:'◆' };
     const SIG_COLOR= { long:'var(--g-text)', short:'var(--r-text)', cover:'var(--teal-text)',
@@ -1879,9 +1861,7 @@ function renderDayView(results){
         if(!previewMap[sym]) previewMap[sym] = { sym, type, pricePct: parseFloat(pricePct)||0 };
       }
     }
-    const previewItems = Object.values(previewMap).slice(0,8);
 
-    // All unique symbols across all comparisons for preview
     const allPreviewItems = Object.values(previewMap);
     const previewHtml = allPreviewItems.length ? `
       <div class="chip-overflow-wrap" data-uid="dvchip_${uid}">
@@ -1900,7 +1880,7 @@ function renderDayView(results){
         <span class="chip-more-btn" id="dvchip_${uid}_more" style="display:none;" onclick="chipShowAll('dvchip_${uid}',event)"></span>
       </div>` : `<div style="padding:2px 0 4px;font-size:.68rem;color:var(--ink3);font-style:italic;">No signals in this scan</div>`;
 
-    if(!allPreviewItems.length) return; // hide empty cards completely
+    if(!allPreviewItems.length) return;
     html += `<div class="dv-tl-item ${dom}" id="${uid}">
       <div class="dv-tl-head" onclick="dvToggle('${uid}')">
         <div class="dv-tl-row1">
@@ -1920,7 +1900,6 @@ function renderDayView(results){
     </div>`;
   });
 
-  // Type → display config
   const LB_TYPE_CFG = {
     long   : { icon:'▲', label:'Long Buildup',   col:'var(--g-text)',      bg:'var(--g-dim)',      border:'var(--g-mid)'      },
     short  : { icon:'▼', label:'Short Buildup',  col:'var(--r-text)',      bg:'var(--r-dim)',      border:'var(--r-mid)'      },
@@ -1930,7 +1909,6 @@ function renderDayView(results){
     dist   : { icon:'◆', label:'Distribution',   col:'var(--purple-text)', bg:'var(--purple-dim)', border:'var(--purple-mid)' },
   };
 
-  // Leaderboard
   if(lbData.length){
     html += '<div id="dv-leaderboard"><div class="dv-sec-label" style="margin-top:20px;">🏆 Symbol Leaderboard — Strong signal count</div>';
     lbData.forEach(([sym,cnt],i)=>{
@@ -1960,12 +1938,12 @@ function renderDayView(results){
     });
   }
 
-  if(lbData.length) html += '</div>'; // close dv-leaderboard
+  if(lbData.length) html += '</div>';
   body.innerHTML = html;
   requestAnimationFrame(()=>setupChipOverflow(body));
 }
 
-/* ── buildDvDetail: flat table with TIME + STALENESS columns ── */
+/* ── buildDvDetail ── */
 function staleConfig(gapMins){
   if(gapMins <  20) return { icon:'●', label:'Fresh',   cls:'stale-fresh',  opacity:1.0  };
   if(gapMins <  40) return { icon:'◐', label:'Watch',   cls:'stale-watch',  opacity:0.85 };
@@ -1978,21 +1956,18 @@ function buildDvDetail(r){
     return '<div style="padding:12px;color:var(--ink3);font-size:.75rem;text-align:center;">No comparison data in this scan</div>';
   }
 
-  // Parse strong signals
   const strongMap = {};
   (r.strong || []).forEach(s => {
     const [sym, type, strength, cnt] = s.split(':');
     strongMap[sym] = { type, strength: strength||'STRONG', confirmCount: parseInt(cnt)||2 };
   });
 
-  // Collect ALL rows from ALL comparisons — flat
   const allRows = [];
   const scanMs  = r.savedAt ? new Date(r.savedAt).getTime() : Date.now();
 
   comparisons.forEach((comp, cidx) => {
     const signals = comp.signals || [];
     if(!signals.length) return;
-    // Gap = scan time minus base time
     let gapMins = (cidx + 1) * 10;
     if(comp.baseTimeStr){
       try{
@@ -2025,7 +2000,6 @@ function buildDvDetail(r){
   if(!allRows.length)
     return '<div style="padding:12px;color:var(--ink3);font-size:.75rem;text-align:center;">No signals</div>';
 
-  // Sort: closest time first (smallest gapMins), then by |pricePct| desc
   allRows.sort((a,b) => a.gapMins - b.gapMins || Math.abs(b.pricePct) - Math.abs(a.pricePct));
 
   const rows = allRows.map(p => {
@@ -2076,7 +2050,6 @@ function dvCompToggle(panelId){
   const arr  = document.getElementById(panelId + '_arr');
   if(!body) return;
   const isOpen = body.classList.contains('open');
-  // Find parent detail container and dim siblings
   const parentDetail = body.closest('.dv-detail');
   if(parentDetail){
     parentDetail.querySelectorAll('.dv-comp-body').forEach(el=>el.classList.remove('open'));
@@ -2086,7 +2059,6 @@ function dvCompToggle(panelId){
   if(!isOpen){
     body.classList.add('open');
     if(arr) arr.textContent = '▼';
-    // Dim siblings
     if(parentDetail){
       parentDetail.querySelectorAll('.dv-comp-panel').forEach(el=>{
         if(!el.contains(body)) el.classList.add('comp-dimmed');
@@ -2100,21 +2072,17 @@ function dvToggle(uid){
   const det    = document.getElementById(uid+'_det');
   const lbWrap = document.getElementById('dv-leaderboard');
   const isOpen = det.classList.contains('open');
-  // Close all + remove dim
   document.querySelectorAll('.dv-detail.open').forEach(el=>el.classList.remove('open'));
   document.querySelectorAll('.dv-tl-item.expanded').forEach(el=>el.classList.remove('expanded'));
   document.querySelectorAll('.dv-tl-item.dimmed').forEach(el=>el.classList.remove('dimmed'));
-  // Also reset inner comp panels
   document.querySelectorAll('.dv-comp-panel.comp-dimmed').forEach(el=>el.classList.remove('comp-dimmed'));
   if(lbWrap) lbWrap.classList.remove('section-dimmed');
   if(!isOpen){
     det.classList.add('open');
     item.classList.add('expanded');
-    // Dim all other timeline items
     document.querySelectorAll('.dv-tl-item').forEach(el=>{
       if(el.id !== uid) el.classList.add('dimmed');
     });
-    // Dim leaderboard
     if(lbWrap) lbWrap.classList.add('section-dimmed');
     setTimeout(()=>item.scrollIntoView({behavior:'smooth',block:'nearest'}),50);
   }
@@ -2264,6 +2232,8 @@ async function compareAndSignal(){
       <div class="ad-title">📊 Accumulation / Distribution</div>
       <div class="ad-subtitle" id="ad-subtitle">Loading…</div>
     </div>
+    <!-- ── STOCK TRADE center label ── -->
+    <div class="modal-center-brand">STOCK TRADE</div>
     <div style="display:flex;align-items:center;gap:8px;">
       <button class="hbtn" id="ad-reprocess-btn" onclick="reprocessAD()" style="height:28px;font-size:.68rem;background:var(--teal-dim);color:var(--teal-text);border-color:var(--teal-mid);">🔄 <span>Reprocess Today</span></button>
       <button class="ad-close" onclick="closeAD()">✕</button>
@@ -2281,6 +2251,8 @@ async function compareAndSignal(){
       <div class="dv-title">📌 Day View</div>
       <div class="dv-subtitle" id="dv-subtitle">Loading today's signals…</div>
     </div>
+    <!-- ── STOCK TRADE center label ── -->
+    <div class="modal-center-brand">STOCK TRADE</div>
     <div style="display:flex;align-items:center;gap:8px;">
       <button class="hbtn" id="dv-reprocess-btn" onclick="reprocessDV()" style="height:28px;font-size:.68rem;background:var(--purple-dim);color:var(--purple-text);border-color:var(--purple-mid);">🔄 <span>Reprocess Today</span></button>
       <button class="dv-close" onclick="closeDayView()">✕</button>

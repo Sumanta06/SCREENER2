@@ -1335,11 +1335,12 @@ function buildDvDetail(r){
     if(!rows.length) return '';
     const bySym={};
     for(const p of rows){ if(!bySym[p.sym]) bySym[p.sym]={CE:[],PE:[]}; if(p.type==='CE') bySym[p.sym].CE.push(p); else if(p.type==='PE') bySym[p.sym].PE.push(p); }
-    let h=`<div class="dv-sec-label" style="margin:10px 0 6px;">&#128203; Stock Options</div>`;
+    const symCount=Object.keys(bySym).length;
+    let inner='';
     for(const [sym,{CE,PE}] of Object.entries(bySym)){
       const isStrong=!!strongMap[sym];
       const expiry=CE[0]?.expiry||PE[0]?.expiry||'';
-      h+=`<div style="background:${C.cardOpt};border:1px solid ${C.cardOptBorder};border-left:4px solid ${C.cardOptLeft};border-radius:8px;margin-bottom:8px;overflow:hidden;">
+      inner+=`<div style="background:${C.cardOpt};border:1px solid ${C.cardOptBorder};border-left:4px solid ${C.cardOptLeft};border-radius:8px;margin-bottom:8px;overflow:hidden;">
         <div class="dv-stock-opt-header" style="padding:7px 12px;font-weight:700;font-size:.78rem;border-bottom:1px solid ${C.cardOptBorder};color:${C.cardOptHdrText};background:${C.cardOptHdr};">
           ${sym}${isStrong?'<span class="strong-fire"> &#128293;</span>':''}${makeStrengthBadge(sym)}
           ${expiry?`<span style="font-size:.62rem;color:${C.cardOptExpiry};font-weight:500;margin-left:8px;font-family:'JetBrains Mono',monospace;">${expiry}</span>`:''}
@@ -1347,7 +1348,17 @@ function buildDvDetail(r){
         ${makeOptRows(CE,'CE',sym)}${makeOptRows(PE,'PE',sym)}
       </div>`;
     }
-    return h;
+    return `<div class="dv-sec-label" style="margin:10px 0 6px;">&#128203; Stock Options</div>
+    <div style="background:${C.cardOpt};border:1px solid ${C.cardOptBorder};border-left:4px solid ${C.cardOptLeft};border-radius:8px;margin-bottom:8px;overflow:hidden;">
+      <div style="padding:7px 12px;font-weight:700;font-size:.78rem;border-bottom:1px solid ${C.cardOptBorder};color:${C.cardOptHdrText};background:${C.cardOptHdr};cursor:pointer;display:flex;align-items:center;gap:8px;user-select:none;" onclick="(function(el){var t=el.nextElementSibling;var open=t.style.display!=='none';t.style.display=open?'none':'';el.querySelector('.dv-toggle-icon').textContent=open?'▶':'▼';})(this)">
+        <span>&#9654; Stock Options</span>
+        <span style="font-size:.6rem;color:${C.ceHdrText};">${symCount} symbols</span>
+        <span class="dv-toggle-icon" style="font-size:.6rem;color:${C.ceHdrText};margin-left:auto;">▶</span>
+      </div>
+      <div style="display:none;background:${C.tableBg};padding:8px;">
+        ${inner}
+      </div>
+    </div>`;
   }
 
   return `<div style="padding:0;background:${C.wrap};color:${C.wrapText};">

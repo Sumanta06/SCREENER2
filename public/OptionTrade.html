@@ -1257,13 +1257,13 @@ function buildDvDetail(r){
     optRows.sort((a,b)=>b.seenAt.size-a.seenAt.size||Math.abs(b.ltpChngPct)-Math.abs(a.ltpChngPct));
     const typeCls=optType==='CE'?'type-ce':'type-pe';
     const expiry=optRows[0]?.expiry||'';
-    let h=`<div style="padding:5px 12px;border-bottom:1px solid ${C.tdBorder};background:${C.ceHdr};cursor:pointer;display:flex;align-items:center;gap:8px;user-select:none;" onclick="(function(el){var t=el.nextElementSibling;var open=t.style.display!=='none';t.style.display=open?'none':'';el.querySelector('.dv-toggle-icon').textContent=open?'▶':'▼';})(this)">
+    let h=`<div class="dv-acc-hdr" style="padding:5px 12px;border-bottom:1px solid ${C.tdBorder};background:${C.ceHdr};cursor:pointer;display:flex;align-items:center;gap:8px;user-select:none;" onclick="dvSecToggle(this)">
       <span class="${typeCls}">${optType}</span>
       <span style="font-size:.6rem;color:${C.ceHdrText};">${optRows.length} signals</span>
       ${expiry?`<span style="font-size:.6rem;color:${C.cardOptExpiry};font-family:'JetBrains Mono',monospace;">${expiry}</span>`:''}
       <span class="dv-toggle-icon" style="font-size:.6rem;color:${C.ceHdrText};margin-left:auto;">▶</span>
     </div>
-    <div style="display:none;background:${C.tableBg};">
+    <div class="dv-acc-body" style="display:none;background:${C.tableBg};">
     <div class="dv-flat-table-wrap" style="margin:0;">
     <table style="table-layout:fixed;width:100%;min-width:620px;background:${C.tableBg};">
       <colgroup><col style="width:80px;"><col style="width:100px;"><col style="width:155px;"><col style="width:80px;"><col style="width:80px;"><col style="width:80px;"><col></colgroup>
@@ -1308,12 +1308,12 @@ function buildDvDetail(r){
     rows.sort((a,b)=>b.seenAt.size-a.seenAt.size||Math.abs(b.ltpChngPct)-Math.abs(a.ltpChngPct));
     let h=`<div class="dv-sec-label" style="margin:10px 0 6px;color:${C.ceHdrText};">&#128200; Stock Futures</div>
     <div style="background:${C.cardFut};border:1px solid ${C.cardFutBorder};border-left:4px solid ${C.cardFutLeft};border-radius:8px;margin-bottom:8px;overflow:hidden;">
-      <div style="padding:7px 12px;font-weight:700;font-size:.78rem;border-bottom:1px solid ${C.cardFutBorder};color:${C.cardFutHdrText};background:${C.cardFutHdr};cursor:pointer;display:flex;align-items:center;gap:8px;user-select:none;" onclick="(function(el){var t=el.nextElementSibling;var open=t.style.display!=='none';t.style.display=open?'none':'';el.querySelector('.dv-toggle-icon').textContent=open?'▶':'▼';})(this)">
+      <div class="dv-acc-hdr" style="padding:7px 12px;font-weight:700;font-size:.78rem;border-bottom:1px solid ${C.cardFutBorder};color:${C.cardFutHdrText};background:${C.cardFutHdr};cursor:pointer;display:flex;align-items:center;gap:8px;user-select:none;" onclick="dvSecToggle(this)">
         <span>&#9654; Futures</span>
         <span style="font-size:.6rem;color:${C.ceHdrText};">${rows.length} symbols</span>
         <span class="dv-toggle-icon" style="font-size:.6rem;color:${C.ceHdrText};margin-left:auto;">▶</span>
       </div>
-      <div style="display:none;background:${C.tableBg};">
+      <div class="dv-acc-body" style="display:none;background:${C.tableBg};">
       <div class="dv-flat-table-wrap"><table style="table-layout:fixed;width:100%;min-width:600px;background:${C.tableBg};">
       <colgroup><col style="width:110px;"><col style="width:110px;"><col style="width:150px;"><col style="width:80px;"><col style="width:80px;"><col style="width:80px;"><col></colgroup>
       <thead><tr style="background:${C.thBg};">
@@ -1350,12 +1350,12 @@ function buildDvDetail(r){
     }
     return `<div class="dv-sec-label" style="margin:10px 0 6px;">&#128203; Stock Options</div>
     <div style="background:${C.cardOpt};border:1px solid ${C.cardOptBorder};border-left:4px solid ${C.cardOptLeft};border-radius:8px;margin-bottom:8px;overflow:hidden;">
-      <div style="padding:7px 12px;font-weight:700;font-size:.78rem;border-bottom:1px solid ${C.cardOptBorder};color:${C.cardOptHdrText};background:${C.cardOptHdr};cursor:pointer;display:flex;align-items:center;gap:8px;user-select:none;" onclick="(function(el){var t=el.nextElementSibling;var open=t.style.display!=='none';t.style.display=open?'none':'';el.querySelector('.dv-toggle-icon').textContent=open?'▶':'▼';})(this)">
+      <div class="dv-acc-hdr" style="padding:7px 12px;font-weight:700;font-size:.78rem;border-bottom:1px solid ${C.cardOptBorder};color:${C.cardOptHdrText};background:${C.cardOptHdr};cursor:pointer;display:flex;align-items:center;gap:8px;user-select:none;" onclick="dvSecToggle(this)">
         <span>&#9654; Stock Options</span>
         <span style="font-size:.6rem;color:${C.ceHdrText};">${symCount} symbols</span>
         <span class="dv-toggle-icon" style="font-size:.6rem;color:${C.ceHdrText};margin-left:auto;">▶</span>
       </div>
-      <div style="display:none;background:${C.tableBg};padding:8px;">
+      <div class="dv-acc-body" style="display:none;background:${C.tableBg};padding:8px;">
         ${inner}
       </div>
     </div>`;
@@ -1369,6 +1369,27 @@ function buildDvDetail(r){
     </div>
     <div style="padding:10px 12px;background:${C.wrap};">${buildIndexSection(idxOpt)}${buildFutSection(stockFut)}${buildStockOptSection(stockOpt)}</div>
   </div>`;
+}
+
+/* ── dvSecToggle — accordion: ek expand to dusra collapse ── */
+/* Parent-scoped: sirf same container ke siblings band hote hain */
+function dvSecToggle(hdr){
+  const parent = hdr.parentElement;
+  const body   = hdr.nextElementSibling;
+  const isOpen = body && body.style.display !== 'none';
+  // Same parent ke saare acc headers band karo
+  parent.querySelectorAll(':scope > .dv-acc-hdr').forEach(h=>{
+    const b = h.nextElementSibling;
+    if(b) b.style.display = 'none';
+    const ic = h.querySelector('.dv-toggle-icon');
+    if(ic) ic.textContent = '▶';
+  });
+  // Agar pehle band tha to kholo
+  if(!isOpen && body){
+    body.style.display = '';
+    const ic = hdr.querySelector('.dv-toggle-icon');
+    if(ic) ic.textContent = '▼';
+  }
 }
 
 /* ── dvToggle ── */

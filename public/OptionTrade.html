@@ -9,16 +9,35 @@
 
 /* ══════════════════════════════════ THEMES */
 [data-theme="blue"]{
-  --bg:#014E52; --bg1:#013638; --bg2:#01413f; --bg3:#015358;
-  --card:#012E30; --border:#025a5e; --border2:#037076;
-  --ink:#e8f8f8; --ink2:#a0d4d6; --ink3:#5aacaf;
-  --shadow:rgba(0,0,0,.45);
-  --bull:#2edc8a; --bull-bg:rgba(46,220,138,.12); --bull-bd:rgba(46,220,138,.35);
-  --bear:#ff4d6a; --bear-bg:rgba(255,77,106,.12); --bear-bd:rgba(255,77,106,.35);
-  --accent:#00d0d8; --acc-bg:rgba(0,208,216,.12); --acc-bd:rgba(0,208,216,.35);
-  --gold:#ffc233; --gold-dim:rgba(255,194,51,.1); --gold-mid:rgba(255,194,51,.25);
-  --orange:#f97316; --orange-dim:rgba(249,115,22,.1); --orange-mid:rgba(249,115,22,.25); --orange-text:#fb923c;
-  --thead:#011e20; --modal-bg:rgba(1,46,48,.92);
+  --bg:#000000;
+  --bg1:#080808;
+  --bg2:#111111;
+  --bg3:#1a1a1a;
+  --card:#0d0d0d;
+  --border:#1f1f1f;
+  --border2:#2a2a2a;
+  --ink:#f0f0f0;
+  --ink2:#888888;
+  --ink3:#555555;
+  --shadow:rgba(0,0,0,.7);
+  --bull:#00e676;
+  --bull-bg:rgba(0,230,118,.1);
+  --bull-bd:rgba(0,230,118,.3);
+  --bear:#ff1744;
+  --bear-bg:rgba(255,23,68,.1);
+  --bear-bd:rgba(255,23,68,.3);
+  --accent:#e040fb;
+  --acc-bg:rgba(224,64,251,.1);
+  --acc-bd:rgba(224,64,251,.3);
+  --gold:#ffd600;
+  --gold-dim:rgba(255,214,0,.1);
+  --gold-mid:rgba(255,214,0,.25);
+  --orange:#f97316;
+  --orange-dim:rgba(249,115,22,.1);
+  --orange-mid:rgba(249,115,22,.25);
+  --orange-text:#fb923c;
+  --thead:#000000;
+  --modal-bg:rgba(0,0,0,.95);
 }
 [data-theme="white"]{
   --bg:#f0f4f8; --bg1:#ffffff; --bg2:#e8eef5; --bg3:#dde4ed;
@@ -290,7 +309,6 @@ td.gold-c{color:var(--gold);}
 .dv-tl-item.mixed   {border-left:3px solid var(--border2);}
 .dv-tl-item.dimmed{opacity:.32;filter:brightness(.65);transition:opacity .2s,filter .2s;}
 
-/* Alternate colors */
 .dv-tl-item:nth-child(odd) {background:var(--card);}
 .dv-tl-item:nth-child(even){background:var(--bg2);}
 
@@ -339,7 +357,7 @@ td.gold-c{color:var(--gold);}
 .dv-flat-table-wrap .sym-col{font-weight:700;font-size:.75rem;white-space:nowrap;color:var(--ink);}
 .dv-flat-table-wrap td:last-child{white-space:nowrap;overflow:visible;}
 
-/* Staleness badges — hard-coded */
+/* Staleness badges */
 .stale-tag{display:inline-flex;align-items:center;gap:3px;font-size:.62rem;font-weight:800;padding:3px 8px;border-radius:5px;white-space:nowrap;margin-right:4px;flex-shrink:0;}
 .stale-fresh{background:#003d20;color:#00ff88 !important;border:1.5px solid #00cc6a;}
 .stale-watch{background:#4a3800;color:#ffd666 !important;border:1.5px solid #cc9900;}
@@ -363,8 +381,7 @@ td.gold-c{color:var(--gold);}
 .type-ce {display:inline-flex;align-items:center;padding:2px 7px;border-radius:20px;font-size:11px;font-weight:600;background:rgba(59,130,246,.12);color:#3b82f6;}
 .type-pe {display:inline-flex;align-items:center;padding:2px 7px;border-radius:20px;font-size:11px;font-weight:600;background:rgba(245,166,35,.12);color:var(--gold);}
 
-/* Invert expanded card — Blue theme → light */
-/* Expanded card — Blue/dark theme: light bg */
+/* Invert expanded card — Blue/AMOLED theme: light bg */
 [data-theme="blue"] .dv-tl-item.expanded .dv-detail{background:#f5f5f5 !important;}
 [data-theme="blue"] .dv-tl-item.expanded .dv-detail td{color:#1a1a1a !important;border-color:#ddd !important;background:#f5f5f5 !important;}
 [data-theme="blue"] .dv-tl-item.expanded .dv-detail th{color:#555 !important;background:#e0e0e0 !important;}
@@ -1027,7 +1044,6 @@ function renderDayView(results){
 
   sub.textContent=`${results.length} scan${results.length>1?'s':''} today`;
 
-  // Leaderboard data
   const symCount={}, symStrength={}, symType={}, symDir={}, symFirstTime={};
   for(const r of results){
     for(const s of (r.strong||[])){
@@ -1044,25 +1060,19 @@ function renderDayView(results){
   const maxBear=Math.max(...results.map(r=>r.bearCount||0),1);
 
   let html='<div class="dv-sec-label">📅 Scan Timeline — newest first</div>';
-
   const sorted=[...results].reverse();
 
   sorted.forEach((r,idx)=>{
     const dom=(r.bullCount||0)>(r.bearCount||0)?'bull-dom':(r.bearCount||0)>(r.bullCount||0)?'bear-dom':'mixed';
-    const bw=Math.round((r.bullCount||0)/maxBull*80);
-    const rw=Math.round((r.bearCount||0)/maxBear*80);
     const uid='tl_'+idx;
     const cmpCount=(r.comparisons||[]).length||0;
-
     const strongItems=(r.strong||[]).map(s=>{
       const [sym,dir,signalType,type,strength,cnt]=s.split(':');
       return {sym,dir,signalType,type,strength:strength||'STRONG',cnt:parseInt(cnt)||2};
     });
-
-    // Preview chips
     const previewSigs=r.previewSigs||[];
     const hasSignals=previewSigs.length>0;
-    if(!hasSignals) return; // hide empty cards
+    if(!hasSignals) return;
 
     const previewHtml=`<div class="chip-overflow-wrap" data-uid="dvchip_${uid}">
       ${previewSigs.map(p=>{
@@ -1095,7 +1105,6 @@ function renderDayView(results){
     </div>`;
   });
 
-  // Leaderboard
   if(lbData.length){
     html+='<div id="dv-leaderboard"><div class="dv-sec-label" style="margin-top:20px;">🏆 Symbol Leaderboard — Strong signal count</div>';
     lbData.forEach(([sym,cnt],i)=>{
@@ -1123,7 +1132,7 @@ function renderDayView(results){
   requestAnimationFrame(()=>setupChipOverflow(body));
 }
 
-/* ── buildDvDetail: sectioned grouped view ── */
+/* ── buildDvDetail ── */
 function buildDvDetail(r){
   const comparisons=r.comparisons||[];
   if(!comparisons.length)
@@ -1135,7 +1144,6 @@ function buildDvDetail(r){
     strongMap[sym]={dir,signalType,type,strength:strength||'STRONG',confirmCount:parseInt(cnt)||2};
   });
 
-  // Theme detection — dark theme gets light card, light theme gets dark card
   const isDark = document.documentElement.getAttribute('data-theme') !== 'white';
   const C = isDark ? {
     wrap:'#f5f5f5', wrapText:'#1a1a1a',
@@ -1258,23 +1266,11 @@ function buildDvDetail(r){
     <div style="display:none;background:${C.tableBg};">
     <div class="dv-flat-table-wrap" style="margin:0;">
     <table style="table-layout:fixed;width:100%;min-width:620px;background:${C.tableBg};">
-      <colgroup>
-        <col style="width:80px;">
-        <col style="width:100px;">
-        <col style="width:155px;">
-        <col style="width:80px;">
-        <col style="width:80px;">
-        <col style="width:80px;">
-        <col>
-      </colgroup>
+      <colgroup><col style="width:80px;"><col style="width:100px;"><col style="width:155px;"><col style="width:80px;"><col style="width:80px;"><col style="width:80px;"><col></colgroup>
       <thead><tr style="background:${C.thBg};">
-        <th style="color:${C.thText};">Strike</th>
-        <th style="color:${C.thText};">Expiry</th>
-        <th style="color:${C.thText};">Signal</th>
-        <th style="text-align:right;color:${C.thText};">LTP%</th>
-        <th style="text-align:right;color:${C.thText};">OI%</th>
-        <th style="text-align:right;color:${C.thText};">LTP</th>
-        <th style="color:${C.thText};">Seen In</th>
+        <th style="color:${C.thText};">Strike</th><th style="color:${C.thText};">Expiry</th><th style="color:${C.thText};">Signal</th>
+        <th style="text-align:right;color:${C.thText};">LTP%</th><th style="text-align:right;color:${C.thText};">OI%</th>
+        <th style="text-align:right;color:${C.thText};">LTP</th><th style="color:${C.thText};">Seen In</th>
       </tr></thead><tbody>`;
     for(const p of optRows){
       const isBull=p.dir==='BULL';
@@ -1299,7 +1295,6 @@ function buildDvDetail(r){
     for(const p of rows){ if(!bySym[p.sym]) bySym[p.sym]={CE:[],PE:[]}; if(p.type==='CE') bySym[p.sym].CE.push(p); else if(p.type==='PE') bySym[p.sym].PE.push(p); }
     let h=`<div class="dv-sec-label" style="margin:10px 0 6px;">&#128202; Index Options</div>`;
     for(const [sym,{CE,PE}] of Object.entries(bySym)){
-      // Index card — accent border left, distinct background
       h+=`<div style="background:${C.cardIdx};border:1px solid ${C.cardIdxBorder};border-left:4px solid ${C.cardIdxLeft};border-radius:8px;margin-bottom:8px;overflow:hidden;">
         <div style="padding:8px 12px;font-weight:700;font-size:.85rem;border-bottom:1px solid ${C.cardIdxBorder};color:${C.cardIdxHdrText};background:${C.cardIdxHdr};letter-spacing:.5px;">&#128208; ${sym}</div>
         ${makeOptRows(CE,'CE',sym)}${makeOptRows(PE,'PE',sym)}
@@ -1311,8 +1306,6 @@ function buildDvDetail(r){
   function buildFutSection(rows){
     if(!rows.length) return '';
     rows.sort((a,b)=>b.seenAt.size-a.seenAt.size||Math.abs(b.ltpChngPct)-Math.abs(a.ltpChngPct));
-    // Futures — collapsible, purple left border
-    const uid='dvfut_'+Math.random().toString(36).slice(2,6);
     let h=`<div class="dv-sec-label" style="margin:10px 0 6px;color:${C.ceHdrText};">&#128200; Stock Futures</div>
     <div style="background:${C.cardFut};border:1px solid ${C.cardFutBorder};border-left:4px solid ${C.cardFutLeft};border-radius:8px;margin-bottom:8px;overflow:hidden;">
       <div style="padding:7px 12px;font-weight:700;font-size:.78rem;border-bottom:1px solid ${C.cardFutBorder};color:${C.cardFutHdrText};background:${C.cardFutHdr};cursor:pointer;display:flex;align-items:center;gap:8px;user-select:none;" onclick="(function(el){var t=el.nextElementSibling;var open=t.style.display!=='none';t.style.display=open?'none':'';el.querySelector('.dv-toggle-icon').textContent=open?'▶':'▼';})(this)">
@@ -1321,8 +1314,13 @@ function buildDvDetail(r){
         <span class="dv-toggle-icon" style="font-size:.6rem;color:${C.ceHdrText};margin-left:auto;">▶</span>
       </div>
       <div style="display:none;background:${C.tableBg};">
-      <div class="dv-flat-table-wrap"><table style="table-layout:fixed;width:100%;min-width:600px;background:${C.tableBg};"><colgroup><col style="width:110px;"><col style="width:110px;"><col style="width:150px;"><col style="width:80px;"><col style="width:80px;"><col style="width:80px;"><col></colgroup>
-      <thead><tr style="background:${C.thBg};"><th style="color:${C.thText};">Symbol</th><th style="color:${C.thText};">Expiry</th><th style="color:${C.thText};">Signal</th><th style="text-align:right;color:${C.thText};">LTP%</th><th style="text-align:right;color:${C.thText};">OI%</th><th style="text-align:right;color:${C.thText};">LTP</th><th style="color:${C.thText};">Seen In</th></tr></thead><tbody>`;
+      <div class="dv-flat-table-wrap"><table style="table-layout:fixed;width:100%;min-width:600px;background:${C.tableBg};">
+      <colgroup><col style="width:110px;"><col style="width:110px;"><col style="width:150px;"><col style="width:80px;"><col style="width:80px;"><col style="width:80px;"><col></colgroup>
+      <thead><tr style="background:${C.thBg};">
+        <th style="color:${C.thText};">Symbol</th><th style="color:${C.thText};">Expiry</th><th style="color:${C.thText};">Signal</th>
+        <th style="text-align:right;color:${C.thText};">LTP%</th><th style="text-align:right;color:${C.thText};">OI%</th>
+        <th style="text-align:right;color:${C.thText};">LTP</th><th style="color:${C.thText};">Seen In</th>
+      </tr></thead><tbody>`;
     for(const p of rows){
       const isStrong=!!strongMap[p.sym];
       const isBull=p.dir==='BULL';
@@ -1341,7 +1339,6 @@ function buildDvDetail(r){
     for(const [sym,{CE,PE}] of Object.entries(bySym)){
       const isStrong=!!strongMap[sym];
       const expiry=CE[0]?.expiry||PE[0]?.expiry||'';
-      // Stock options — gold left border, distinct from futures
       h+=`<div style="background:${C.cardOpt};border:1px solid ${C.cardOptBorder};border-left:4px solid ${C.cardOptLeft};border-radius:8px;margin-bottom:8px;overflow:hidden;">
         <div class="dv-stock-opt-header" style="padding:7px 12px;font-weight:700;font-size:.78rem;border-bottom:1px solid ${C.cardOptBorder};color:${C.cardOptHdrText};background:${C.cardOptHdr};">
           ${sym}${isStrong?'<span class="strong-fire"> &#128293;</span>':''}${makeStrengthBadge(sym)}
@@ -1381,11 +1378,10 @@ function dvToggle(uid){
     setTimeout(()=>item.scrollIntoView({behavior:'smooth',block:'nearest'}),50);
   }
 }
+
 /* ════════════════════════════════════════
    SNAPSHOT LIST + FETCH OLD
 ════════════════════════════════════════ */
-// WORKER_OLD moved to top
-
 async function loadSnapshotList(){
   try{
     const res  = await fetch(WORKER_OLD + 'list');
@@ -1435,10 +1431,8 @@ async function fetchOld(){
   btn.textContent = 'Fetch Old'; btn.style.pointerEvents = 'auto';
 }
 
-// Load snapshot list on page load + refresh every 5 min
 window.addEventListener('DOMContentLoaded', loadSnapshotList);
 setInterval(loadSnapshotList, 5 * 60 * 1000);
-
 </script>
 </body>
 </html>

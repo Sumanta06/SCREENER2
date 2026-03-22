@@ -1124,26 +1124,43 @@ function renderDayView(results){
   });
 
   if(lbData.length){
-    html+='<div id="dv-leaderboard"><div class="dv-sec-label" style="margin-top:20px;">🏆 Symbol Leaderboard — Strong signal count</div>';
-    lbData.forEach(([sym,cnt],i)=>{
-      const firstTime=symFirstTime[sym]||'';
-      const strength=symStrength[sym]||'STRONG';
-      const signalType=symType[sym]||'';
-      html+=`<div class="dv-lb-item">
-        <span class="dv-lb-rank">${i+1}</span>
-        <div style="flex:1;min-width:0;display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
-          <span class="dv-lb-sym">${sym}</span>
-          <span style="font-size:.65rem;font-weight:700;padding:2px 8px;border-radius:4px;white-space:nowrap;background:var(--bg2);color:var(--ink2);border:1px solid var(--border);">${signalType}</span>
-          ${strength==='CAUTION'?`<span class="dv-caution-badge">⚠️ CAUTION</span>`:`<span class="dv-strong-badge">🔥 STRONG</span>`}
-          ${firstTime?`<span style="font-size:.6rem;color:var(--ink3);white-space:nowrap;">🕐 ${firstTime}</span>`:''}
-        </div>
-        <div class="dv-lb-bar-wrap">
-          <div class="dv-lb-bar-bg"><div class="dv-lb-bar-fill" style="width:${Math.round(cnt/maxCount*100)}%"></div></div>
-          <span class="dv-lb-count">${cnt}×</span>
-        </div>
-      </div>`;
+    const lbIdx=[], lbFut=[], lbOpt=[];
+    lbData.forEach(([sym,cnt])=>{
+      const type=symType[sym]||'';
+      if(INDEX_SYMS.has(sym)) lbIdx.push([sym,cnt]);
+      else if(type==='FUT') lbFut.push([sym,cnt]);
+      else lbOpt.push([sym,cnt]);
     });
-    html+='</div>';
+
+    const renderLb=(data, title)=>{
+      if(!data.length) return '';
+      let h=`<div class="dv-sec-label" style="margin-top:20px;">🏆 ${title} Leaderboard</div>`;
+      data.slice(0,5).forEach(([sym,cnt],i)=>{
+        const firstTime=symFirstTime[sym]||'';
+        const strength=symStrength[sym]||'STRONG';
+        const signalType=symType[sym]||'';
+        h+=`<div class="dv-lb-item">
+          <span class="dv-lb-rank">${i+1}</span>
+          <div style="flex:1;min-width:0;display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
+            <span class="dv-lb-sym">${sym}</span>
+            <span style="font-size:.65rem;font-weight:700;padding:2px 8px;border-radius:4px;white-space:nowrap;background:var(--bg2);color:var(--ink2);border:1px solid var(--border);">${signalType}</span>
+            ${strength==='CAUTION'?`<span class="dv-caution-badge">&#9888;&#65039; CAUTION</span>`:`<span class="dv-strong-badge">&#128293; STRONG</span>`}
+            ${firstTime?`<span style="font-size:.6rem;color:var(--ink3);white-space:nowrap;">🕐 ${firstTime}</span>`:''}
+          </div>
+          <div class="dv-lb-bar-wrap">
+            <div class="dv-lb-bar-bg"><div class="dv-lb-bar-fill" style="width:${Math.round(cnt/maxCount*100)}%"></div></div>
+            <span class="dv-lb-count">${cnt}×</span>
+          </div>
+        </div>`;
+      });
+      return h;
+    };
+
+    html+=`<div id="dv-leaderboard">
+      ${renderLb(lbIdx, 'Index')}
+      ${renderLb(lbFut, 'Stock Futures')}
+      ${renderLb(lbOpt, 'Stock Options')}
+    </div>`;
   }
 
   body.innerHTML=html;

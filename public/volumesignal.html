@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Scalping Feed</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            background-color: #0b0f19; 
+            color: #e2e8f0; 
+            font-family: 'Inter', sans-serif; 
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        header {
+            background: linear-gradient(90deg, #111827 0%, #172554 100%);
+            border-bottom: 1px solid #1e293b;
+        }
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        .title h1 { font-size: 20px; font-weight: 700; color: #60a5fa; text-transform: uppercase; }
+        .status { display: flex; gap: 15px; align-items: center; }
+        .pulse { width: 10px; height: 10px; border-radius: 50%; background: #10b981; box-shadow: 0 0 10px #10b981; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0%, 100% { transform: scale(0.9); opacity: 0.8; } 50% { transform: scale(1.1); opacity: 1; }}
+        .time-box { background: #1e293b; border-radius: 4px; padding: 6px 12px; font-size: 13px; color: #cbd5e1; font-weight: 600; font-family: monospace; }
+        
+        main { padding: 20px 30px; flex: 1; max-width: 1200px; margin: 0 auto; width: 100%; }
+        
+        .list-header {
+            display: flex; padding: 10px 20px; color: #64748b; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; border-bottom: 1px solid #1e293b; margin-bottom: 10px;
+        }
+        .col-time { width: 100px; }
+        .col-symbol { width: 180px; }
+        .col-type { width: 160px; }
+        .col-price { width: 120px; text-align: right; }
+        .col-vol { width: 140px; text-align: right; }
+        .col-avgvol { width: 140px; text-align: right; }
+        .col-spike { flex: 1; text-align: right; }
+
+        .signal-list { display: flex; flex-direction: column; gap: 6px; }
+        
+        .row {
+            display: flex; align-items: center; background: #1e293b; padding: 14px 20px; border-radius: 6px; border-left: 4px solid transparent; transition: background 0.2s;
+        }
+        .row:hover { background: #334155; }
+        
+        .BULLISH { border-left-color: #10b981; }
+        .BEARISH { border-left-color: #ef4444; }
+        
+        .row .col-time { color: #94a3b8; font-family: monospace; font-size: 13px; }
+        .row .col-symbol { font-weight: 700; font-size: 16px; color: #f8fafc; }
+        .row .col-price { font-family: monospace; font-size: 15px; font-weight: 600; line-height: 1.2; }
+        .price-movement { font-size: 11px; font-weight: 700; display: block; margin-top: 2px; }
+        .BULLISH-text { color: #10b981; }
+        .BEARISH-text { color: #ef4444; }
+        
+        .row .col-vol { font-family: monospace; font-size: 14px; font-weight: 700; color: #f8fafc; }
+        .row .col-avgvol { font-family: monospace; font-size: 13px; color: #64748b; }
+        
+        .type-badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; }
+        .BULLISH .type-badge { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+        .BEARISH .type-badge { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+        
+        .spike-pill { display: inline-block; padding: 4px 10px; border-radius: 20px; background: #0f172a; font-size: 12px; font-weight: 700; color: #e2e8f0; border: 1px solid #334155; }
+        .BULLISH .spike-pill { color: #10b981; border-color: rgba(16, 185, 129, 0.3); }
+        .BEARISH .spike-pill { color: #ef4444; border-color: rgba(239, 68, 68, 0.3); }
+
+        #empty-state { text-align: center; color: #64748b; margin-top: 50px; font-style: italic; }
+
+        @keyframes flashNewBullish { 0% { background: #065f46; transform: translateX(-5px); } 100% { background: #1e293b; transform: translateX(0); } }
+        @keyframes flashNewBearish { 0% { background: #7f1d1d; transform: translateX(-5px); } 100% { background: #1e293b; transform: translateX(0); } }
+        .BULLISH.new-row { animation: flashNewBullish 0.8s ease-out forwards; }
+        .BEARISH.new-row { animation: flashNewBearish 0.8s ease-out forwards; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <div class="title">
+                <h1>Scalping Feed</h1>
+            </div>
+            <div class="status">
+                <div class="pulse" id="live-indicator"></div>
+                <div class="time-box" id="clock">--:--:--</div>
+                <div class="time-box">Total Hits: <span id="sig-count">0</span></div>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div class="list-header">
+            <div class="col-time">Time</div>
+            <div class="col-symbol">Symbol</div>
+            <div class="col-type">Signal</div>
+            <div class="col-price">LTP</div>
+            <div class="col-vol">Volume</div>
+            <div class="col-avgvol">30D Avg Vol</div>
+            <div class="col-spike">Spike Power</div>
+        </div>
+        <div id="empty-state">Connecting to Serverless Feed...</div>
+        <div class="signal-list" id="list"></div>
+    </main>
+
+    <script>
+        // ==========================================
+        // YAHAN PAR APNA R2 PUBLIC URL DAALIYE
+        // ==========================================
+        const PUBLIC_R2_URL = "https://pub-ced41a0bcdfc4c8da30ae906c5f3a3f7.r2.dev/signals/live_alerts.json";
+        
+        let previousDataStr = '';
+
+        setInterval(() => {
+            document.getElementById('clock').innerText = new Date().toLocaleTimeString('en-US', { hour12: false });
+        }, 1000);
+
+        async function fetchData() {
+            if (PUBLIC_R2_URL.includes("LINK-YAHAN-DAALIYE")) {
+                document.getElementById('empty-state').innerText = "Developer ne URL add nahi kiya hai! Code me apna R2 URL update karein.";
+                document.getElementById('live-indicator').style.backgroundColor = '#ef4444';
+                return;
+            }
+
+            try {
+                const res = await fetch(PUBLIC_R2_URL + '?t=' + Date.now());
+                if (!res.ok) return;
+                
+                const text = await res.text();
+                if(text === previousDataStr) return; // No change
+                
+                previousDataStr = text;
+                const json = JSON.parse(text);
+                
+                // Sort signals to make sure newest is always on TOP
+                let sortedSignals = (json.signals || []).sort((a,b) => {
+                    return a.timestamp < b.timestamp ? 1 : -1;
+                });
+                
+                renderList(sortedSignals);
+                
+                document.getElementById('sig-count').innerText = sortedSignals.length;
+                document.getElementById('live-indicator').style.backgroundColor = '#10b981';
+                document.getElementById('live-indicator').style.boxShadow = '0 0 10px #10b981';
+                
+            } catch (err) {
+                document.getElementById('live-indicator').style.backgroundColor = '#ef4444';
+                document.getElementById('live-indicator').style.boxShadow = '0 0 10px #ef4444';
+            }
+        }
+        
+        let knownSymbols = new Set();
+
+        function renderList(signals) {
+            const list = document.getElementById('list');
+            if (signals.length === 0) {
+                document.getElementById('empty-state').style.display = 'block';
+                document.getElementById('empty-state').innerText = 'Listening for live volume spikes...';
+                list.innerHTML = '';
+                return;
+            }
+            document.getElementById('empty-state').style.display = 'none';
+            
+            let html = '';
+            for(let s of signals) {
+                const isNew = !knownSymbols.has(s.symbol);
+                knownSymbols.add(s.symbol);
+                
+                const isBull = (s.type || '').includes('BULLISH');
+                const typeClass = isBull ? 'BULLISH' : 'BEARISH';
+                const arrow = isBull ? '▲' : '▼';
+                const colorClass = isBull ? 'BULLISH-text' : 'BEARISH-text';
+                const newClass = isNew ? 'new-row' : '';
+                
+                const avgVolHtml = s.avg_vol ? new Intl.NumberFormat('en-IN').format(s.avg_vol) : '--';
+                
+                let chgHtml = '';
+                if (s.chg) {
+                    chgHtml = `<span class="price-movement ${colorClass}">${arrow} ${s.chg}</span>`;
+                }
+                
+                html += `
+                <div class="row ${typeClass} ${newClass}">
+                    <div class="col-time">${s.timestamp}</div>
+                    <div class="col-symbol">${s.symbol}</div>
+                    <div class="col-type"><span class="type-badge">${s.type}</span></div>
+                    <div class="col-price">
+                        ₹${parseFloat(s.ltp).toFixed(2)}
+                        ${chgHtml}
+                    </div>
+                    <div class="col-vol">${new Intl.NumberFormat('en-IN').format(s.volume)}</div>
+                    <div class="col-avgvol">${avgVolHtml}</div>
+                    <div class="col-spike"><span class="spike-pill">${s.vol_ratio}x Vol</span></div>
+                </div>
+                `;
+            }
+            list.innerHTML = html;
+        }
+
+        setInterval(fetchData, 1500); 
+        fetchData();
+    </script>
+</body>
+</html>

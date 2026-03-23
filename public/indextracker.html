@@ -424,8 +424,9 @@ async function fetchAll() {
   hideErr(); buildSkeletons(); resetHero();
 
   try {
-    const res = await fetch('http://localhost:5000/api/quotes');
-    if (!res.ok) throw new Error('Server error ' + res.status);
+    const R2_URL = 'https://pub-872ee524d3b44e039d5b82f78c97bbcb.r2.dev/quotes.json';
+    const res = await fetch(R2_URL + '?t=' + Date.now()); // cache bust
+    if (!res.ok) throw new Error('R2 error ' + res.status);
     const json = await res.json();
     if (json.status !== 'ok') throw new Error(json.message || 'Unknown error');
 
@@ -467,7 +468,7 @@ async function fetchAll() {
     const ts = json.timestamp || new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit'}) + ' IST';
     document.getElementById('footer').textContent = 'Last updated: ' + ts + '  ·  Source: NSE India';
   } catch(e) {
-    showErr('Cannot reach server. Is server.py running?  →  python server.py');
+    showErr('Data load nahi hua. nse_to_r2.py chalao apne PC pe.');
     console.error(e);
   }
 

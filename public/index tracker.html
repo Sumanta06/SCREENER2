@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>NSE Sector Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#f0f2f5; --surface:#fff; --surface2:#f7f8fa; --border:#e2e6ea;
+  --text:#1a1a2e; --text2:#5a6272; --text3:#9aa0ac;
+  --hero:#1a3c6e; --up:#16a34a; --up-bg:#dcfce7;
+  --down:#dc2626; --down-bg:#fee2e2;
+  --shadow:0 2px 12px rgba(0,0,0,0.07);
+}
+[data-theme="dark"]{
+  --bg:#0f1117; --surface:#1a1d27; --surface2:#13151e; --border:#2a2d3a;
+  --text:#e8eaf0; --text2:#9aa0b8; --text3:#5a607a;
+  --hero:#0d2240; --up:#4ade80; --up-bg:#052e16;
+  --down:#f87171; --down-bg:#450a0a;
+  --shadow:0 2px 12px rgba(0,0,0,0.35);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:background .3s,color .3s}
+
+/* Header */
+header{background:var(--surface);border-bottom:1px solid var(--border);height:52px;position:sticky;top:0;z-index:100;box-shadow:var(--shadow)}
+.hinner{max-width:1100px;margin:0 auto;padding:0 16px;height:100%;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.logo{display:flex;align-items:center;gap:9px;flex-shrink:0}
+.logo-icon{width:34px;height:34px;background:#1a3c6e;border-radius:9px;display:flex;align-items:center;justify-content:center}
+.logo-icon svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.logo-title{font-size:16px;font-weight:700;color:var(--text);white-space:nowrap}
+.logo-title b{color:#1a3c6e}
+[data-theme="dark"] .logo-title b{color:#60a5fa}
+.hright{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.mbadge{display:inline-flex;align-items:center;gap:5px;padding:0 10px;height:28px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+.mopen{background:var(--up-bg);color:var(--up)}
+.mclosed{background:var(--down-bg);color:var(--down)}
+.dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+.pulse{animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.ibtn{width:34px;height:34px;border-radius:9px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:background .2s;flex-shrink:0}
+.ibtn:hover{background:var(--border)}
+.rbtn{height:34px;padding:0 14px;border-radius:9px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;font-size:12px;font-weight:600;font-family:inherit;display:flex;align-items:center;gap:5px;white-space:nowrap}
+.rbtn:hover{background:var(--border)}
+.rbtn:disabled{opacity:.5;cursor:not-allowed}
+.spin{animation:spin .7s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Main */
+main{max-width:1100px;margin:0 auto;padding:20px 16px 40px}
+
+/* Error banner */
+.errbar{background:var(--down-bg);color:var(--down);border:1px solid var(--down);border-radius:10px;padding:10px 16px;font-size:13px;font-weight:500;margin-bottom:16px;display:none;align-items:center;gap:8px}
+
+/* Hero */
+.hero{background:var(--hero);border-radius:16px;padding:22px 24px;margin-bottom:24px;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;box-shadow:0 4px 24px rgba(13,34,64,.4)}
+.hleft .hlabel{font-size:10px;letter-spacing:1.2px;opacity:.55;text-transform:uppercase;margin-bottom:3px}
+.hleft .hname{font-size:14px;font-weight:600;opacity:.85;margin-bottom:10px}
+.hleft .hval{font-size:38px;font-weight:700;letter-spacing:-1.5px;line-height:1}
+.hleft .hchg{font-size:14px;font-weight:600;margin-top:7px}
+.h-up{color:#86efac} .h-dn{color:#fca5a5}
+.hmeta{text-align:right;font-size:12px;line-height:2.1;opacity:.7}
+.hmeta strong{font-size:13px;font-weight:600;opacity:.95}
+
+/* Skeleton */
+.sk{background:linear-gradient(90deg,rgba(255,255,255,.08) 25%,rgba(255,255,255,.18) 50%,rgba(255,255,255,.08) 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:7px}
+.sk-v{height:38px;width:190px}
+.sk-c{height:16px;width:130px;margin-top:8px}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.csk{background:linear-gradient(90deg,var(--surface2) 25%,var(--border) 50%,var(--surface2) 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:6px}
+.csk-v{height:22px;width:85px;margin-bottom:5px}
+.csk-c{height:13px;width:65px}
+
+/* Section */
+.stitle{font-size:11px;font-weight:700;color:var(--text3);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:12px}
+
+/* Grid */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;transition:transform .15s,box-shadow .15s}
+.card:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.ctop{display:flex;align-items:center;gap:8px;margin-bottom:11px}
+.cicon{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.cname{font-size:11px;font-weight:600;color:var(--text2);line-height:1.35}
+.cval{font-size:19px;font-weight:700;color:var(--text);letter-spacing:-.5px}
+.cchg{font-size:11px;font-weight:600;margin-top:4px}
+.up{color:var(--up)} .dn{color:var(--down)} .neu{color:var(--text3)}
+
+.footer{font-size:11px;color:var(--text3);text-align:center;margin-top:22px}
+
+@media(max-width:600px){
+  .logo-title{font-size:14px} .hleft .hval{font-size:28px} .hmeta{display:none}
+  .grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:400px){.mbadge{display:none}}
+</style>
+</head>
+<body>
+<header>
+  <div class="hinner">
+    <div class="logo">
+      <div class="logo-icon"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+      <span class="logo-title"><b>NSE</b> Tracker</span>
+    </div>
+    <div class="hright">
+      <span class="mbadge mclosed" id="mbadge"><span class="dot" id="mdot"></span><span id="mtxt">Checking...</span></span>
+      <button class="ibtn" id="thbtn" title="Toggle theme">🌙</button>
+      <button class="rbtn" id="rfbtn"><span id="rico">↻</span> Refresh</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="errbar" id="errbar">❌ <span id="errmsg"></span></div>
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hleft">
+      <div class="hlabel">Index</div>
+      <div class="hname">NIFTY 50</div>
+      <div id="hval" class="sk sk-v"></div>
+      <div id="hchg" class="sk sk-c"></div>
+    </div>
+    <div class="hmeta" id="hmeta" style="visibility:hidden">
+      Open &nbsp;<strong id="hopen">—</strong><br>
+      High &nbsp;<strong id="hhigh">—</strong><br>
+      Low &nbsp;&nbsp;<strong id="hlow">—</strong>
+    </div>
+  </div>
+
+  <div class="stitle">Sector Indices</div>
+  <div class="grid" id="grid"></div>
+  <div class="footer" id="footer"></div>
+</main>
+
+<script>
+const SECTORS = [
+  {sym:'^NSEBANK',   name:'Nifty Bank',    icon:'🏦', bg:'#dbeafe', bgd:'#1e3a5f'},
+  {sym:'^CNXIT',     name:'Nifty IT',      icon:'💻', bg:'#dcfce7', bgd:'#14532d'},
+  {sym:'^CNXPHARMA', name:'Nifty Pharma',  icon:'💊', bg:'#fef9c3', bgd:'#422006'},
+  {sym:'^CNXAUTO',   name:'Nifty Auto',    icon:'🚗', bg:'#fee2e2', bgd:'#450a0a'},
+  {sym:'^CNXFMCG',   name:'Nifty FMCG',   icon:'🛒', bg:'#dcfce7', bgd:'#14532d'},
+  {sym:'^CNXMETAL',  name:'Nifty Metal',   icon:'⚙️', bg:'#f3f4f6', bgd:'#1f2937'},
+  {sym:'^CNXREALTY', name:'Nifty Realty',  icon:'🏗️', bg:'#fce7f3', bgd:'#4a044e'},
+  {sym:'^CNXENERGY', name:'Nifty Energy',  icon:'⚡', bg:'#fef3c7', bgd:'#451a03'},
+  {sym:'^CNXMEDIA',  name:'Nifty Media',   icon:'📺', bg:'#ede9fe', bgd:'#2e1065'},
+  {sym:'^CNXPSUBANK',        name:'PSU Bank',      icon:'🏛️', bg:'#d1fae5', bgd:'#022c22'},
+  {sym:'^CNXINFRA',          name:'Nifty Infra',   icon:'🏭', bg:'#dcfce7', bgd:'#14532d'},
+];
+
+function isDark(){return document.documentElement.getAttribute('data-theme')==='dark'}
+
+function fmt(n){
+  if(n==null||isNaN(n)) return '—';
+  return n.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+function isOpen(){
+  const ist=new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Kolkata'}));
+  const d=ist.getDay(),m=ist.getHours()*60+ist.getMinutes();
+  return d>0&&d<6&&m>=555&&m<=930;
+}
+
+function setMarket(){
+  const open=isOpen();
+  const b=document.getElementById('mbadge'),dot=document.getElementById('mdot');
+  b.className='mbadge '+(open?'mopen':'mclosed');
+  dot.className='dot'+(open?' pulse':'');
+  document.getElementById('mtxt').textContent=open?'Market Open':'Market Closed';
+}
+
+function buildSkeletons(){
+  const g=document.getElementById('grid');
+  g.innerHTML='';
+  const dark=isDark();
+  SECTORS.forEach(s=>{
+    const el=document.createElement('div');
+    el.className='card'; el.id='c'+s.sym.replace(/\W/g,'_');
+    el.innerHTML=`<div class="ctop"><div class="cicon" style="background:${dark?s.bgd:s.bg}">${s.icon}</div><div class="cname">${s.name}</div></div><div class="csk csk-v"></div><div class="csk csk-c"></div>`;
+    g.appendChild(el);
+  });
+}
+
+function fillCard(s, q){
+  const el=document.getElementById('c'+s.sym.replace(/\W/g,'_'));
+  if(!el) return;
+  const dark=isDark();
+  const up=q.change>=0;
+  el.innerHTML=`
+    <div class="ctop">
+      <div class="cicon" style="background:${dark?s.bgd:s.bg}">${s.icon}</div>
+      <div class="cname">${s.name}</div>
+    </div>
+    <div class="cval">${fmt(q.price)}</div>
+    <div class="cchg ${up?'up':'dn'}">${up?'▲':'▼'} ${fmt(Math.abs(q.change))} (${Math.abs(q.pct).toFixed(2)}%)</div>`;
+}
+
+function errCard(s){
+  const el=document.getElementById('c'+s.sym.replace(/\W/g,'_'));
+  if(!el) return;
+  const dark=isDark();
+  el.innerHTML=`<div class="ctop"><div class="cicon" style="background:${dark?s.bgd:s.bg}">${s.icon}</div><div class="cname">${s.name}</div></div><div class="cval neu">—</div><div class="cchg neu">N/A</div>`;
+}
+
+function showErr(msg){const b=document.getElementById('errbar');b.style.display='flex';document.getElementById('errmsg').textContent=msg}
+function hideErr(){document.getElementById('errbar').style.display='none'}
+
+let busy=false;
+async function fetchAll(){
+  if(busy) return;
+  busy=true;
+  const btn=document.getElementById('rfbtn'), ico=document.getElementById('rico');
+  btn.disabled=true; ico.className='spin';
+  hideErr(); buildSkeletons();
+
+  // Reset hero skeleton
+  document.getElementById('hval').className='sk sk-v'; document.getElementById('hval').textContent='';
+  document.getElementById('hchg').className='sk sk-c'; document.getElementById('hchg').textContent='';
+  document.getElementById('hmeta').style.visibility='hidden';
+
+  try{
+    const res = await fetch('http://localhost:5000/api/quotes');
+    if(!res.ok) throw new Error('Server error '+res.status);
+    const json = await res.json();
+    if(json.status !== 'ok') throw new Error(json.message||'Unknown error');
+
+    const dataMap={};
+    json.data.forEach(q=>{ if(!q.error) dataMap[q.symbol]=q; });
+
+    // Fill Nifty 50
+    const n=dataMap['^NSEI'];
+    if(n){
+      const up=n.change>=0;
+      const vEl=document.getElementById('hval');
+      vEl.className='hleft .hval'; vEl.style.fontSize='38px'; vEl.style.fontWeight='700'; vEl.style.letterSpacing='-1.5px';
+      vEl.removeAttribute('class'); vEl.className='hval-live';
+      vEl.textContent=fmt(n.price);
+      const cEl=document.getElementById('hchg');
+      cEl.removeAttribute('class'); cEl.className='hchg-live hchg '+(up?'h-up':'h-dn');
+      cEl.textContent=(up?'▲':'▼')+' '+fmt(Math.abs(n.change))+' ('+Math.abs(n.pct).toFixed(2)+'%)';
+      document.getElementById('hopen').textContent=fmt(n.open);
+      document.getElementById('hhigh').textContent=fmt(n.high);
+      document.getElementById('hlow').textContent=fmt(n.low);
+      document.getElementById('hmeta').style.visibility='visible';
+    }
+
+    // Fill sectors
+    let errs=0;
+    SECTORS.forEach(s=>{
+      const q=dataMap[s.sym];
+      if(q) fillCard(s,q); else{errCard(s); errs++;}
+    });
+    if(errs>0) showErr(errs+' symbol(s) not available. Rest loaded fine.');
+
+    document.getElementById('footer').textContent=
+      'Last updated: '+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit'})+
+      ' IST  •  Live data via yfinance';
+  } catch(e){
+    showErr('Cannot connect to server. Is server.py running? → python server.py');
+    console.error(e);
+  }
+
+  ico.className=''; ico.textContent='↻'; btn.disabled=false; busy=false;
+}
+
+// Inline hero styles needed since class reuse issue
+const st=document.createElement('style');
+st.textContent='.hval-live{font-size:38px;font-weight:700;letter-spacing:-1.5px;line-height:1} .hchg{font-size:14px;font-weight:600;margin-top:7px}';
+document.head.appendChild(st);
+
+// Theme
+function applyTheme(t){
+  document.documentElement.setAttribute('data-theme',t);
+  document.getElementById('thbtn').textContent=t==='dark'?'☀️':'🌙';
+  localStorage.setItem('nse-theme',t);
+  buildSkeletons();
+}
+document.getElementById('thbtn').addEventListener('click',()=>applyTheme(isDark()?'light':'dark'));
+const saved=localStorage.getItem('nse-theme');
+if(saved) applyTheme(saved);
+else if(window.matchMedia('(prefers-color-scheme:dark)').matches) applyTheme('dark');
+
+document.getElementById('rfbtn').addEventListener('click',fetchAll);
+setInterval(fetchAll,60000);
+setMarket();
+fetchAll();
+</script>
+</body>
+</html>

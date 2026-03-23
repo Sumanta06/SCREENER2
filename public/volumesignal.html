@@ -39,13 +39,25 @@
         .list-header {
             display: flex; padding: 10px 20px; color: #64748b; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; border-bottom: 1px solid #1e293b; margin-bottom: 10px;
         }
+        .list-header div {
+            cursor: pointer;
+            user-select: none;
+            transition: color 0.1s;
+        }
+        .list-header div:hover {
+            color: #f8fafc;
+            background: rgba(255,255,255,0.05);
+            border-radius: 4px;
+        }
         .col-time { width: 100px; }
         .col-symbol { width: 180px; }
         .col-type { width: 160px; }
         .col-price { width: 120px; text-align: right; }
         .col-vol { width: 140px; text-align: right; }
         .col-avgvol { width: 140px; text-align: right; }
-        .col-spike { flex: 1; text-align: right; }
+        .col-spike { flex: 1; text-align: right; justify-content: flex-end; display: flex;}
+        
+        .sort-icon { display: inline-block; margin-left: 4px; margin-top: -2px; }
 
         .signal-list { display: flex; flex-direction: column; gap: 6px; }
         
@@ -76,7 +88,7 @@
         .BEARISH .spike-pill { color: #ef4444; border-color: rgba(239, 68, 68, 0.3); }
 
         #empty-state { text-align: center; color: #64748b; margin-top: 50px; font-style: italic; }
-
+        
         @keyframes flashNewBullish { 0% { background: #065f46; transform: translateX(-5px); } 100% { background: #1e293b; transform: translateX(0); } }
         @keyframes flashNewBearish { 0% { background: #7f1d1d; transform: translateX(-5px); } 100% { background: #1e293b; transform: translateX(0); } }
         .BULLISH.new-row { animation: flashNewBullish 0.8s ease-out forwards; }
@@ -98,59 +110,67 @@
     </header>
 
     <main>
-        <div class="list-header">
-            <div class="col-time">Time</div>
-            <div class="col-symbol">Symbol</div>
-            <div class="col-type">Signal</div>
-            <div class="col-price">LTP</div>
-            <div class="col-vol">Volume</div>
-            <div class="col-avgvol">30D Avg Vol</div>
-            <div class="col-spike">Spike Power</div>
+        <div class="list-header" title="Click any header to Sort data!">
+            <div class="col-time" onclick="setSort('timestamp')" data-sort="timestamp">Time <span class="sort-icon">↓</span></div>
+            <div class="col-symbol" onclick="setSort('symbol')" data-sort="symbol">Symbol <span class="sort-icon"></span></div>
+            <div class="col-type" onclick="setSort('type')" data-sort="type">Signal <span class="sort-icon"></span></div>
+            <div class="col-price" onclick="setSort('ltp')" data-sort="ltp">LTP <span class="sort-icon"></span></div>
+            <div class="col-vol" onclick="setSort('volume')" data-sort="volume">Volume <span class="sort-icon"></span></div>
+            <div class="col-avgvol" onclick="setSort('avg_vol')" data-sort="avg_vol">30D Avg Vol <span class="sort-icon"></span></div>
+            <div class="col-spike" onclick="setSort('vol_ratio')" data-sort="vol_ratio" style="padding-right: 15px;">Spike Power <span class="sort-icon"></span></div>
         </div>
         <div id="empty-state">Connecting to Serverless Feed...</div>
         <div class="signal-list" id="list"></div>
     </main>
 
     <script>
-        // ==========================================
-        // YAHAN PAR APNA R2 PUBLIC URL DAALIYE
-        // ==========================================
         const PUBLIC_R2_URL = "https://pub-ced41a0bcdfc4c8da30ae906c5f3a3f7.r2.dev/signals/live_alerts.json";
         
         let previousDataStr = '';
+        let currentSort = 'timestamp';
+        let sortDesc = true;
+        let latestSignals = [];
+
+        function setSort(key) {
+            if (currentSort === key) {
+                sortDesc = !sortDesc;
+            } else {
+                currentSort = key;
+                sortDesc = true;
+            }
+            updateHeaders();
+            if(latestSignals.length > 0) {
+                renderList(latestSignals);
+            }
+        }
+        
+        function updateHeaders() {
+            document.querySelectorAll('.list-header div').forEach(el => {
+                const icon = el.querySelector('.sort-icon');
+                if(!icon) return;
+                if (el.getAttribute('data-sort') === currentSort) {
+                    icon.innerText = sortDesc ? '↓' : '↑';
+                } else {
+                    icon.innerText = '';
+                }
+            });
+        }
 
         setInterval(() => {
             document.getElementById('clock').innerText = new Date().toLocaleTimeString('en-US', { hour12: false });
         }, 1000);
 
         async function fetchData() {
-            if (PUBLIC_R2_URL.includes("LINK-YAHAN-DAALIYE")) {
-                document.getElementById('empty-state').innerText = "Developer ne URL add nahi kiya hai! Code me apna R2 URL update karein.";
-                document.getElementById('live-indicator').style.backgroundColor = '#ef4444';
-                return;
-            }
-
             try {
                 const res = await fetch(PUBLIC_R2_URL + '?t=' + Date.now());
-                if (!res.ok) return;
+                if (!res.ok) throw new Error("Fetch failed");
+                const json = await res.json();
+                latestSignals = json.signals || [];
+                renderList(latestSignals);
                 
-                const text = await res.text();
-                if(text === previousDataStr) return; // No change
-                
-                previousDataStr = text;
-                const json = JSON.parse(text);
-                
-                // Sort signals to make sure newest is always on TOP
-                let sortedSignals = (json.signals || []).sort((a,b) => {
-                    return a.timestamp < b.timestamp ? 1 : -1;
-                });
-                
-                renderList(sortedSignals);
-                
-                document.getElementById('sig-count').innerText = sortedSignals.length;
+                document.getElementById('sig-count').innerText = latestSignals.length;
                 document.getElementById('live-indicator').style.backgroundColor = '#10b981';
                 document.getElementById('live-indicator').style.boxShadow = '0 0 10px #10b981';
-                
             } catch (err) {
                 document.getElementById('live-indicator').style.backgroundColor = '#ef4444';
                 document.getElementById('live-indicator').style.boxShadow = '0 0 10px #ef4444';
@@ -169,23 +189,32 @@
             }
             document.getElementById('empty-state').style.display = 'none';
             
+            // Dynamic Sort Logic
+            let sortedSignals = [...signals].sort((a,b) => {
+                let valA = a[currentSort];
+                let valB = b[currentSort];
+                
+                if (currentSort !== 'timestamp' && currentSort !== 'symbol' && currentSort !== 'type') {
+                    valA = parseFloat(valA) || 0;
+                    valB = parseFloat(valB) || 0;
+                }
+                
+                if (valA < valB) return sortDesc ? 1 : -1;
+                if (valA > valB) return sortDesc ? -1 : 1;
+                return 0;
+            });
+
             let html = '';
-            for(let s of signals) {
+            for(let s of sortedSignals) {
                 const isNew = !knownSymbols.has(s.symbol);
                 knownSymbols.add(s.symbol);
                 
                 const isBull = (s.type || '').includes('BULLISH');
                 const typeClass = isBull ? 'BULLISH' : 'BEARISH';
-                const arrow = isBull ? '▲' : '▼';
                 const colorClass = isBull ? 'BULLISH-text' : 'BEARISH-text';
                 const newClass = isNew ? 'new-row' : '';
                 
                 const avgVolHtml = s.avg_vol ? new Intl.NumberFormat('en-IN').format(s.avg_vol) : '--';
-                
-                let chgHtml = '';
-                if (s.chg) {
-                    chgHtml = `<span class="price-movement ${colorClass}">${arrow} ${s.chg}</span>`;
-                }
                 
                 html += `
                 <div class="row ${typeClass} ${newClass}">
@@ -194,7 +223,6 @@
                     <div class="col-type"><span class="type-badge">${s.type}</span></div>
                     <div class="col-price">
                         ₹${parseFloat(s.ltp).toFixed(2)}
-                        ${chgHtml}
                     </div>
                     <div class="col-vol">${new Intl.NumberFormat('en-IN').format(s.volume)}</div>
                     <div class="col-avgvol">${avgVolHtml}</div>

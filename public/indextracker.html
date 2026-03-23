@@ -4,285 +4,501 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>NSE Sector Tracker</title>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <style>
-:root{
-  --bg:#f0f2f5; --surface:#fff; --surface2:#f7f8fa; --border:#e2e6ea;
-  --text:#1a1a2e; --text2:#5a6272; --text3:#9aa0ac;
-  --hero:#1a3c6e; --up:#16a34a; --up-bg:#dcfce7;
-  --down:#dc2626; --down-bg:#fee2e2;
-  --shadow:0 2px 12px rgba(0,0,0,0.07);
+:root {
+  --bg:       #f4f5f7;
+  --surface:  #ffffff;
+  --surface2: #f0f1f4;
+  --border:   #e3e5ea;
+  --text:     #0f1923;
+  --text2:    #4a5568;
+  --text3:    #9aa5b4;
+  --accent:   #0052cc;
+  --up:       #0a7c42;
+  --up-bg:    #e3f5ec;
+  --down:     #c0392b;
+  --down-bg:  #fdecea;
+  --hero-bg:  #0f1923;
+  --hero-sub: rgba(255,255,255,0.5);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+  --radius:   12px;
 }
-[data-theme="dark"]{
-  --bg:#0f1117; --surface:#1a1d27; --surface2:#13151e; --border:#2a2d3a;
-  --text:#e8eaf0; --text2:#9aa0b8; --text3:#5a607a;
-  --hero:#0d2240; --up:#4ade80; --up-bg:#052e16;
-  --down:#f87171; --down-bg:#450a0a;
-  --shadow:0 2px 12px rgba(0,0,0,0.35);
+[data-theme="dark"] {
+  --bg:       #0b0e14;
+  --surface:  #141820;
+  --surface2: #1a1f2e;
+  --border:   #252b3b;
+  --text:     #e8ecf4;
+  --text2:    #8892a4;
+  --text3:    #4a5568;
+  --accent:   #4c9aff;
+  --up:       #36b37e;
+  --up-bg:    #0a2e1e;
+  --down:     #ff5630;
+  --down-bg:  #2e0a08;
+  --hero-bg:  #0b0e14;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.4);
 }
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:background .3s,color .3s}
 
-/* Header */
-header{background:var(--surface);border-bottom:1px solid var(--border);height:52px;position:sticky;top:0;z-index:100;box-shadow:var(--shadow)}
-.hinner{max-width:1100px;margin:0 auto;padding:0 16px;height:100%;display:flex;align-items:center;justify-content:space-between;gap:10px}
-.logo{display:flex;align-items:center;gap:9px;flex-shrink:0}
-.logo-icon{width:34px;height:34px;background:#1a3c6e;border-radius:9px;display:flex;align-items:center;justify-content:center}
-.logo-icon svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
-.logo-title{font-size:16px;font-weight:700;color:var(--text);white-space:nowrap}
-.logo-title b{color:#1a3c6e}
-[data-theme="dark"] .logo-title b{color:#60a5fa}
-.hright{display:flex;align-items:center;gap:8px;flex-shrink:0}
-.mbadge{display:inline-flex;align-items:center;gap:5px;padding:0 10px;height:28px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
-.mopen{background:var(--up-bg);color:var(--up)}
-.mclosed{background:var(--down-bg);color:var(--down)}
-.dot{width:6px;height:6px;border-radius:50%;background:currentColor}
-.pulse{animation:pulse 2s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-.ibtn{width:34px;height:34px;border-radius:9px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:background .2s;flex-shrink:0}
-.ibtn:hover{background:var(--border)}
-.rbtn{height:34px;padding:0 14px;border-radius:9px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;font-size:12px;font-weight:600;font-family:inherit;display:flex;align-items:center;gap:5px;white-space:nowrap}
-.rbtn:hover{background:var(--border)}
-.rbtn:disabled{opacity:.5;cursor:not-allowed}
-.spin{animation:spin .7s linear infinite;display:inline-block}
-@keyframes spin{to{transform:rotate(360deg)}}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* Main */
-main{max-width:1100px;margin:0 auto;padding:20px 16px 40px}
-
-/* Error banner */
-.errbar{background:var(--down-bg);color:var(--down);border:1px solid var(--down);border-radius:10px;padding:10px 16px;font-size:13px;font-weight:500;margin-bottom:16px;display:none;align-items:center;gap:8px}
-
-/* Hero */
-.hero{background:var(--hero);border-radius:16px;padding:22px 24px;margin-bottom:24px;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;box-shadow:0 4px 24px rgba(13,34,64,.4)}
-.hleft .hlabel{font-size:10px;letter-spacing:1.2px;opacity:.55;text-transform:uppercase;margin-bottom:3px}
-.hleft .hname{font-size:14px;font-weight:600;opacity:.85;margin-bottom:10px}
-.hleft .hval{font-size:38px;font-weight:700;letter-spacing:-1.5px;line-height:1}
-.hleft .hchg{font-size:14px;font-weight:600;margin-top:7px}
-.h-up{color:#86efac} .h-dn{color:#fca5a5}
-.hmeta{text-align:right;font-size:12px;line-height:2.1;opacity:.7}
-.hmeta strong{font-size:13px;font-weight:600;opacity:.95}
-
-/* Skeleton */
-.sk{background:linear-gradient(90deg,rgba(255,255,255,.08) 25%,rgba(255,255,255,.18) 50%,rgba(255,255,255,.08) 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:7px}
-.sk-v{height:38px;width:190px}
-.sk-c{height:16px;width:130px;margin-top:8px}
-@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
-.csk{background:linear-gradient(90deg,var(--surface2) 25%,var(--border) 50%,var(--surface2) 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:6px}
-.csk-v{height:22px;width:85px;margin-bottom:5px}
-.csk-c{height:13px;width:65px}
-
-/* Section */
-.stitle{font-size:11px;font-weight:700;color:var(--text3);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:12px}
-
-/* Grid */
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;transition:transform .15s,box-shadow .15s}
-.card:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
-.ctop{display:flex;align-items:center;gap:8px;margin-bottom:11px}
-.cicon{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
-.cname{font-size:11px;font-weight:600;color:var(--text2);line-height:1.35}
-.cval{font-size:19px;font-weight:700;color:var(--text);letter-spacing:-.5px}
-.cchg{font-size:11px;font-weight:600;margin-top:4px}
-.up{color:var(--up)} .dn{color:var(--down)} .neu{color:var(--text3)}
-
-.footer{font-size:11px;color:var(--text3);text-align:center;margin-top:22px}
-
-@media(max-width:600px){
-  .logo-title{font-size:14px} .hleft .hval{font-size:28px} .hmeta{display:none}
-  .grid{grid-template-columns:1fr 1fr}
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  font-size: 14px;
+  transition: background .25s, color .25s;
 }
-@media(max-width:400px){.mbadge{display:none}}
+
+/* ── Header ── */
+header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  height: 56px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: var(--shadow-sm);
+}
+.hinner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+.logo-mark {
+  width: 32px; height: 32px;
+  background: var(--accent);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+}
+.logo-mark svg { width: 16px; height: 16px; stroke: #fff; fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.logo-text { font-size: 15px; font-weight: 600; color: var(--text); letter-spacing: -.3px; }
+.logo-text span { color: var(--text3); font-weight: 400; }
+
+.hright { display: flex; align-items: center; gap: 8px; }
+
+.market-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 0 12px; height: 30px;
+  border-radius: 20px; font-size: 12px; font-weight: 500;
+  border: 1px solid;
+}
+.market-open  { background: var(--up-bg);   color: var(--up);   border-color: var(--up); }
+.market-closed{ background: var(--down-bg); color: var(--down); border-color: var(--down); }
+.dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.pulse { animation: pulse 1.8s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+.refresh-select {
+  height: 32px; padding: 0 10px;
+  border: 1px solid var(--border);
+  background: var(--surface2); color: var(--text2);
+  border-radius: 8px; font-size: 12px; font-family: inherit;
+  cursor: pointer; outline: none;
+  transition: border-color .2s;
+}
+.refresh-select:hover { border-color: var(--accent); color: var(--text); }
+
+.icon-btn {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface2); color: var(--text);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-size: 15px; transition: background .2s, border-color .2s;
+}
+.icon-btn:hover { background: var(--border); border-color: var(--text3); }
+
+.refresh-btn {
+  height: 32px; padding: 0 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface2); color: var(--text);
+  cursor: pointer; font-size: 12px; font-weight: 500; font-family: inherit;
+  display: flex; align-items: center; gap: 6px;
+  transition: background .2s, border-color .2s;
+}
+.refresh-btn:hover { background: var(--border); }
+.refresh-btn:disabled { opacity: .45; cursor: not-allowed; }
+.spin { display: inline-block; animation: spin .65s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Main ── */
+main { max-width: 1200px; margin: 0 auto; padding: 24px 20px 48px; }
+
+/* ── Error ── */
+.err-bar {
+  background: var(--down-bg); color: var(--down);
+  border: 1px solid var(--down);
+  border-radius: 10px; padding: 10px 16px;
+  font-size: 13px; font-weight: 500;
+  margin-bottom: 20px;
+  display: none; align-items: center; gap: 8px;
+}
+
+/* ── Hero ── */
+.hero {
+  background: var(--hero-bg);
+  border-radius: 16px;
+  padding: 28px 32px;
+  margin-bottom: 28px;
+  display: flex; justify-content: space-between; align-items: flex-start;
+  gap: 24px; flex-wrap: wrap;
+  box-shadow: var(--shadow-md);
+  position: relative; overflow: hidden;
+}
+.hero::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 80% 50%, rgba(0,82,204,.18) 0%, transparent 65%);
+  pointer-events: none;
+}
+.hero-left { position: relative; }
+.hero-label { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(255,255,255,.4); margin-bottom: 4px; font-family: 'DM Mono', monospace; }
+.hero-name  { font-size: 13px; font-weight: 500; color: rgba(255,255,255,.6); margin-bottom: 14px; }
+.hero-price { font-size: 44px; font-weight: 300; color: #fff; letter-spacing: -2px; line-height: 1; font-family: 'DM Mono', monospace; }
+.hero-change { font-size: 14px; font-weight: 500; margin-top: 10px; display: flex; align-items: center; gap: 6px; }
+.h-up { color: #57d9a3; } .h-dn { color: #ff8f73; }
+
+.hero-right { text-align: right; position: relative; display: flex; flex-direction: column; gap: 6px; }
+.hero-stat { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
+.hero-stat-label { font-size: 11px; color: rgba(255,255,255,.35); font-family: 'DM Mono', monospace; letter-spacing: .5px; }
+.hero-stat-val   { font-size: 13px; color: rgba(255,255,255,.75); font-weight: 500; font-family: 'DM Mono', monospace; }
+
+.hero-breadth {
+  margin-top: 10px;
+  display: flex; gap: 12px;
+  padding-top: 12px; border-top: 1px solid rgba(255,255,255,.08);
+}
+.breadth-item { text-align: right; }
+.breadth-num  { font-size: 16px; font-weight: 600; font-family: 'DM Mono', monospace; }
+.breadth-lbl  { font-size: 10px; color: rgba(255,255,255,.35); text-transform: uppercase; letter-spacing: 1px; margin-top: 1px; }
+.ba { color: #57d9a3; } .bd { color: #ff8f73; } .bu { color: rgba(255,255,255,.4); }
+
+/* skeleton hero */
+.sk { background: linear-gradient(90deg, rgba(255,255,255,.07) 25%, rgba(255,255,255,.15) 50%, rgba(255,255,255,.07) 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; border-radius: 6px; }
+.sk-h1 { height: 44px; width: 220px; }
+.sk-h2 { height: 14px; width: 150px; margin-top: 10px; }
+@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+/* ── Section title ── */
+.section-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 14px;
+}
+.section-title { font-size: 11px; font-weight: 600; color: var(--text3); letter-spacing: 1.4px; text-transform: uppercase; }
+
+/* ── Grid ── */
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  cursor: default;
+  transition: transform .15s, box-shadow .15s, border-color .15s;
+}
+.card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--text3); }
+
+.card-top { display: flex; align-items: center; gap: 9px; margin-bottom: 12px; }
+.card-icon {
+  width: 32px; height: 32px;
+  border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; flex-shrink: 0;
+}
+.card-name { font-size: 11px; font-weight: 500; color: var(--text2); line-height: 1.35; }
+
+.card-price { font-size: 20px; font-weight: 600; color: var(--text); letter-spacing: -.6px; font-family: 'DM Mono', monospace; }
+.card-change { font-size: 11px; font-weight: 500; margin-top: 4px; }
+.card-breadth { font-size: 10px; color: var(--text3); margin-top: 6px; display: flex; gap: 6px; }
+.cb-a { color: var(--up); } .cb-d { color: var(--down); }
+
+.up { color: var(--up); } .dn { color: var(--down); } .neu { color: var(--text3); }
+
+/* card skeleton */
+.csk { background: linear-gradient(90deg, var(--surface2) 25%, var(--border) 50%, var(--surface2) 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; border-radius: 5px; }
+.csk-v { height: 20px; width: 90px; margin-bottom: 6px; }
+.csk-c { height: 12px; width: 70px; }
+
+/* ── Last updated ── */
+.footer { font-size: 11px; color: var(--text3); text-align: center; margin-top: 24px; font-family: 'DM Mono', monospace; letter-spacing: .3px; }
+
+/* ── Responsive ── */
+@media(max-width:600px) {
+  .hero { padding: 20px; }
+  .hero-price { font-size: 32px; }
+  .hero-right { display: none; }
+  .grid { grid-template-columns: 1fr 1fr; }
+}
+@media(max-width:380px) { .market-pill { display: none; } }
 </style>
 </head>
 <body>
+
 <header>
   <div class="hinner">
-    <div class="logo">
-      <div class="logo-icon"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
-      <span class="logo-title"><b>NSE</b> Tracker</span>
-    </div>
+    <a class="logo" href="#">
+      <div class="logo-mark">
+        <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      </div>
+      <span class="logo-text">NSE <span>Tracker</span></span>
+    </a>
     <div class="hright">
-      <span class="mbadge mclosed" id="mbadge"><span class="dot" id="mdot"></span><span id="mtxt">Checking...</span></span>
-      <button class="ibtn" id="thbtn" title="Toggle theme">🌙</button>
-      <button class="rbtn" id="rfbtn"><span id="rico">↻</span> Refresh</button>
+      <span class="market-pill market-closed" id="mbadge">
+        <span class="dot" id="mdot"></span>
+        <span id="mtxt">Checking…</span>
+      </span>
+      <select class="refresh-select" id="interval-sel" title="Auto-refresh interval">
+        <option value="0">Manual</option>
+        <option value="30">30 sec</option>
+        <option value="60" selected>1 min</option>
+        <option value="120">2 min</option>
+        <option value="300">5 min</option>
+      </select>
+      <button class="icon-btn" id="theme-btn" title="Toggle theme">🌙</button>
+      <button class="refresh-btn" id="refresh-btn">
+        <span id="r-ico">↻</span> Refresh
+      </button>
     </div>
   </div>
 </header>
 
 <main>
-  <div class="errbar" id="errbar">❌ <span id="errmsg"></span></div>
+  <div class="err-bar" id="err-bar">⚠ <span id="err-msg"></span></div>
 
-  <!-- Hero -->
+  <!-- Hero: Nifty 50 -->
   <div class="hero">
-    <div class="hleft">
-      <div class="hlabel">Index</div>
-      <div class="hname">NIFTY 50</div>
-      <div id="hval" class="sk sk-v"></div>
-      <div id="hchg" class="sk sk-c"></div>
+    <div class="hero-left">
+      <div class="hero-label">Index</div>
+      <div class="hero-name">NIFTY 50</div>
+      <div id="h-price" class="sk sk-h1"></div>
+      <div id="h-change" class="sk sk-h2" style="margin-top:12px"></div>
     </div>
-    <div class="hmeta" id="hmeta" style="visibility:hidden">
-      Open &nbsp;<strong id="hopen">—</strong><br>
-      High &nbsp;<strong id="hhigh">—</strong><br>
-      Low &nbsp;&nbsp;<strong id="hlow">—</strong>
+    <div class="hero-right" id="h-right" style="visibility:hidden">
+      <div class="hero-stat"><span class="hero-stat-label">OPEN</span><span class="hero-stat-val" id="h-open">—</span></div>
+      <div class="hero-stat"><span class="hero-stat-label">HIGH</span><span class="hero-stat-val" id="h-high">—</span></div>
+      <div class="hero-stat"><span class="hero-stat-label">LOW &nbsp;</span><span class="hero-stat-val" id="h-low">—</span></div>
+      <div class="hero-stat"><span class="hero-stat-label">PREV</span><span class="hero-stat-val" id="h-prev">—</span></div>
+      <div class="hero-breadth">
+        <div class="breadth-item"><div class="breadth-num ba" id="h-adv">—</div><div class="breadth-lbl">ADV</div></div>
+        <div class="breadth-item"><div class="breadth-num bd" id="h-dec">—</div><div class="breadth-lbl">DEC</div></div>
+        <div class="breadth-item"><div class="breadth-num bu" id="h-unch">—</div><div class="breadth-lbl">UNCH</div></div>
+      </div>
     </div>
   </div>
 
-  <div class="stitle">Sector Indices</div>
+  <div class="section-head">
+    <div class="section-title">Sector Indices</div>
+  </div>
   <div class="grid" id="grid"></div>
   <div class="footer" id="footer"></div>
 </main>
 
 <script>
 const SECTORS = [
-  {sym:'^NSEBANK',   name:'Nifty Bank',    icon:'🏦', bg:'#dbeafe', bgd:'#1e3a5f'},
-  {sym:'^CNXIT',     name:'Nifty IT',      icon:'💻', bg:'#dcfce7', bgd:'#14532d'},
-  {sym:'^CNXPHARMA', name:'Nifty Pharma',  icon:'💊', bg:'#fef9c3', bgd:'#422006'},
-  {sym:'^CNXAUTO',   name:'Nifty Auto',    icon:'🚗', bg:'#fee2e2', bgd:'#450a0a'},
-  {sym:'^CNXFMCG',   name:'Nifty FMCG',   icon:'🛒', bg:'#dcfce7', bgd:'#14532d'},
-  {sym:'^CNXMETAL',  name:'Nifty Metal',   icon:'⚙️', bg:'#f3f4f6', bgd:'#1f2937'},
-  {sym:'^CNXREALTY', name:'Nifty Realty',  icon:'🏗️', bg:'#fce7f3', bgd:'#4a044e'},
-  {sym:'^CNXENERGY', name:'Nifty Energy',  icon:'⚡', bg:'#fef3c7', bgd:'#451a03'},
-  {sym:'^CNXMEDIA',  name:'Nifty Media',   icon:'📺', bg:'#ede9fe', bgd:'#2e1065'},
-  {sym:'^CNXPSUBANK',        name:'PSU Bank',      icon:'🏛️', bg:'#d1fae5', bgd:'#022c22'},
-  {sym:'^CNXINFRA',          name:'Nifty Infra',   icon:'🏭', bg:'#dcfce7', bgd:'#14532d'},
+  {sym:'NIFTY BANK',        name:'Nifty Bank',     icon:'🏦', bg:'#dbeafe', bgd:'#1e3a5f'},
+  {sym:'NIFTY IT',          name:'Nifty IT',        icon:'💻', bg:'#dcfce7', bgd:'#14532d'},
+  {sym:'NIFTY PHARMA',      name:'Nifty Pharma',    icon:'💊', bg:'#fef9c3', bgd:'#3b2005'},
+  {sym:'NIFTY AUTO',        name:'Nifty Auto',      icon:'🚗', bg:'#fee2e2', bgd:'#450a0a'},
+  {sym:'NIFTY FMCG',        name:'Nifty FMCG',      icon:'🛒', bg:'#dcfce7', bgd:'#14532d'},
+  {sym:'NIFTY METAL',       name:'Nifty Metal',     icon:'⚙️',  bg:'#f3f4f6', bgd:'#1f2937'},
+  {sym:'NIFTY REALTY',      name:'Nifty Realty',    icon:'🏗️',  bg:'#fce7f3', bgd:'#4a044e'},
+  {sym:'NIFTY ENERGY',      name:'Nifty Energy',    icon:'⚡', bg:'#fef3c7', bgd:'#451a03'},
+  {sym:'NIFTY MEDIA',       name:'Nifty Media',     icon:'📺', bg:'#ede9fe', bgd:'#2e1065'},
+  {sym:'NIFTY PSU BANK',    name:'PSU Bank',         icon:'🏛️',  bg:'#d1fae5', bgd:'#022c22'},
+  {sym:'NIFTY OIL AND GAS', name:'Oil & Gas',        icon:'🛢️',  bg:'#dbeafe', bgd:'#1e3a5f'},
+  {sym:'NIFTY INFRA',       name:'Nifty Infra',      icon:'🏭', bg:'#dcfce7', bgd:'#14532d'},
+  {sym:'NIFTY FIN SERVICE', name:'Financial Svcs',   icon:'💰', bg:'#fef9c3', bgd:'#3b2005'},
+  {sym:'NIFTY HEALTHCARE',  name:'Healthcare',       icon:'🩺', bg:'#fee2e2', bgd:'#450a0a'},
+  {sym:'NIFTY CONSR DURBL', name:'Consumer Dur.',    icon:'📱', bg:'#ede9fe', bgd:'#2e1065'},
+  {sym:'NIFTY MID SELECT',  name:'Midcap Select',   icon:'📊', bg:'#d1fae5', bgd:'#022c22'},
 ];
 
-function isDark(){return document.documentElement.getAttribute('data-theme')==='dark'}
+const isDark = () => document.documentElement.getAttribute('data-theme') === 'dark';
 
-function fmt(n){
-  if(n==null||isNaN(n)) return '—';
-  return n.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+function fmt(n) {
+  if (n == null || isNaN(n)) return '—';
+  return n.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
 }
 
-function isOpen(){
-  const ist=new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Kolkata'}));
-  const d=ist.getDay(),m=ist.getHours()*60+ist.getMinutes();
-  return d>0&&d<6&&m>=555&&m<=930;
+function isMarketOpen() {
+  const ist = new Date(new Date().toLocaleString('en-US', {timeZone:'Asia/Kolkata'}));
+  const d = ist.getDay(), m = ist.getHours()*60 + ist.getMinutes();
+  return d > 0 && d < 6 && m >= 555 && m <= 930;
 }
 
-function setMarket(){
-  const open=isOpen();
-  const b=document.getElementById('mbadge'),dot=document.getElementById('mdot');
-  b.className='mbadge '+(open?'mopen':'mclosed');
-  dot.className='dot'+(open?' pulse':'');
-  document.getElementById('mtxt').textContent=open?'Market Open':'Market Closed';
+function updateMarketBadge() {
+  const open = isMarketOpen();
+  const badge = document.getElementById('mbadge');
+  const dot   = document.getElementById('mdot');
+  badge.className = 'market-pill ' + (open ? 'market-open' : 'market-closed');
+  dot.className   = 'dot' + (open ? ' pulse' : '');
+  document.getElementById('mtxt').textContent = open ? 'Market Open' : 'Market Closed';
 }
 
-function buildSkeletons(){
-  const g=document.getElementById('grid');
-  g.innerHTML='';
-  const dark=isDark();
-  SECTORS.forEach(s=>{
-    const el=document.createElement('div');
-    el.className='card'; el.id='c'+s.sym.replace(/\W/g,'_');
-    el.innerHTML=`<div class="ctop"><div class="cicon" style="background:${dark?s.bgd:s.bg}">${s.icon}</div><div class="cname">${s.name}</div></div><div class="csk csk-v"></div><div class="csk csk-c"></div>`;
+function buildSkeletons() {
+  const g = document.getElementById('grid');
+  g.innerHTML = '';
+  const dark = isDark();
+  SECTORS.forEach(s => {
+    const el = document.createElement('div');
+    el.className = 'card';
+    el.id = 'card_' + s.sym.replace(/\W/g,'_');
+    el.innerHTML = `
+      <div class="card-top">
+        <div class="card-icon" style="background:${dark ? s.bgd : s.bg}">${s.icon}</div>
+        <div class="card-name">${s.name}</div>
+      </div>
+      <div class="csk csk-v"></div>
+      <div class="csk csk-c"></div>`;
     g.appendChild(el);
   });
 }
 
-function fillCard(s, q){
-  const el=document.getElementById('c'+s.sym.replace(/\W/g,'_'));
-  if(!el) return;
-  const dark=isDark();
-  const up=q.change>=0;
-  el.innerHTML=`
-    <div class="ctop">
-      <div class="cicon" style="background:${dark?s.bgd:s.bg}">${s.icon}</div>
-      <div class="cname">${s.name}</div>
+function fillCard(s, q) {
+  const el = document.getElementById('card_' + s.sym.replace(/\W/g,'_'));
+  if (!el) return;
+  const dark = isDark();
+  const up = q.change >= 0;
+  const adv = parseInt(q.advances) || 0;
+  const dec = parseInt(q.declines) || 0;
+  el.innerHTML = `
+    <div class="card-top">
+      <div class="card-icon" style="background:${dark ? s.bgd : s.bg}">${s.icon}</div>
+      <div class="card-name">${s.name}</div>
     </div>
-    <div class="cval">${fmt(q.price)}</div>
-    <div class="cchg ${up?'up':'dn'}">${up?'▲':'▼'} ${fmt(Math.abs(q.change))} (${Math.abs(q.pct).toFixed(2)}%)</div>`;
+    <div class="card-price">${fmt(q.price)}</div>
+    <div class="card-change ${up ? 'up' : 'dn'}">${up ? '▲' : '▼'} ${fmt(Math.abs(q.change))} (${Math.abs(q.pct).toFixed(2)}%)</div>
+    ${(adv || dec) ? `<div class="card-breadth"><span class="cb-a">▲${adv}</span><span class="cb-d">▼${dec}</span></div>` : ''}`;
 }
 
-function errCard(s){
-  const el=document.getElementById('c'+s.sym.replace(/\W/g,'_'));
-  if(!el) return;
-  const dark=isDark();
-  el.innerHTML=`<div class="ctop"><div class="cicon" style="background:${dark?s.bgd:s.bg}">${s.icon}</div><div class="cname">${s.name}</div></div><div class="cval neu">—</div><div class="cchg neu">N/A</div>`;
+function errCard(s) {
+  const el = document.getElementById('card_' + s.sym.replace(/\W/g,'_'));
+  if (!el) return;
+  const dark = isDark();
+  el.innerHTML = `
+    <div class="card-top">
+      <div class="card-icon" style="background:${dark ? s.bgd : s.bg}">${s.icon}</div>
+      <div class="card-name">${s.name}</div>
+    </div>
+    <div class="card-price neu">—</div>
+    <div class="card-change neu">N/A</div>`;
 }
 
-function showErr(msg){const b=document.getElementById('errbar');b.style.display='flex';document.getElementById('errmsg').textContent=msg}
-function hideErr(){document.getElementById('errbar').style.display='none'}
+function showErr(msg) { const b=document.getElementById('err-bar'); b.style.display='flex'; document.getElementById('err-msg').textContent=msg; }
+function hideErr()    { document.getElementById('err-bar').style.display='none'; }
 
-let busy=false;
-async function fetchAll(){
-  if(busy) return;
-  busy=true;
-  const btn=document.getElementById('rfbtn'), ico=document.getElementById('rico');
-  btn.disabled=true; ico.className='spin';
-  hideErr(); buildSkeletons();
+// Hero skeleton reset
+function resetHero() {
+  const hp = document.getElementById('h-price');
+  hp.className = 'sk sk-h1'; hp.textContent = '';
+  const hc = document.getElementById('h-change');
+  hc.className = 'sk sk-h2'; hc.textContent = '';
+  document.getElementById('h-right').style.visibility = 'hidden';
+}
 
-  // Reset hero skeleton
-  document.getElementById('hval').className='sk sk-v'; document.getElementById('hval').textContent='';
-  document.getElementById('hchg').className='sk sk-c'; document.getElementById('hchg').textContent='';
-  document.getElementById('hmeta').style.visibility='hidden';
+let busy = false;
+async function fetchAll() {
+  if (busy) return;
+  busy = true;
+  const btn = document.getElementById('refresh-btn');
+  const ico = document.getElementById('r-ico');
+  btn.disabled = true; ico.className = 'spin'; ico.textContent = '↻';
+  hideErr(); buildSkeletons(); resetHero();
 
-  try{
+  try {
     const res = await fetch('http://localhost:5000/api/quotes');
-    if(!res.ok) throw new Error('Server error '+res.status);
+    if (!res.ok) throw new Error('Server error ' + res.status);
     const json = await res.json();
-    if(json.status !== 'ok') throw new Error(json.message||'Unknown error');
+    if (json.status !== 'ok') throw new Error(json.message || 'Unknown error');
 
-    const dataMap={};
-    json.data.forEach(q=>{ if(!q.error) dataMap[q.symbol]=q; });
+    const map = {};
+    json.data.forEach(q => { map[q.symbol] = q; });
 
-    // Fill Nifty 50
-    const n=dataMap['^NSEI'];
-    if(n){
-      const up=n.change>=0;
-      const vEl=document.getElementById('hval');
-      vEl.className='hleft .hval'; vEl.style.fontSize='38px'; vEl.style.fontWeight='700'; vEl.style.letterSpacing='-1.5px';
-      vEl.removeAttribute('class'); vEl.className='hval-live';
-      vEl.textContent=fmt(n.price);
-      const cEl=document.getElementById('hchg');
-      cEl.removeAttribute('class'); cEl.className='hchg-live hchg '+(up?'h-up':'h-dn');
-      cEl.textContent=(up?'▲':'▼')+' '+fmt(Math.abs(n.change))+' ('+Math.abs(n.pct).toFixed(2)+'%)';
-      document.getElementById('hopen').textContent=fmt(n.open);
-      document.getElementById('hhigh').textContent=fmt(n.high);
-      document.getElementById('hlow').textContent=fmt(n.low);
-      document.getElementById('hmeta').style.visibility='visible';
+    // Fill Nifty 50 hero
+    const n = map['NIFTY 50'];
+    if (n) {
+      const up = n.change >= 0;
+      const hp = document.getElementById('h-price');
+      hp.removeAttribute('class');
+      hp.style.cssText = 'font-size:44px;font-weight:300;color:#fff;letter-spacing:-2px;line-height:1;font-family:"DM Mono",monospace';
+      hp.textContent = fmt(n.price);
+
+      const hc = document.getElementById('h-change');
+      hc.removeAttribute('class');
+      hc.className = 'hero-change ' + (up ? 'h-up' : 'h-dn');
+      hc.textContent = (up ? '▲ ' : '▼ ') + fmt(Math.abs(n.change)) + '  (' + Math.abs(n.pct).toFixed(2) + '%)';
+
+      document.getElementById('h-open').textContent = fmt(n.open);
+      document.getElementById('h-high').textContent = fmt(n.high);
+      document.getElementById('h-low').textContent  = fmt(n.low);
+      document.getElementById('h-prev').textContent = fmt(n.prev);
+      document.getElementById('h-adv').textContent  = n.advances  || '—';
+      document.getElementById('h-dec').textContent  = n.declines  || '—';
+      document.getElementById('h-unch').textContent = n.unchanged || '—';
+      document.getElementById('h-right').style.visibility = 'visible';
     }
 
-    // Fill sectors
-    let errs=0;
-    SECTORS.forEach(s=>{
-      const q=dataMap[s.sym];
-      if(q) fillCard(s,q); else{errCard(s); errs++;}
+    // Fill sector cards
+    let errs = 0;
+    SECTORS.forEach(s => {
+      const q = map[s.sym];
+      if (q) fillCard(s, q); else { errCard(s); errs++; }
     });
-    if(errs>0) showErr(errs+' symbol(s) not available. Rest loaded fine.');
+    if (errs > 0) showErr(errs + ' symbol(s) not found in NSE response.');
 
-    document.getElementById('footer').textContent=
-      'Last updated: '+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit'})+
-      ' IST  •  Live data via yfinance';
-  } catch(e){
-    showErr('Cannot connect to server. Is server.py running? → python server.py');
+    const ts = json.timestamp || new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit'}) + ' IST';
+    document.getElementById('footer').textContent = 'Last updated: ' + ts + '  ·  Source: NSE India';
+  } catch(e) {
+    showErr('Cannot reach server. Is server.py running?  →  python server.py');
     console.error(e);
   }
 
-  ico.className=''; ico.textContent='↻'; btn.disabled=false; busy=false;
+  ico.className = ''; ico.textContent = '↻'; btn.disabled = false; busy = false;
 }
 
-// Inline hero styles needed since class reuse issue
-const st=document.createElement('style');
-st.textContent='.hval-live{font-size:38px;font-weight:700;letter-spacing:-1.5px;line-height:1} .hchg{font-size:14px;font-weight:600;margin-top:7px}';
-document.head.appendChild(st);
+// ── Auto-refresh ──
+let refreshTimer = null;
+function setRefreshTimer() {
+  clearInterval(refreshTimer);
+  const val = parseInt(document.getElementById('interval-sel').value);
+  if (val > 0) refreshTimer = setInterval(fetchAll, val * 1000);
+}
+document.getElementById('interval-sel').addEventListener('change', setRefreshTimer);
 
-// Theme
-function applyTheme(t){
-  document.documentElement.setAttribute('data-theme',t);
-  document.getElementById('thbtn').textContent=t==='dark'?'☀️':'🌙';
-  localStorage.setItem('nse-theme',t);
+// ── Theme ──
+function applyTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  document.getElementById('theme-btn').textContent = t === 'dark' ? '☀️' : '🌙';
+  localStorage.setItem('nse-theme', t);
   buildSkeletons();
 }
-document.getElementById('thbtn').addEventListener('click',()=>applyTheme(isDark()?'light':'dark'));
-const saved=localStorage.getItem('nse-theme');
-if(saved) applyTheme(saved);
-else if(window.matchMedia('(prefers-color-scheme:dark)').matches) applyTheme('dark');
+document.getElementById('theme-btn').addEventListener('click', () => applyTheme(isDark() ? 'light' : 'dark'));
 
-document.getElementById('rfbtn').addEventListener('click',fetchAll);
-setInterval(fetchAll,60000);
-setMarket();
+const saved = localStorage.getItem('nse-theme');
+if (saved) applyTheme(saved);
+else if (window.matchMedia('(prefers-color-scheme:dark)').matches) applyTheme('dark');
+
+document.getElementById('refresh-btn').addEventListener('click', fetchAll);
+updateMarketBadge();
+setRefreshTimer();
 fetchAll();
 </script>
 </body>

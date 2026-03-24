@@ -42,6 +42,133 @@ const WORKER = 'https://spurts-ul.21aoips3531a1zi.workers.dev/';
 ════════════════════════════════════════ */
 let _adTimer       = null;
 let _adLastSavedAt = null;
+let _adResults     = [];   // stored for CSV export
+
+/* ════════════════════════════════════════
+   CSV EXPORT HELPERS
+════════════════════════════════════════ */
+function escCsv(v){
+  const s = (v === null || v === undefined) ? '' : String(v);
+  return (s.includes(',') || s.includes('"') || s.includes('\n'))
+    ? '"' + s.replace(/"/g,'""') + '"' : s;
+}
+function downloadCsv(filename, rows){
+  const csv  = rows.map(r => r.map(escCsv).join(',')).join('\r\n');
+  const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = filename; a.style.display='none';
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 1000);
+}
+
+function exportADCSV(){
+  if(!_adResults.length){ alert('A/D data abhi available nahi hai. Pehle load karo.'); return; }
+  const today = new Date().toISOString().slice(0,10);
+  const rows  = [['Scan Time','Base Time','Symbol','Type','Price Δ%','OI Δ%','Base Price (₹)','Age (mins)','Freshness']];
+  _adResults.forEach(r => {
+    const comparisons = r.comparisons || [];
+    const fallback    = [];
+    if(!comparisons.length && (r.accSignals || r.distSignals)){
+      fallback.push({ baseTimeStr:r.baseTimeStr||'—', accSignals:r.accSignals||[], distSignals:r.distSignals||[], accCount:r.accCount||0, distCount:r.distCount||0 });
+    }
+    const comps = comparisons.length ? comparisons : fallback;
+    const scanMs = r.savedAt ? new Date(r.savedAt).getTime() : Date.now();
+    comps.forEach(comp => {
+      const allSigs = [
+        ...(comp.accSignals||[]).map(s=>({...s,adType:'Accumulation'})),
+        ...(comp.distSignals||[]).map(s=>({...s,adType:'Distribution'})),
+      ];
+      allSigs.forEach(s => {
+        let gapMins = 10;
+        if(comp.baseTimeStr){
+          try{
+            const [hhmm,ap] = comp.baseTimeStr.split(' ');
+            let [hh,mm]     = hhmm.split(':').map(Number);
+            if(ap==='PM'&&hh!==12) hh+=12;
+            if(ap==='AM'&&hh===12) hh=0;
+            const baseMs = new Date(new Date(scanMs).toDateString()+' '+hh+':'+mm).getTime();
+            gapMins = Math.max(0,Math.round((scanMs-baseMs)/60000));
+          }catch(e){}
+        }
+        const freshness = gapMins<20?'Fresh':gapMins<40?'Watch':'Very Old';
+        const basePrice = (s.priceBase && parseFloat(s.priceBase)>0) ? parseFloat(s.priceBase) : (parseFloat(s.priceNow)||0);
+        rows.push([
+          r.timeStr||'—',
+          comp.baseTimeStr||'—',
+          s.symbol||'',
+          s.adType,
+          (parseFloat(s.pricePct)||0).toFixed(2),
+          (parseFloat(s.oiPct)||0).toFixed(2),
+          basePrice ? basePrice.toFixed(2) : '',
+          gapMins,
+          freshness,
+        ]);
+      });
+    });
+  });
+  if(rows.length <= 1){ alert('Koi A/D signal nahi mila export karne ke liye.'); return; }
+  downloadCsv('AD_Signals_'+today+'.csv', rows);
+}
+
+let _dvResults = [];   // stored for CSV export
+
+function exportDVCSV(){
+  if(!_dvResults.length){ alert('Day View data abhi available nahi hai. Pehle load karo.'); return; }
+  const today = new Date().toISOString().slice(0,10);
+  const SIG_LABEL_MAP = {
+    long:'Long Buildup', cover:'Short Covering', acc:'Accumulation',
+    short:'Short Buildup', unwind:'Long Unwinding', dist:'Distribution',
+  };
+  const strongMap_all = {};
+  _dvResults.forEach(r => {
+    (r.strong||[]).forEach(s => {
+      const [sym,type,strength,cnt] = s.split(':');
+      if(!strongMap_all[sym]) strongMap_all[sym] = { strength: strength||'STRONG', cnt: parseInt(cnt)||2 };
+    });
+  });
+  const rows = [['Scan Time','Base Time','Symbol','Signal Type','Price Δ%','OI Δ%','Base Price (₹)','Age (mins)','Freshness','Strong']];
+  _dvResults.forEach(r => {
+    const scanMs = r.savedAt ? new Date(r.savedAt).getTime() : Date.now();
+    const strongMap = {};
+    (r.strong||[]).forEach(s => {
+      const [sym,type,strength] = s.split(':');
+      strongMap[sym] = strength||'STRONG';
+    });
+    (r.comparisons||[]).forEach((comp,cidx) => {
+      let gapMins = (cidx+1)*10;
+      if(comp.baseTimeStr){
+        try{
+          const [hhmm,ap] = comp.baseTimeStr.split(' ');
+          let [hh,mm]     = hhmm.split(':').map(Number);
+          if(ap==='PM'&&hh!==12) hh+=12;
+          if(ap==='AM'&&hh===12) hh=0;
+          const baseMs = new Date(new Date(scanMs).toDateString()+' '+hh+':'+mm).getTime();
+          gapMins = Math.max(0,Math.round((scanMs-baseMs)/60000));
+        }catch(e){}
+      }
+      const freshness = gapMins<20?'Fresh':gapMins<40?'Watch':'Very Old';
+      (comp.signals||[]).forEach(s => {
+        const [sym,type,pricePct,oiPct,priceNow,oiNow,priceBase] = s.split(':');
+        const bp = (priceBase && parseFloat(priceBase)>0) ? parseFloat(priceBase) : (parseFloat(priceNow)||0);
+        rows.push([
+          r.timeStr||'—',
+          comp.baseTimeStr||'—',
+          sym||'',
+          SIG_LABEL_MAP[type]||type||'',
+          (parseFloat(pricePct)||0).toFixed(2),
+          (parseFloat(oiPct)||0).toFixed(2),
+          bp ? bp.toFixed(2) : '',
+          gapMins,
+          freshness,
+          strongMap[sym] ? (strongMap[sym]==='CAUTION'?'CAUTION':'STRONG') : '',
+        ]);
+      });
+    });
+  });
+  if(rows.length <= 1){ alert('Koi Day View signal nahi mila export karne ke liye.'); return; }
+  downloadCsv('DayView_Signals_'+today+'.csv', rows);
+}
 
 async function loadAD(){
   const body = document.getElementById('ad-body');
@@ -70,6 +197,7 @@ async function loadAD(){
       return;
     }
     _adLastSavedAt = results[results.length-1].savedAt;
+    _adResults = results;
     renderAD(results, body, sub);
   } catch(e){
     body.innerHTML = `<div class="ad-empty">⚠️ Failed: ${e.message}</div>`;
@@ -87,6 +215,7 @@ async function loadADSmart(){
     const latest = results[results.length-1].savedAt;
     if(latest === _adLastSavedAt) return;
     _adLastSavedAt = latest;
+    _adResults = results;
     const body = document.getElementById('ad-body');
     const sub  = document.getElementById('ad-subtitle');
     renderAD(results, body, sub);
@@ -1770,6 +1899,7 @@ async function loadDayView(){
     const results = j.results||[];
     window._dvDebug = j.debug || {};
     if(results.length) _dvLastSavedAt = results[results.length-1].savedAt;
+    _dvResults = results;
     renderDayView(results);
   } catch(e){
     body.innerHTML = `<div class="dv-empty"><div class="dv-empty-icon">⚠️</div>Failed to load: ${e.message}</div>`;
@@ -1787,6 +1917,7 @@ async function loadDayViewSmart(){
     const latestSavedAt = results[results.length-1].savedAt;
     if(latestSavedAt === _dvLastSavedAt) return;
     _dvLastSavedAt = latestSavedAt;
+    _dvResults = results;
     renderDayView(results);
   } catch(e){ /* silent */ }
 }
@@ -2236,6 +2367,7 @@ async function compareAndSignal(){
     <div class="modal-center-brand">STOCK TRADE</div>
     <div style="display:flex;align-items:center;gap:8px;">
       <button class="hbtn" id="ad-reprocess-btn" onclick="reprocessAD()" style="height:28px;font-size:.68rem;background:var(--teal-dim);color:var(--teal-text);border-color:var(--teal-mid);">🔄 <span>Reprocess Today</span></button>
+      <button class="hbtn" onclick="exportADCSV()" style="height:28px;font-size:.68rem;background:var(--g-dim);color:var(--g-text);border-color:var(--g-mid);">⬇️ <span>Export CSV</span></button>
       <button class="ad-close" onclick="closeAD()">✕</button>
     </div>
   </div>
@@ -2255,6 +2387,7 @@ async function compareAndSignal(){
     <div class="modal-center-brand">STOCK TRADE</div>
     <div style="display:flex;align-items:center;gap:8px;">
       <button class="hbtn" id="dv-reprocess-btn" onclick="reprocessDV()" style="height:28px;font-size:.68rem;background:var(--purple-dim);color:var(--purple-text);border-color:var(--purple-mid);">🔄 <span>Reprocess Today</span></button>
+      <button class="hbtn" onclick="exportDVCSV()" style="height:28px;font-size:.68rem;background:var(--g-dim);color:var(--g-text);border-color:var(--g-mid);">⬇️ <span>Export CSV</span></button>
       <button class="dv-close" onclick="closeDayView()">✕</button>
     </div>
   </div>

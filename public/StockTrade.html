@@ -1950,6 +1950,7 @@ function renderDayView(results){
   const symStrength = {};
   const symType     = {};
   const symFirstTime= {};
+  const symHistory  = {};
   for(const r of results){
     for(const s of (r.strong||[])){
       const parts    = s.split(':');
@@ -1961,6 +1962,9 @@ function renderDayView(results){
       symStrength[sym]  = strength;
       symType[sym]      = type;
       if(!symFirstTime[sym]) symFirstTime[sym] = r.timeStr;
+      
+      if(!symHistory[sym]) symHistory[sym] = [];
+      symHistory[sym].push({ timeStr: r.timeStr, type });
     }
   }
   const lbData   = Object.entries(symCount).sort((a,b)=>b[1]-a[1]).slice(0,10);
@@ -2050,7 +2054,8 @@ function renderDayView(results){
       const strength  = symStrength[sym]  || 'STRONG';
       const type      = symType[sym]      || '';
       const tcfg      = LB_TYPE_CFG[type] || { icon:'·', label: type, col:'var(--ink2)', bg:'var(--bg2)', border:'var(--border)' };
-      html += `<div class="dv-lb-item">
+      
+      html += `<div class="dv-lb-item" style="cursor:pointer;position:relative;" onclick="toggleLbHist('${sym}')">
         <span class="dv-lb-rank">${i+1}</span>
         <div style="flex:1;min-width:0;display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
           <span class="dv-lb-sym">${sym}</span>
@@ -2064,10 +2069,27 @@ function renderDayView(results){
             : `<span class="dv-strong-badge">🔥 STRONG</span>`}
           ${firstTime?`<span style="font-size:.6rem;color:var(--ink3);white-space:nowrap;">🕐 ${firstTime}</span>`:''}
         </div>
-        <div class="dv-lb-bar-wrap">
-          <div class="dv-lb-bar-bg"><div class="dv-lb-bar-fill" style="width:${Math.round(cnt/maxCount*100)}%"></div></div>
-          <span class="dv-lb-count">${cnt}×</span>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <div class="dv-lb-bar-wrap" style="width:60px;">
+            <div class="dv-lb-bar-bg"><div class="dv-lb-bar-fill" style="width:${Math.round(cnt/maxCount*100)}%"></div></div>
+            <span class="dv-lb-count" style="margin-left:4px;">${cnt}×</span>
+          </div>
+          <span style="font-size:.6rem;color:var(--ink3);">▼</span>
         </div>
+      </div>`;
+
+      const hist = symHistory[sym] || [];
+      const histRows = hist.map(h => {
+        const htcfg = LB_TYPE_CFG[h.type] || { icon:'·', label: h.type, col:'var(--ink2)' };
+        return `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border);font-size:.65rem;">
+          <span style="color:var(--ink3);font-family:'JetBrains Mono',monospace;">🕐 ${h.timeStr}</span>
+          <span style="color:${htcfg.col};font-weight:700;">${htcfg.icon} ${htcfg.label}</span>
+        </div>`;
+      }).join('');
+      
+      html += `<div id="lbhist_${sym}" style="display:none;padding:8px 16px 12px 16px;background:#0d1117;border-bottom:1px solid var(--border);border-left:2px solid ${tcfg.border};margin-bottom:-1px;">
+        <div style="font-size:.6rem;color:var(--ink3);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;font-weight:700;">Chronological History</div>
+        ${histRows}
       </div>`;
     });
   }
@@ -2178,6 +2200,11 @@ function buildDvDetail(r){
     </tr></thead>
     <tbody>${rows.join('')}</tbody>
   </table></div>`;
+}
+
+function toggleLbHist(sym){
+  const el = document.getElementById('lbhist_'+sym);
+  if(el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
 }
 
 function dvCompToggle(panelId){

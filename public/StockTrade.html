@@ -223,9 +223,8 @@ async function loadADSmart(){
   } catch(e){ /* silent */ }
 }
 
-/* ── renderAD: updated for comparisons[] array ── */
+/* ── renderAD: updated for dual view ── */
 function renderAD(results, body, sub){
-  // Total counts from all results, first comparison of each
   let totalAcc = 0, totalDist = 0;
   results.forEach(r => {
     const first = (r.comparisons || [])[0] || r;
@@ -234,12 +233,18 @@ function renderAD(results, body, sub){
   });
   sub.textContent = `${results.length} scans · ${totalAcc} Acc · ${totalDist} Dist today`;
 
-  const sorted = [...results].reverse(); // newest first
-  let html = '<div class="ad-sec">📅 Scan History — newest first</div>';
+  const sorted = [...results].reverse();
+  
+  let htmlTimeline = '<div class="ad-sec">📅 Scan Timeline — newest first</div>';
+
+  const symCount   = {};
+  const symType    = {};
+  const symLastTime= {};
+  const symLastMs  = {};
+  const symHistory = {};
 
   sorted.forEach((r, idx) => {
     const comparisons = r.comparisons || [];
-    // Fallback for old-format results that don't have comparisons[]
     if(!comparisons.length && (r.accSignals || r.distSignals)){
       comparisons.push({
         baseTimeStr: r.baseTimeStr || '—',
@@ -255,7 +260,6 @@ function renderAD(results, body, sub){
     const hasSignals      = totalAccInScan > 0 || totalDistInScan > 0;
     const uid             = 'ad_tl_' + idx;
 
-    // Collect ALL unique symbols across ALL comparisons
     const accSeen = new Map(), distSeen = new Map();
     for(const comp of comparisons){
       for(const s of (comp.accSignals||[]))  if(!accSeen.has(s.symbol))  accSeen.set(s.symbol, s);
@@ -264,7 +268,33 @@ function renderAD(results, body, sub){
     const allAccChips  = [...accSeen.values()];
     const allDistChips = [...distSeen.values()];
 
-    html += `<div class="ad-tl-item${hasSignals ? '' : ' no-sig'}" id="${uid}">
+    const ms = r.savedAt ? new Date(r.savedAt).getTime() : 0;
+
+    allAccChips.forEach(s => {
+      const sym = s.symbol;
+      symCount[sym] = (symCount[sym]||0)+1;
+      symType[sym]  = 'acc';
+      if(ms >= (symLastMs[sym]||0)){
+        symLastMs[sym]   = ms;
+        symLastTime[sym] = r.timeStr;
+      }
+      if(!symHistory[sym]) symHistory[sym] = [];
+      symHistory[sym].push({ timeStr: r.timeStr, type: 'acc', pricePct: s.pricePct||'0', oiPct: s.oiPct||'0' });
+    });
+    
+    allDistChips.forEach(s => {
+      const sym = s.symbol;
+      symCount[sym] = (symCount[sym]||0)+1;
+      symType[sym]  = 'dist';
+      if(ms >= (symLastMs[sym]||0)){
+        symLastMs[sym]   = ms;
+        symLastTime[sym] = r.timeStr;
+      }
+      if(!symHistory[sym]) symHistory[sym] = [];
+      symHistory[sym].push({ timeStr: r.timeStr, type: 'dist', pricePct: s.pricePct||'0', oiPct: s.oiPct||'0' });
+    });
+
+    htmlTimeline += `<div class="ad-tl-item${hasSignals ? '' : ' no-sig'}" id="${uid}">
       <div class="ad-tl-head" onclick="adTlToggle('${uid}')">
         <div class="ad-tl-row1">
           <div style="display:flex;align-items:center;gap:8px;">
@@ -290,8 +320,108 @@ function renderAD(results, body, sub){
     </div>`;
   });
 
+  function renderAdSymRow(sym, cnt) {
+    const lastTime  = symLastTime[sym] || '';
+    const type      = symType[sym]     || '';
+    const isAcc     = type === 'acc';
+    const label     = isAcc ? '◆ Accumulation' : '◆ Distribution';
+    const col       = isAcc ? 'var(--teal-text)' : 'var(--orange-text)';
+    const bg        = isAcc ? 'var(--teal-dim)'  : 'var(--orange-dim)';
+    const bdr       = isAcc ? 'var(--teal-mid)'  : 'var(--orange-mid)';
+    
+    let htmlRow = `<div class="dv-lb-item" style="cursor:pointer;position:relative;" onclick="toggleLbHist('${sym}_ad')">
+      <div style="flex:1;min-width:0;display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
+        <span class="dv-lb-sym">${sym}</span>
+        <span style="display:inline-flex;align-items:center;gap:3px;font-size:.65rem;font-weight:700;
+          padding:2px 8px;border-radius:4px;white-space:nowrap;
+          color:${col};background:${bg};border:1px solid ${bdr};">
+          ${label}
+        </span>
+        ${lastTime?`<span style="font-size:.6rem;color:var(--ink3);white-space:nowrap;">🕐 ${lastTime}</span>`:''}
+      </div>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span class="dv-lb-count" style="font-weight:700;color:var(--ink);">${cnt} Signal${cnt!=1?'s':''}</span>
+        <span style="font-size:.6rem;color:var(--ink3);">▼</span>
+      </div>
+    </div>`;
+
+    const hist = [...(symHistory[sym] || [])].reverse();
+    const histRows = hist.map(h => {
+      const hIsAcc = h.type === 'acc';
+      const hCol   = hIsAcc ? 'var(--teal-text)' : 'var(--orange-text)';
+      const hLbl   = hIsAcc ? '◆ Accumulation' : '◆ Distribution';
+      
+      const pPct = parseFloat(h.pricePct)||0;
+      const oPct = parseFloat(h.oiPct)||0;
+      const pCls = pPct>=0 ? 'var(--g-text)' : 'var(--r-text)';
+      const oCls = oPct>=0 ? 'var(--g-text)' : 'var(--r-text)';
+      const pSgn = pPct>=0 ? '+' : '';
+      const oSgn = oPct>=0 ? '+' : '';
+      
+      return `<div style="display:flex;justify-content:flex-start;gap:20px;padding:6px 0;border-bottom:1px solid var(--border);font-size:.65rem;">
+        <span style="color:var(--ink3);font-family:'JetBrains Mono',monospace;width:60px;">🕐 ${h.timeStr}</span>
+        <span style="color:${hCol};font-weight:700;width:110px;">${hLbl}</span>
+        <span style="color:${pCls};font-family:'JetBrains Mono',monospace;">Price ${pSgn}${pPct.toFixed(2)}%</span>
+        <span style="color:${oCls};font-family:'JetBrains Mono',monospace;">OI ${oSgn}${oPct.toFixed(2)}%</span>
+      </div>`;
+    }).join('');
+    
+    htmlRow += `<div id="lbhist_${sym}_ad" style="display:none;padding:12px 16px;background:#0d1117;border-bottom:1px solid var(--border);border-left:2px solid ${bdr};margin-bottom:-1px;">
+      <div style="font-size:.65rem;color:var(--ink3);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;font-weight:700;">Chronological History</div>
+      ${histRows}
+    </div>`;
+    return htmlRow;
+  }
+
+  const allData = Object.entries(symCount)
+    .sort((a,b) => symLastMs[b[0]] - symLastMs[a[0]]);
+
+  let htmlAllSymbols = '';
+  if(allData.length){
+    htmlAllSymbols += '<div class="ad-sec" style="margin-top:10px;">📊 All Active A/D Signals Today</div>';
+    allData.forEach(([sym,cnt])=>{
+      htmlAllSymbols += renderAdSymRow(sym, cnt);
+    });
+  } else {
+    htmlAllSymbols += '<div style="text-align:center;color:var(--ink3);margin:30px 0;font-size:0.85rem;font-style:italic;">No A/D signals found today.</div>';
+  }
+
+  let html = `
+    <div style="display:flex;justify-content:center;margin:8px 0 20px;gap:12px;">
+      <button id="btn-adview-timeline" class="hbtn active" onclick="switchAdView('timeline')" style="height:32px;padding:0 24px;border-color:var(--teal);background:var(--teal-dim);color:var(--teal-text);">⏱️ Timeline</button>
+      <button id="btn-adview-symbols" class="hbtn" onclick="switchAdView('symbols')" style="height:32px;padding:0 24px;background:transparent;border:1px solid var(--border);">📊 All Symbols</button>
+    </div>
+    
+    <div id="ad-view-timeline">
+      ${htmlTimeline}
+    </div>
+    
+    <div id="ad-view-symbols" style="display:none;">
+      ${htmlAllSymbols}
+    </div>
+  `;
+
   body.innerHTML = html;
   requestAnimationFrame(()=>setupChipOverflow(body));
+}
+
+function switchAdView(view){
+  const tl = document.getElementById('ad-view-timeline');
+  const syms = document.getElementById('ad-view-symbols');
+  const btnTl = document.getElementById('btn-adview-timeline');
+  const btnSyms = document.getElementById('btn-adview-symbols');
+  
+  if (view === 'timeline') {
+    if(tl) tl.style.display = 'block';
+    if(syms) syms.style.display = 'none';
+    if(btnTl) { btnTl.classList.add('active'); btnTl.style.background = 'var(--teal-dim)'; btnTl.style.borderColor = 'var(--teal)'; btnTl.style.color = 'var(--teal-text)'; }
+    if(btnSyms) { btnSyms.classList.remove('active'); btnSyms.style.background = 'transparent'; btnSyms.style.border = '1px solid var(--border)'; btnSyms.style.color = 'var(--ink2)'; }
+  } else {
+    if(tl) tl.style.display = 'none';
+    if(syms) syms.style.display = 'block';
+    if(btnSyms) { btnSyms.classList.add('active'); btnSyms.style.background = 'var(--teal-dim)'; btnSyms.style.borderColor = 'var(--teal)'; btnSyms.style.color = 'var(--teal-text)'; }
+    if(btnTl) { btnTl.classList.remove('active'); btnTl.style.background = 'transparent'; btnTl.style.border = '1px solid var(--border)'; btnTl.style.color = 'var(--ink2)'; }
+  }
 }
 
 /* ── buildADDetail: flat table with TIME + AGE columns ── */
@@ -2057,14 +2187,13 @@ function renderDayView(results){
     dist   : { icon:'◆', label:'Distribution',   col:'var(--purple-text)', bg:'var(--purple-dim)', border:'var(--purple-mid)' },
   };
 
-  function renderSymRow(sym, cnt, rankNum = null) {
+  function renderSymRow(sym, cnt) {
     const lastTime  = symLastTime[sym]  || '';
     const strength  = symStrength[sym]  || 'STRONG';
     const type      = symType[sym]      || '';
     const tcfg      = LB_TYPE_CFG[type] || { icon:'·', label: type, col:'var(--ink2)', bg:'var(--bg2)', border:'var(--border)' };
     
     let htmlRow = `<div class="dv-lb-item" style="cursor:pointer;position:relative;" onclick="toggleLbHist('${sym}')">
-      ${rankNum !== null ? `<span class="dv-lb-rank">${rankNum}</span>` : ''}
       <div style="flex:1;min-width:0;display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
         <span class="dv-lb-sym">${sym}</span>
         <span style="display:inline-flex;align-items:center;gap:3px;font-size:.65rem;font-weight:700;
@@ -2077,9 +2206,8 @@ function renderDayView(results){
           : `<span class="dv-strong-badge">🔥 STRONG</span>`}
         ${lastTime?`<span style="font-size:.6rem;color:var(--ink3);white-space:nowrap;">🕐 ${lastTime}</span>`:''}
       </div>
-      <div class="dv-lb-bar-wrap" style="flex:1; max-width:300px; display:flex; align-items:center; gap:10px; justify-content:flex-end;">
-        <div class="dv-lb-bar-bg" style="flex:1; max-width:200px;"><div class="dv-lb-bar-fill" style="width:${Math.round(cnt/maxCount*100)}%"></div></div>
-        <span class="dv-lb-count" style="font-weight:700;">${cnt}×</span>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span class="dv-lb-count" style="font-weight:700;">${cnt} Signal${cnt!=1?'s':''}</span>
         <span style="font-size:.6rem;color:var(--ink3);">▼</span>
       </div>
     </div>`;
@@ -2106,28 +2234,17 @@ function renderDayView(results){
     return htmlRow;
   }
 
-  let htmlLeaderboard = '';
-  if(lbData.length){
-    htmlLeaderboard += '<div id="dv-leaderboard"><div class="dv-sec-label" style="margin-top:20px;">🏆 Symbol Leaderboard — Strong signal count</div>';
-    lbData.forEach(([sym,cnt],i)=>{
-      htmlLeaderboard += renderSymRow(sym, cnt, i+1);
-    });
-    htmlLeaderboard += '</div>';
-  }
-
-  const lbSyms = new Set(lbData.map(x => x[0]));
-  const otherData = Object.entries(symCount)
-    .filter(x => !lbSyms.has(x[0]))
+  const allData = Object.entries(symCount)
     .sort((a,b) => symLastMs[b[0]] - symLastMs[a[0]]);
 
-  let htmlOther = '';
-  if(otherData.length){
-    htmlOther += '<div class="dv-sec-label" style="margin-top:15px;">📊 Other Active Signals Today</div>';
-    otherData.forEach(([sym,cnt])=>{
-      htmlOther += renderSymRow(sym, cnt, null);
+  let htmlAllSymbols = '';
+  if(allData.length){
+    htmlAllSymbols += '<div class="dv-sec-label" style="margin-top:10px;">📊 All Active Signals Today</div>';
+    allData.forEach(([sym,cnt])=>{
+      htmlAllSymbols += renderSymRow(sym, cnt);
     });
   } else {
-    htmlOther += '<div style="text-align:center;color:var(--ink3);margin:30px 0;font-size:0.85rem;font-style:italic;">No other signals found today.</div>';
+    htmlAllSymbols += '<div style="text-align:center;color:var(--ink3);margin:30px 0;font-size:0.85rem;font-style:italic;">No signals found today.</div>';
   }
 
   let html = `
@@ -2141,10 +2258,8 @@ function renderDayView(results){
     </div>
     
     <div id="dv-view-symbols" style="display:none;">
-      ${htmlOther}
+      ${htmlAllSymbols}
     </div>
-    
-    ${htmlLeaderboard}
   `;
 
   body.innerHTML = html;

@@ -1,123 +1,338 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Live Scalping Feed</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
+        :root[data-theme="dark"] {
+            --bg: #0b0f19;
+            --border: #1e293b;
+            --text: #e2e8f0;
+            --text-muted: #64748b;
+            --text-sub: #94a3b8;
+            --text-bright: #f8fafc;
+            --header-grad: linear-gradient(90deg, #111827 0%, #172554 100%);
+            --row-bg: #1e293b;
+            --row-hover: #334155;
+            --pill-bg: #0f172a;
+            --pill-border: #334155;
+            --title-color: #60a5fa;
+            --bull: #10b981;
+            --bear: #ef4444;
+            --bull-bg: rgba(16,185,129,0.15);
+            --bull-text: #34d399;
+            --bear-bg: rgba(239,68,68,0.15);
+            --bear-text: #f87171;
+            --flash-bull: #065f46;
+            --flash-bear: #7f1d1d;
+            --shadow: 0 2px 8px rgba(0,0,0,0.4);
+        }
+        :root[data-theme="light"] {
+            --bg: #f0f4f8;
+            --border: #cbd5e1;
+            --text: #1e293b;
+            --text-muted: #94a3b8;
+            --text-sub: #64748b;
+            --text-bright: #0f172a;
+            --header-grad: linear-gradient(90deg, #1e40af 0%, #1d4ed8 100%);
+            --row-bg: #ffffff;
+            --row-hover: #f1f5f9;
+            --pill-bg: #f1f5f9;
+            --pill-border: #cbd5e1;
+            --title-color: #ffffff;
+            --bull: #059669;
+            --bear: #dc2626;
+            --bull-bg: rgba(5,150,105,0.1);
+            --bull-text: #059669;
+            --bear-bg: rgba(220,38,38,0.1);
+            --bear-text: #dc2626;
+            --flash-bull: #d1fae5;
+            --flash-bear: #fee2e2;
+            --shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { 
-            background-color: #0b0f19; 
-            color: #e2e8f0; 
-            font-family: 'Inter', sans-serif; 
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+            transition: background 0.3s, color 0.3s;
         }
+
         header {
-            background: linear-gradient(90deg, #111827 0%, #172554 100%);
-            border-bottom: 1px solid #1e293b;
+            background: var(--header-grad);
+            border-bottom: 1px solid var(--border);
+            position: sticky; top: 0; z-index: 100;
+            box-shadow: var(--shadow);
         }
         .header-content {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 15px 30px;
+            padding: 12px 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+            gap: 10px;
+        }
+        .title h1 {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--title-color);
+            text-transform: uppercase;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+        .status {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            justify-content: flex-end;
+            flex-shrink: 0;
+        }
+        .pulse {
+            width: 10px; height: 10px; border-radius: 50%;
+            background: var(--bull);
+            box-shadow: 0 0 10px var(--bull);
+            animation: pulse 1.5s infinite;
+            flex-shrink: 0;
+        }
+        @keyframes pulse { 0%,100%{transform:scale(0.9);opacity:.8} 50%{transform:scale(1.1);opacity:1} }
+
+        .time-box {
+            background: rgba(0,0,0,0.25);
+            border-radius: 4px;
+            padding: 5px 10px;
+            font-size: 13px;
+            color: #fff;
+            font-weight: 600;
+            font-family: monospace;
+            white-space: nowrap;
+        }
+        .theme-toggle {
+            background: rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.25);
+            border-radius: 20px;
+            padding: 5px 12px;
+            cursor: pointer;
+            font-size: 12px;
+            color: #fff;
+            white-space: nowrap;
+            transition: background 0.2s;
+        }
+        .theme-toggle:hover { background: rgba(0,0,0,0.4); }
+
+        main {
+            padding: 12px 20px;
+            flex: 1;
             max-width: 1200px;
             margin: 0 auto;
             width: 100%;
         }
-        .title h1 { font-size: 20px; font-weight: 700; color: #60a5fa; text-transform: uppercase; }
-        .status { display: flex; gap: 15px; align-items: center; }
-        .pulse { width: 10px; height: 10px; border-radius: 50%; background: #10b981; box-shadow: 0 0 10px #10b981; animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0%, 100% { transform: scale(0.9); opacity: 0.8; } 50% { transform: scale(1.1); opacity: 1; }}
-        .time-box { background: #1e293b; border-radius: 4px; padding: 6px 12px; font-size: 13px; color: #cbd5e1; font-weight: 600; font-family: monospace; }
-        
-        main { padding: 20px 30px; flex: 1; max-width: 1200px; margin: 0 auto; width: 100%; }
-        
+
+        /* ── DESKTOP COLUMN HEADERS ── */
         .list-header {
-            display: flex; padding: 10px 20px; color: #64748b; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; border-bottom: 1px solid #1e293b; margin-bottom: 10px;
+            display: flex;
+            padding: 10px 20px;
+            color: #64748b;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 700;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 10px;
         }
         .list-header div {
-            cursor: pointer;
-            user-select: none;
-            transition: color 0.1s;
+            cursor: pointer; user-select: none; transition: color 0.1s;
         }
         .list-header div:hover {
-            color: #f8fafc;
-            background: rgba(255,255,255,0.05);
+            color: var(--text-bright);
+            background: rgba(128,128,128,0.08);
             border-radius: 4px;
         }
-        .col-time { width: 100px; }
-        .col-symbol { width: 180px; }
-        .col-type { width: 160px; }
-        .col-price { width: 120px; text-align: right; }
-        .col-vol { width: 140px; text-align: right; }
-        .col-avgvol { width: 140px; text-align: right; }
-        .col-spike { flex: 1; text-align: right; justify-content: flex-end; display: flex;}
-        
         .sort-icon { display: inline-block; margin-left: 4px; margin-top: -2px; }
 
+        .col-time   { width: 100px; flex-shrink: 0; }
+        .col-symbol { width: 180px; flex-shrink: 0; }
+        .col-type   { width: 160px; flex-shrink: 0; }
+        .col-price  { width: 120px; text-align: right; flex-shrink: 0; }
+        .col-vol    { width: 140px; text-align: right; flex-shrink: 0; }
+        .col-avgvol { width: 140px; text-align: right; flex-shrink: 0; }
+        .col-spike  { flex: 1; text-align: right; display: flex; justify-content: flex-end; }
+
+        /* ── ROWS ── */
         .signal-list { display: flex; flex-direction: column; gap: 6px; }
-        
+
         .row {
-            display: flex; align-items: center; background: #1e293b; padding: 14px 20px; border-radius: 6px; border-left: 4px solid transparent; transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            background: var(--row-bg);
+            padding: 14px 20px;
+            border-radius: 6px;
+            border-left: 4px solid transparent;
+            transition: background 0.2s;
+            box-shadow: var(--shadow);
         }
-        .row:hover { background: #334155; }
-        
-        .BULLISH { border-left-color: #10b981; }
-        .BEARISH { border-left-color: #ef4444; }
-        
-        .row .col-time { color: #94a3b8; font-family: monospace; font-size: 13px; }
-        .row .col-symbol { font-weight: 700; font-size: 16px; color: #f8fafc; }
-        .row .col-price { font-family: monospace; font-size: 15px; font-weight: 600; line-height: 1.2; }
-        .price-movement { font-size: 11px; font-weight: 700; display: block; margin-top: 2px; }
-        .BULLISH-text { color: #10b981; }
-        .BEARISH-text { color: #ef4444; }
-        
-        .row .col-vol { font-family: monospace; font-size: 14px; font-weight: 700; color: #f8fafc; }
+        .row:hover { background: var(--row-hover); }
+        .BULLISH { border-left-color: var(--bull); }
+        .BEARISH { border-left-color: var(--bear); }
+
+        .row .col-time   { color: #94a3b8; font-family: monospace; font-size: 13px; }
+        .row .col-symbol { font-weight: 700; font-size: 16px; color: var(--text-bright); }
+        .row .col-price  { font-family: monospace; font-size: 15px; font-weight: 600; line-height: 1.2; }
+        .row .col-vol    { font-family: monospace; font-size: 14px; font-weight: 700; color: var(--text-bright); }
         .row .col-avgvol { font-family: monospace; font-size: 13px; color: #64748b; }
-        
-        .type-badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; }
-        .BULLISH .type-badge { background: rgba(16, 185, 129, 0.15); color: #34d399; }
-        .BEARISH .type-badge { background: rgba(239, 68, 68, 0.15); color: #f87171; }
-        
-        .spike-pill { display: inline-block; padding: 4px 10px; border-radius: 20px; background: #0f172a; font-size: 12px; font-weight: 700; color: #e2e8f0; border: 1px solid #334155; }
-        .BULLISH .spike-pill { color: #10b981; border-color: rgba(16, 185, 129, 0.3); }
-        .BEARISH .spike-pill { color: #ef4444; border-color: rgba(239, 68, 68, 0.3); }
+
+        .BULLISH-text { color: var(--bull); }
+        .BEARISH-text { color: var(--bear); }
+
+        .type-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 700;
+        }
+        .BULLISH .type-badge { background: var(--bull-bg); color: var(--bull-text); }
+        .BEARISH .type-badge { background: var(--bear-bg); color: var(--bear-text); }
+
+        .spike-pill {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            background: var(--pill-bg);
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text);
+            border: 1px solid var(--pill-border);
+        }
+        .BULLISH .spike-pill { color: var(--bull); border-color: rgba(16,185,129,0.3); }
+        .BEARISH .spike-pill { color: var(--bear); border-color: rgba(239,68,68,0.3); }
 
         #empty-state { text-align: center; color: #64748b; margin-top: 50px; font-style: italic; }
-        
-        @keyframes flashNewBullish { 0% { background: #065f46; transform: translateX(-5px); } 100% { background: #1e293b; transform: translateX(0); } }
-        @keyframes flashNewBearish { 0% { background: #7f1d1d; transform: translateX(-5px); } 100% { background: #1e293b; transform: translateX(0); } }
+
+        @keyframes flashNewBullish { 0%{background:var(--flash-bull);transform:translateX(-5px)} 100%{background:var(--row-bg);transform:translateX(0)} }
+        @keyframes flashNewBearish { 0%{background:var(--flash-bear);transform:translateX(-5px)} 100%{background:var(--row-bg);transform:translateX(0)} }
         .BULLISH.new-row { animation: flashNewBullish 0.8s ease-out forwards; }
         .BEARISH.new-row { animation: flashNewBearish 0.8s ease-out forwards; }
+
+        /* ══════════════════════════════════════
+           MOBILE  ≤ 640px  —  pure CSS only
+        ══════════════════════════════════════ */
+        @media (max-width: 640px) {
+            main { padding: 8px 8px; }
+
+            /* Hide column-header bar */
+            .list-header { display: none; }
+
+            /* Card: wrap all cols */
+            .row {
+                flex-wrap: wrap;
+                padding: 11px 12px;
+                gap: 0;
+                row-gap: 7px;
+                align-items: flex-start;
+            }
+
+            /* ── Line 1: Symbol | Badge | Spike pill ── */
+            .row .col-symbol {
+                order: 1;
+                flex: 1;
+                width: auto;
+                font-size: 16px;
+                font-weight: 800;
+                align-self: center;
+            }
+            .row .col-type {
+                order: 2;
+                width: auto;
+                flex-shrink: 0;
+                align-self: center;
+                text-align: left;
+            }
+            .row .col-spike {
+                order: 3;
+                width: auto;
+                flex: none;
+                justify-content: flex-end;
+                align-self: center;
+            }
+
+            /* ── Line 2: LTP (left) | Volume (right) ── */
+            .row .col-price {
+                order: 4;
+                width: 50%;
+                text-align: left;
+                font-size: 15px;
+                font-weight: 700;
+            }
+            .row .col-vol {
+                order: 5;
+                width: 50%;
+                text-align: right;
+                font-size: 13px;
+            }
+
+            /* ── Line 3: Time (left) | AvgVol (right) ── */
+            .row .col-time {
+                order: 6;
+                width: 50%;
+                font-size: 11px;
+                color: var(--text-sub);
+                padding-top: 5px;
+                border-top: 1px solid var(--border);
+            }
+            .row .col-avgvol {
+                order: 7;
+                width: 50%;
+                text-align: right;
+                font-size: 11px;
+                padding-top: 5px;
+                border-top: 1px solid var(--border);
+                color: var(--text-muted);
+            }
+            .row .col-avgvol::before { content: "30D Avg: "; }
+
+            .spike-pill { font-size: 11px; padding: 3px 8px; }
+            .type-badge { font-size: 9px; padding: 3px 7px; }
+            .title h1   { font-size: 15px; }
+            .time-box   { font-size: 11px; padding: 4px 7px; }
+            .theme-toggle { font-size: 11px; padding: 4px 9px; }
+            .signal-list { gap: 5px; }
+        }
     </style>
 </head>
 <body>
     <header>
         <div class="header-content">
             <div class="title">
-                <h1>Scalping Feed</h1>
+                <h1>📡 Scalping Feed</h1>
             </div>
             <div class="status">
                 <div class="pulse" id="live-indicator"></div>
                 <div class="time-box" id="clock">--:--:--</div>
                 <div class="time-box">Total Hits: <span id="sig-count">0</span></div>
+                <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn">🌙 Dark</button>
             </div>
         </div>
     </header>
 
     <main>
         <div class="list-header" title="Click any header to Sort data!">
-            <div class="col-time" onclick="setSort('timestamp')" data-sort="timestamp">Time <span class="sort-icon">↓</span></div>
-            <div class="col-symbol" onclick="setSort('symbol')" data-sort="symbol">Symbol <span class="sort-icon"></span></div>
-            <div class="col-type" onclick="setSort('type')" data-sort="type">Signal <span class="sort-icon"></span></div>
-            <div class="col-price" onclick="setSort('ltp')" data-sort="ltp">LTP <span class="sort-icon"></span></div>
-            <div class="col-vol" onclick="setSort('volume')" data-sort="volume">Volume <span class="sort-icon"></span></div>
-            <div class="col-avgvol" onclick="setSort('avg_vol')" data-sort="avg_vol">30D Avg Vol <span class="sort-icon"></span></div>
-            <div class="col-spike" onclick="setSort('vol_ratio')" data-sort="vol_ratio" style="padding-right: 15px;">Spike Power <span class="sort-icon"></span></div>
+            <div class="col-time"   onclick="setSort('timestamp')" data-sort="timestamp">Time <span class="sort-icon">↓</span></div>
+            <div class="col-symbol" onclick="setSort('symbol')"    data-sort="symbol">Symbol <span class="sort-icon"></span></div>
+            <div class="col-type"   onclick="setSort('type')"      data-sort="type">Signal <span class="sort-icon"></span></div>
+            <div class="col-price"  onclick="setSort('ltp')"       data-sort="ltp">LTP <span class="sort-icon"></span></div>
+            <div class="col-vol"    onclick="setSort('volume')"    data-sort="volume">Volume <span class="sort-icon"></span></div>
+            <div class="col-avgvol" onclick="setSort('avg_vol')"   data-sort="avg_vol">30D Avg Vol <span class="sort-icon"></span></div>
+            <div class="col-spike"  onclick="setSort('vol_ratio')" data-sort="vol_ratio" style="padding-right:15px;">Spike Power <span class="sort-icon"></span></div>
         </div>
         <div id="empty-state">Connecting to Serverless Feed...</div>
         <div class="signal-list" id="list"></div>
@@ -125,7 +340,7 @@
 
     <script>
         const PUBLIC_R2_URL = "https://pub-ced41a0bcdfc4c8da30ae906c5f3a3f7.r2.dev/signals/live_alerts.json";
-        
+
         let previousDataStr = '';
         let currentSort = 'timestamp';
         let sortDesc = true;
@@ -143,7 +358,7 @@
                 renderList(latestSignals);
             }
         }
-        
+
         function updateHeaders() {
             document.querySelectorAll('.list-header div').forEach(el => {
                 const icon = el.querySelector('.sort-icon');
@@ -154,6 +369,13 @@
                     icon.innerText = '';
                 }
             });
+        }
+
+        function toggleTheme() {
+            const html = document.documentElement;
+            const isDark = html.getAttribute('data-theme') === 'dark';
+            html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+            document.getElementById('theme-btn').textContent = isDark ? '☀️ Light' : '🌙 Dark';
         }
 
         setInterval(() => {
@@ -167,7 +389,6 @@
                 const json = await res.json();
                 latestSignals = json.signals || [];
                 renderList(latestSignals);
-                
                 document.getElementById('sig-count').innerText = latestSignals.length;
                 document.getElementById('live-indicator').style.backgroundColor = '#10b981';
                 document.getElementById('live-indicator').style.boxShadow = '0 0 10px #10b981';
@@ -176,7 +397,7 @@
                 document.getElementById('live-indicator').style.boxShadow = '0 0 10px #ef4444';
             }
         }
-        
+
         let knownSymbols = new Set();
 
         function renderList(signals) {
@@ -188,17 +409,14 @@
                 return;
             }
             document.getElementById('empty-state').style.display = 'none';
-            
-            // Dynamic Sort Logic
+
             let sortedSignals = [...signals].sort((a,b) => {
                 let valA = a[currentSort];
                 let valB = b[currentSort];
-                
                 if (currentSort !== 'timestamp' && currentSort !== 'symbol' && currentSort !== 'type') {
                     valA = parseFloat(valA) || 0;
                     valB = parseFloat(valB) || 0;
                 }
-                
                 if (valA < valB) return sortDesc ? 1 : -1;
                 if (valA > valB) return sortDesc ? -1 : 1;
                 return 0;
@@ -208,22 +426,20 @@
             for(let s of sortedSignals) {
                 const isNew = !knownSymbols.has(s.symbol);
                 knownSymbols.add(s.symbol);
-                
+
                 const isBull = (s.type || '').includes('BULLISH');
                 const typeClass = isBull ? 'BULLISH' : 'BEARISH';
                 const colorClass = isBull ? 'BULLISH-text' : 'BEARISH-text';
                 const newClass = isNew ? 'new-row' : '';
-                
+
                 const avgVolHtml = s.avg_vol ? new Intl.NumberFormat('en-IN').format(s.avg_vol) : '--';
-                
+
                 html += `
                 <div class="row ${typeClass} ${newClass}">
                     <div class="col-time">${s.timestamp}</div>
                     <div class="col-symbol">${s.symbol}</div>
                     <div class="col-type"><span class="type-badge">${s.type}</span></div>
-                    <div class="col-price">
-                        ₹${parseFloat(s.ltp).toFixed(2)}
-                    </div>
+                    <div class="col-price ${colorClass}">₹${parseFloat(s.ltp).toFixed(2)}</div>
                     <div class="col-vol">${new Intl.NumberFormat('en-IN').format(s.volume)}</div>
                     <div class="col-avgvol">${avgVolHtml}</div>
                     <div class="col-spike"><span class="spike-pill">${s.vol_ratio}x Vol</span></div>
@@ -233,7 +449,7 @@
             list.innerHTML = html;
         }
 
-        setInterval(fetchData, 1500); 
+        setInterval(fetchData, 1500);
         fetchData();
     </script>
 </body>

@@ -1946,29 +1946,39 @@ function renderDayView(results){
 
   sub.textContent = `${results.length} scan${results.length>1?'s':''} today`;
 
-  const symCount    = {};
-  const symStrength = {};
-  const symType     = {};
-  const symFirstTime= {};
-  const symHistory  = {};
+  const symCount   = {};
+  const symStrength= {};
+  const symType    = {};
+  const symLastTime= {};
+  const symLastMs  = {};
+  const symHistory = {};
   for(const r of results){
+    const ms = r.savedAt ? new Date(r.savedAt).getTime() : 0;
     for(const s of (r.strong||[])){
       const parts    = s.split(':');
       const sym      = parts[0];
       const type     = parts[1] || '';
       const strength = parts[2] || 'STRONG';
+      const volPct   = parts[4] || '0';
       if(type === 'acc' || type === 'dist') continue; // acc/dist sirf A/D me
       symCount[sym]     = (symCount[sym]||0)+1;
       symStrength[sym]  = strength;
       symType[sym]      = type;
-      if(!symFirstTime[sym]) symFirstTime[sym] = r.timeStr;
+      symLastTime[sym]  = r.timeStr;
+      symLastMs[sym]    = ms;
       
       if(!symHistory[sym]) symHistory[sym] = [];
-      symHistory[sym].push({ timeStr: r.timeStr, type });
+      symHistory[sym].push({ timeStr: r.timeStr, type, volPct });
     }
   }
-  const lbData   = Object.entries(symCount).sort((a,b)=>b[1]-a[1]).slice(0,10);
-  const maxCount = lbData[0]?.[1]||1;
+  
+  const lbData = Object.entries(symCount)
+    .sort((a,b) => symLastMs[b[0]] - symLastMs[a[0]])
+    .slice(0,10);
+    
+  let maxCount = 1;
+  Object.values(symCount).forEach(c => { if(c > maxCount) maxCount = c; });
+  
   const maxBull  = Math.max(...results.map(r=>r.bullCount||0),1);
   const maxBear  = Math.max(...results.map(r=>r.bearCount||0),1);
 
@@ -1983,8 +1993,8 @@ function renderDayView(results){
     const cmpCount = (r.comparisons||[]).length || 0;
 
     const strongItems = (r.strong||[]).map(s=>{
-      const [sym,type,strength,cnt] = s.split(':');
-      return { sym, type, strength: strength||'STRONG', cnt: parseInt(cnt)||2 };
+      const [sym,type,strength,cnt,vp] = s.split(':');
+      return { sym, type, strength: strength||'STRONG', cnt: parseInt(cnt)||2, volPct: vp||0 };
     }).filter(si => si.type !== 'acc' && si.type !== 'dist'); // acc/dist sirf A/D me
     const strongCount = strongItems.length;
 
@@ -2050,7 +2060,7 @@ function renderDayView(results){
   if(lbData.length){
     html += '<div id="dv-leaderboard"><div class="dv-sec-label" style="margin-top:20px;">🏆 Symbol Leaderboard — Strong signal count</div>';
     lbData.forEach(([sym,cnt],i)=>{
-      const firstTime = symFirstTime[sym] || '';
+      const lastTime  = symLastTime[sym]  || '';
       const strength  = symStrength[sym]  || 'STRONG';
       const type      = symType[sym]      || '';
       const tcfg      = LB_TYPE_CFG[type] || { icon:'·', label: type, col:'var(--ink2)', bg:'var(--bg2)', border:'var(--border)' };
@@ -2067,28 +2077,32 @@ function renderDayView(results){
           ${strength==='CAUTION'
             ? `<span class="dv-caution-badge">⚠️ CAUTION</span>`
             : `<span class="dv-strong-badge">🔥 STRONG</span>`}
-          ${firstTime?`<span style="font-size:.6rem;color:var(--ink3);white-space:nowrap;">🕐 ${firstTime}</span>`:''}
+          ${lastTime?`<span style="font-size:.6rem;color:var(--ink3);white-space:nowrap;">🕐 ${lastTime}</span>`:''}
         </div>
-        <div style="display:flex;align-items:center;gap:6px;">
-          <div class="dv-lb-bar-wrap" style="width:60px;">
-            <div class="dv-lb-bar-bg"><div class="dv-lb-bar-fill" style="width:${Math.round(cnt/maxCount*100)}%"></div></div>
-            <span class="dv-lb-count" style="margin-left:4px;">${cnt}×</span>
-          </div>
+        <div class="dv-lb-bar-wrap" style="flex:1; max-width:300px; display:flex; align-items:center; gap:10px; justify-content:flex-end;">
+          <div class="dv-lb-bar-bg" style="flex:1; max-width:200px;"><div class="dv-lb-bar-fill" style="width:${Math.round(cnt/maxCount*100)}%"></div></div>
+          <span class="dv-lb-count" style="font-weight:700;">${cnt}×</span>
           <span style="font-size:.6rem;color:var(--ink3);">▼</span>
         </div>
       </div>`;
 
-      const hist = symHistory[sym] || [];
+      const hist = [...(symHistory[sym] || [])].reverse();
       const histRows = hist.map(h => {
         const htcfg = LB_TYPE_CFG[h.type] || { icon:'·', label: h.type, col:'var(--ink2)' };
-        return `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border);font-size:.65rem;">
-          <span style="color:var(--ink3);font-family:'JetBrains Mono',monospace;">🕐 ${h.timeStr}</span>
-          <span style="color:${htcfg.col};font-weight:700;">${htcfg.icon} ${htcfg.label}</span>
+        const vpNum = parseFloat(h.volPct) || 0;
+        const vSign = vpNum > 0 ? '+' : '';
+        const vCol  = vpNum > 0 ? 'var(--g-text)' : 'var(--ink3)';
+        const volHtml = vpNum !== 0 ? `<span style="color:${vCol};font-weight:600;margin-left:auto;">${vSign}${h.volPct}% Vol</span>` : '';
+        
+        return `<div style="display:flex;justify-content:flex-start;gap:30px;padding:6px 0;border-bottom:1px solid var(--border);font-size:.65rem;">
+          <span style="color:var(--ink3);font-family:'JetBrains Mono',monospace;width:60px;">🕐 ${h.timeStr}</span>
+          <span style="color:${htcfg.col};font-weight:700;width:120px;">${htcfg.icon} ${htcfg.label}</span>
+          ${volHtml}
         </div>`;
       }).join('');
       
-      html += `<div id="lbhist_${sym}" style="display:none;padding:8px 16px 12px 16px;background:#0d1117;border-bottom:1px solid var(--border);border-left:2px solid ${tcfg.border};margin-bottom:-1px;">
-        <div style="font-size:.6rem;color:var(--ink3);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;font-weight:700;">Chronological History</div>
+      html += `<div id="lbhist_${sym}" style="display:none;padding:12px 16px;background:#0d1117;border-bottom:1px solid var(--border);border-left:2px solid ${tcfg.border};margin-bottom:-1px;">
+        <div style="font-size:.65rem;color:var(--ink3);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;font-weight:700;">Chronological History</div>
         ${histRows}
       </div>`;
     });

@@ -65,48 +65,60 @@ function downloadCsv(filename, rows){
 function exportADCSV(){
   if(!_adResults.length){ alert('A/D data abhi available nahi hai. Pehle load karo.'); return; }
   const today = new Date().toISOString().slice(0,10);
-  const rows  = [['Scan Time','Base Time','Symbol','Type','Price Δ%','OI Δ%','Base Price (₹)','Age (mins)','Freshness']];
-  _adResults.forEach(r => {
+  
+  const symCount   = {};
+  const symType    = {};
+  const symLastTime= {};
+  const symLastMs  = {};
+  const symHistory = {};
+
+  [..._adResults].forEach((r, idx) => {
     const comparisons = r.comparisons || [];
-    const fallback    = [];
     if(!comparisons.length && (r.accSignals || r.distSignals)){
-      fallback.push({ baseTimeStr:r.baseTimeStr||'—', accSignals:r.accSignals||[], distSignals:r.distSignals||[], accCount:r.accCount||0, distCount:r.distCount||0 });
+      comparisons.push({ accSignals: r.accSignals||[], distSignals: r.distSignals||[] });
     }
-    const comps = comparisons.length ? comparisons : fallback;
-    const scanMs = r.savedAt ? new Date(r.savedAt).getTime() : Date.now();
-    comps.forEach(comp => {
-      const allSigs = [
-        ...(comp.accSignals||[]).map(s=>({...s,adType:'Accumulation'})),
-        ...(comp.distSignals||[]).map(s=>({...s,adType:'Distribution'})),
-      ];
-      allSigs.forEach(s => {
-        let gapMins = 10;
-        if(comp.baseTimeStr){
-          try{
-            const [hhmm,ap] = comp.baseTimeStr.split(' ');
-            let [hh,mm]     = hhmm.split(':').map(Number);
-            if(ap==='PM'&&hh!==12) hh+=12;
-            if(ap==='AM'&&hh===12) hh=0;
-            const baseMs = new Date(new Date(scanMs).toDateString()+' '+hh+':'+mm).getTime();
-            gapMins = Math.max(0,Math.round((scanMs-baseMs)/60000));
-          }catch(e){}
-        }
-        const freshness = gapMins<20?'Fresh':gapMins<40?'Watch':'Very Old';
-        const basePrice = (s.priceBase && parseFloat(s.priceBase)>0) ? parseFloat(s.priceBase) : (parseFloat(s.priceNow)||0);
-        rows.push([
-          r.timeStr||'—',
-          comp.baseTimeStr||'—',
-          s.symbol||'',
-          s.adType,
-          (parseFloat(s.pricePct)||0).toFixed(2),
-          (parseFloat(s.oiPct)||0).toFixed(2),
-          basePrice ? basePrice.toFixed(2) : '',
-          gapMins,
-          freshness,
-        ]);
-      });
+    const accSeen = new Map(), distSeen = new Map();
+    for(const comp of comparisons){
+      for(const s of (comp.accSignals||[]))  if(!accSeen.has(s.symbol))  accSeen.set(s.symbol, s);
+      for(const s of (comp.distSignals||[])) if(!distSeen.has(s.symbol)) distSeen.set(s.symbol, s);
+    }
+    const ms = r.savedAt ? new Date(r.savedAt).getTime() : 0;
+    
+    [...accSeen.values()].forEach(s => {
+      const sym = s.symbol;
+      symCount[sym] = (symCount[sym]||0)+1;
+      symType[sym]  = 'acc';
+      if(ms >= (symLastMs[sym]||0)){ symLastMs[sym]=ms; symLastTime[sym]=r.timeStr; }
+      if(!symHistory[sym]) symHistory[sym] = [];
+      symHistory[sym].push({ timeStr: r.timeStr, type: 'Accumulation', pricePct: s.pricePct, oiPct: s.oiPct });
+    });
+    [...distSeen.values()].forEach(s => {
+      const sym = s.symbol;
+      symCount[sym] = (symCount[sym]||0)+1;
+      symType[sym]  = 'dist';
+      if(ms >= (symLastMs[sym]||0)){ symLastMs[sym]=ms; symLastTime[sym]=r.timeStr; }
+      if(!symHistory[sym]) symHistory[sym] = [];
+      symHistory[sym].push({ timeStr: r.timeStr, type: 'Distribution', pricePct: s.pricePct, oiPct: s.oiPct });
     });
   });
+
+  const allData = Object.entries(symCount).sort((a,b) => symLastMs[b[0]] - symLastMs[a[0]]);
+  
+  const rows = [['Symbol', 'Total Signals', 'Latest Time', 'Primary Type', 'Chronological History']];
+  
+  allData.forEach(([sym, cnt]) => {
+    const type = symType[sym] === 'acc' ? 'Accumulation' : 'Distribution';
+    const lastTime = symLastTime[sym];
+    const histStr = [...symHistory[sym]].reverse().map(h => {
+       const pPct = parseFloat(h.pricePct)||0;
+       const oPct = parseFloat(h.oiPct)||0;
+       const pSign= pPct>=0?'+':''; const oSign= oPct>=0?'+':'';
+       return `[${h.timeStr} ${h.type} | Prc ${pSign}${pPct.toFixed(2)}% | OI ${oSign}${oPct.toFixed(2)}%]`;
+    }).join(' -> ');
+    
+    rows.push([sym, cnt, lastTime, type, histStr]);
+  });
+
   if(rows.length <= 1){ alert('Koi A/D signal nahi mila export karne ke liye.'); return; }
   downloadCsv('AD_Signals_'+today+'.csv', rows);
 }
@@ -116,57 +128,53 @@ let _dvResults = [];   // stored for CSV export
 function exportDVCSV(){
   if(!_dvResults.length){ alert('Day View data abhi available nahi hai. Pehle load karo.'); return; }
   const today = new Date().toISOString().slice(0,10);
+  
+  const symCount   = {};
+  const symStrength= {};
+  const symType    = {};
+  const symLastTime= {};
+  const symLastMs  = {};
+  const symHistory = {};
+  
+  for(const r of _dvResults){
+    const ms = r.savedAt ? new Date(r.savedAt).getTime() : 0;
+    for(const s of (r.strong||[])){
+      const parts = s.split(':');
+      const sym = parts[0], type = parts[1]||'', strength = parts[2]||'STRONG', cnt = parts[3], vp = parts[4]||'0';
+      if(type === 'acc' || type === 'dist') continue;
+      symCount[sym]     = (symCount[sym]||0)+1;
+      symStrength[sym]  = strength;
+      symType[sym]      = type;
+      symLastTime[sym]  = r.timeStr;
+      symLastMs[sym]    = ms;
+      if(!symHistory[sym]) symHistory[sym] = [];
+      symHistory[sym].push({ timeStr: r.timeStr, type: type, volPct: parseFloat(vp)||0 });
+    }
+  }
+
+  const allData = Object.entries(symCount).sort((a,b) => symLastMs[b[0]] - symLastMs[a[0]]);
+    
+  const rows = [['Symbol', 'Total Signals', 'Latest Time', 'Primary Type', 'Strength', 'Chronological History']];
+  
   const SIG_LABEL_MAP = {
     long:'Long Buildup', cover:'Short Covering', acc:'Accumulation',
     short:'Short Buildup', unwind:'Long Unwinding', dist:'Distribution',
   };
-  const strongMap_all = {};
-  _dvResults.forEach(r => {
-    (r.strong||[]).forEach(s => {
-      const [sym,type,strength,cnt] = s.split(':');
-      if(!strongMap_all[sym]) strongMap_all[sym] = { strength: strength||'STRONG', cnt: parseInt(cnt)||2 };
-    });
+  
+  allData.forEach(([sym, cnt]) => {
+    const type = symType[sym];
+    const typeLbl = SIG_LABEL_MAP[type] || type;
+    const strength = symStrength[sym];
+    const lastTime = symLastTime[sym];
+    const histStr = [...symHistory[sym]].reverse().map(h => {
+       const hLbl = SIG_LABEL_MAP[h.type] || h.type;
+       const vStr = h.volPct !== 0 ? ` (${h.volPct > 0 ? '+' : ''}${h.volPct}% Vol)` : '';
+       return `[${h.timeStr} ${hLbl}${vStr}]`;
+    }).join(' -> ');
+    
+    rows.push([sym, cnt, lastTime, typeLbl, strength, histStr]);
   });
-  const rows = [['Scan Time','Base Time','Symbol','Signal Type','Price Δ%','OI Δ%','Base Price (₹)','Age (mins)','Freshness','Strong']];
-  _dvResults.forEach(r => {
-    const scanMs = r.savedAt ? new Date(r.savedAt).getTime() : Date.now();
-    const strongMap = {};
-    (r.strong||[]).forEach(s => {
-      const [sym,type,strength] = s.split(':');
-      strongMap[sym] = strength||'STRONG';
-    });
-    (r.comparisons||[]).forEach((comp,cidx) => {
-      let gapMins = (cidx+1)*10;
-      if(comp.baseTimeStr){
-        try{
-          const [hhmm,ap] = comp.baseTimeStr.split(' ');
-          let [hh,mm]     = hhmm.split(':').map(Number);
-          if(ap==='PM'&&hh!==12) hh+=12;
-          if(ap==='AM'&&hh===12) hh=0;
-          const baseMs = new Date(new Date(scanMs).toDateString()+' '+hh+':'+mm).getTime();
-          gapMins = Math.max(0,Math.round((scanMs-baseMs)/60000));
-        }catch(e){}
-      }
-      const freshness = gapMins<20?'Fresh':gapMins<40?'Watch':'Very Old';
-      (comp.signals||[]).forEach(s => {
-        const [sym,type,pricePct,oiPct,priceNow,oiNow,priceBase] = s.split(':');
-        if(type === 'acc' || type === 'dist') return; // acc/dist sirf A/D me
-        const bp = (priceBase && parseFloat(priceBase)>0) ? parseFloat(priceBase) : (parseFloat(priceNow)||0);
-        rows.push([
-          r.timeStr||'—',
-          comp.baseTimeStr||'—',
-          sym||'',
-          SIG_LABEL_MAP[type]||type||'',
-          (parseFloat(pricePct)||0).toFixed(2),
-          (parseFloat(oiPct)||0).toFixed(2),
-          bp ? bp.toFixed(2) : '',
-          gapMins,
-          freshness,
-          strongMap[sym] ? (strongMap[sym]==='CAUTION'?'CAUTION':'STRONG') : '',
-        ]);
-      });
-    });
-  });
+  
   if(rows.length <= 1){ alert('Koi Day View signal nahi mila export karne ke liye.'); return; }
   downloadCsv('DayView_Signals_'+today+'.csv', rows);
 }
@@ -388,15 +396,15 @@ function renderAD(results, body, sub){
 
   let html = `
     <div style="display:flex;justify-content:center;margin:8px 0 20px;gap:12px;">
-      <button id="btn-adview-timeline" class="hbtn active" onclick="switchAdView('timeline')" style="height:32px;padding:0 24px;border-color:var(--teal);background:var(--teal-dim);color:var(--teal-text);">⏱️ Timeline</button>
-      <button id="btn-adview-symbols" class="hbtn" onclick="switchAdView('symbols')" style="height:32px;padding:0 24px;background:transparent;border:1px solid var(--border);">📊 All Symbols</button>
+      <button id="btn-adview-timeline" class="hbtn" onclick="switchAdView('timeline')" style="height:32px;padding:0 24px;background:transparent;border:1px solid var(--border);">⏱️ Timeline</button>
+      <button id="btn-adview-symbols" class="hbtn active" onclick="switchAdView('symbols')" style="height:32px;padding:0 24px;border-color:var(--teal);background:var(--teal-dim);color:var(--teal-text);">📊 All Symbols</button>
     </div>
     
-    <div id="ad-view-timeline">
+    <div id="ad-view-timeline" style="display:none;">
       ${htmlTimeline}
     </div>
     
-    <div id="ad-view-symbols" style="display:none;">
+    <div id="ad-view-symbols">
       ${htmlAllSymbols}
     </div>
   `;
@@ -2249,15 +2257,15 @@ function renderDayView(results){
 
   let html = `
     <div style="display:flex;justify-content:center;margin:16px 0 24px;gap:12px;">
-      <button id="btn-view-timeline" class="dv-btn active" onclick="switchDvView('timeline')" style="padding:8px 24px;">⏱️ Timeline</button>
-      <button id="btn-view-symbols" class="dv-btn" onclick="switchDvView('symbols')" style="padding:8px 24px;background:transparent;border:1px solid var(--border);">📊 All Symbols</button>
+      <button id="btn-view-timeline" class="dv-btn" onclick="switchDvView('timeline')" style="padding:8px 24px;background:transparent;border:1px solid var(--border);">⏱️ Timeline</button>
+      <button id="btn-view-symbols" class="dv-btn active" onclick="switchDvView('symbols')" style="padding:8px 24px;">📊 All Symbols</button>
     </div>
     
-    <div id="dv-view-timeline">
+    <div id="dv-view-timeline" style="display:none;">
       ${htmlTimeline}
     </div>
     
-    <div id="dv-view-symbols" style="display:none;">
+    <div id="dv-view-symbols">
       ${htmlAllSymbols}
     </div>
   `;

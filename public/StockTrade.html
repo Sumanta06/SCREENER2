@@ -150,6 +150,7 @@ function exportDVCSV(){
       const freshness = gapMins<20?'Fresh':gapMins<40?'Watch':'Very Old';
       (comp.signals||[]).forEach(s => {
         const [sym,type,pricePct,oiPct,priceNow,oiNow,priceBase] = s.split(':');
+        if(type === 'acc' || type === 'dist') return; // acc/dist sirf A/D me
         const bp = (priceBase && parseFloat(priceBase)>0) ? parseFloat(priceBase) : (parseFloat(priceNow)||0);
         rows.push([
           r.timeStr||'—',
@@ -1955,6 +1956,7 @@ function renderDayView(results){
       const sym      = parts[0];
       const type     = parts[1] || '';
       const strength = parts[2] || 'STRONG';
+      if(type === 'acc' || type === 'dist') continue; // acc/dist sirf A/D me
       symCount[sym]     = (symCount[sym]||0)+1;
       symStrength[sym]  = strength;
       symType[sym]      = type;
@@ -1979,7 +1981,7 @@ function renderDayView(results){
     const strongItems = (r.strong||[]).map(s=>{
       const [sym,type,strength,cnt] = s.split(':');
       return { sym, type, strength: strength||'STRONG', cnt: parseInt(cnt)||2 };
-    });
+    }).filter(si => si.type !== 'acc' && si.type !== 'dist'); // acc/dist sirf A/D me
     const strongCount = strongItems.length;
 
     const previewMap = {};
@@ -1989,6 +1991,7 @@ function renderDayView(results){
     for(const comp of (r.comparisons||[])){
       for(const s of (comp.signals||[])){
         const [sym,type,pricePct] = s.split(':');
+        if(type === 'acc' || type === 'dist') continue; // acc/dist sirf A/D me
         if(!previewMap[sym]) previewMap[sym] = { sym, type, pricePct: parseFloat(pricePct)||0 };
       }
     }
@@ -2115,6 +2118,7 @@ function buildDvDetail(r){
 
     signals.forEach(s => {
       const [sym,type,pricePct,oiPct,priceNow,oiNow,priceBase] = s.split(':');
+      if(type === 'acc' || type === 'dist') return; // acc/dist sirf A/D me
       allRows.push({
         sym, type,
         pricePct  : parseFloat(pricePct)||0,

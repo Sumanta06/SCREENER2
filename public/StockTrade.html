@@ -1982,8 +1982,8 @@ function renderDayView(results){
   const maxBull  = Math.max(...results.map(r=>r.bullCount||0),1);
   const maxBear  = Math.max(...results.map(r=>r.bearCount||0),1);
 
-  let html = '';
-  html += '<div class="dv-sec-label">📅 Scan Timeline — newest first</div>';
+  let htmlTimeline = '';
+  htmlTimeline += '<div class="dv-sec-label">📅 Scan Timeline — newest first</div>';
 
   const sorted = [...results].reverse();
 
@@ -2029,7 +2029,7 @@ function renderDayView(results){
       </div>` : `<div style="padding:2px 0 4px;font-size:.68rem;color:var(--ink3);font-style:italic;">No signals in this scan</div>`;
 
     if(!allPreviewItems.length) return;
-    html += `<div class="dv-tl-item ${dom}" id="${uid}">
+    htmlTimeline += `<div class="dv-tl-item ${dom}" id="${uid}">
       <div class="dv-tl-head" onclick="dvToggle('${uid}')">
         <div class="dv-tl-row1">
           <span class="dv-tl-time">🕐 ${r.timeStr}</span>
@@ -2057,58 +2057,96 @@ function renderDayView(results){
     dist   : { icon:'◆', label:'Distribution',   col:'var(--purple-text)', bg:'var(--purple-dim)', border:'var(--purple-mid)' },
   };
 
-  if(lbData.length){
-    html += '<div id="dv-leaderboard"><div class="dv-sec-label" style="margin-top:20px;">🏆 Symbol Leaderboard — Strong signal count</div>';
-    lbData.forEach(([sym,cnt],i)=>{
-      const lastTime  = symLastTime[sym]  || '';
-      const strength  = symStrength[sym]  || 'STRONG';
-      const type      = symType[sym]      || '';
-      const tcfg      = LB_TYPE_CFG[type] || { icon:'·', label: type, col:'var(--ink2)', bg:'var(--bg2)', border:'var(--border)' };
-      
-      html += `<div class="dv-lb-item" style="cursor:pointer;position:relative;" onclick="toggleLbHist('${sym}')">
-        <span class="dv-lb-rank">${i+1}</span>
-        <div style="flex:1;min-width:0;display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
-          <span class="dv-lb-sym">${sym}</span>
-          <span style="display:inline-flex;align-items:center;gap:3px;font-size:.65rem;font-weight:700;
-            padding:2px 8px;border-radius:4px;white-space:nowrap;
-            color:${tcfg.col};background:${tcfg.bg};border:1px solid ${tcfg.border};">
-            ${tcfg.icon} ${tcfg.label}
-          </span>
-          ${strength==='CAUTION'
-            ? `<span class="dv-caution-badge">⚠️ CAUTION</span>`
-            : `<span class="dv-strong-badge">🔥 STRONG</span>`}
-          ${lastTime?`<span style="font-size:.6rem;color:var(--ink3);white-space:nowrap;">🕐 ${lastTime}</span>`:''}
-        </div>
-        <div class="dv-lb-bar-wrap" style="flex:1; max-width:300px; display:flex; align-items:center; gap:10px; justify-content:flex-end;">
-          <div class="dv-lb-bar-bg" style="flex:1; max-width:200px;"><div class="dv-lb-bar-fill" style="width:${Math.round(cnt/maxCount*100)}%"></div></div>
-          <span class="dv-lb-count" style="font-weight:700;">${cnt}×</span>
-          <span style="font-size:.6rem;color:var(--ink3);">▼</span>
-        </div>
-      </div>`;
+  function renderSymRow(sym, cnt, rankNum = null) {
+    const lastTime  = symLastTime[sym]  || '';
+    const strength  = symStrength[sym]  || 'STRONG';
+    const type      = symType[sym]      || '';
+    const tcfg      = LB_TYPE_CFG[type] || { icon:'·', label: type, col:'var(--ink2)', bg:'var(--bg2)', border:'var(--border)' };
+    
+    let htmlRow = `<div class="dv-lb-item" style="cursor:pointer;position:relative;" onclick="toggleLbHist('${sym}')">
+      ${rankNum !== null ? `<span class="dv-lb-rank">${rankNum}</span>` : ''}
+      <div style="flex:1;min-width:0;display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
+        <span class="dv-lb-sym">${sym}</span>
+        <span style="display:inline-flex;align-items:center;gap:3px;font-size:.65rem;font-weight:700;
+          padding:2px 8px;border-radius:4px;white-space:nowrap;
+          color:${tcfg.col};background:${tcfg.bg};border:1px solid ${tcfg.border};">
+          ${tcfg.icon} ${tcfg.label}
+        </span>
+        ${strength==='CAUTION'
+          ? `<span class="dv-caution-badge">⚠️ CAUTION</span>`
+          : `<span class="dv-strong-badge">🔥 STRONG</span>`}
+        ${lastTime?`<span style="font-size:.6rem;color:var(--ink3);white-space:nowrap;">🕐 ${lastTime}</span>`:''}
+      </div>
+      <div class="dv-lb-bar-wrap" style="flex:1; max-width:300px; display:flex; align-items:center; gap:10px; justify-content:flex-end;">
+        <div class="dv-lb-bar-bg" style="flex:1; max-width:200px;"><div class="dv-lb-bar-fill" style="width:${Math.round(cnt/maxCount*100)}%"></div></div>
+        <span class="dv-lb-count" style="font-weight:700;">${cnt}×</span>
+        <span style="font-size:.6rem;color:var(--ink3);">▼</span>
+      </div>
+    </div>`;
 
-      const hist = [...(symHistory[sym] || [])].reverse();
-      const histRows = hist.map(h => {
-        const htcfg = LB_TYPE_CFG[h.type] || { icon:'·', label: h.type, col:'var(--ink2)' };
-        const vpNum = parseFloat(h.volPct) || 0;
-        const vSign = vpNum > 0 ? '+' : '';
-        const vCol  = vpNum > 0 ? 'var(--g-text)' : 'var(--ink3)';
-        const volHtml = vpNum !== 0 ? `<span style="color:${vCol};font-weight:600;margin-left:auto;">${vSign}${h.volPct}% Vol</span>` : '';
-        
-        return `<div style="display:flex;justify-content:flex-start;gap:30px;padding:6px 0;border-bottom:1px solid var(--border);font-size:.65rem;">
-          <span style="color:var(--ink3);font-family:'JetBrains Mono',monospace;width:60px;">🕐 ${h.timeStr}</span>
-          <span style="color:${htcfg.col};font-weight:700;width:120px;">${htcfg.icon} ${htcfg.label}</span>
-          ${volHtml}
-        </div>`;
-      }).join('');
+    const hist = [...(symHistory[sym] || [])].reverse();
+    const histRows = hist.map(h => {
+      const htcfg = LB_TYPE_CFG[h.type] || { icon:'·', label: h.type, col:'var(--ink2)' };
+      const vpNum = parseFloat(h.volPct) || 0;
+      const vSign = vpNum > 0 ? '+' : '';
+      const vCol  = vpNum > 0 ? 'var(--g-text)' : 'var(--ink3)';
+      const volHtml = vpNum !== 0 ? `<span style="color:${vCol};font-weight:600;margin-left:auto;">${vSign}${h.volPct}% Vol</span>` : '';
       
-      html += `<div id="lbhist_${sym}" style="display:none;padding:12px 16px;background:#0d1117;border-bottom:1px solid var(--border);border-left:2px solid ${tcfg.border};margin-bottom:-1px;">
-        <div style="font-size:.65rem;color:var(--ink3);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;font-weight:700;">Chronological History</div>
-        ${histRows}
+      return `<div style="display:flex;justify-content:flex-start;gap:30px;padding:6px 0;border-bottom:1px solid var(--border);font-size:.65rem;">
+        <span style="color:var(--ink3);font-family:'JetBrains Mono',monospace;width:60px;">🕐 ${h.timeStr}</span>
+        <span style="color:${htcfg.col};font-weight:700;width:120px;">${htcfg.icon} ${htcfg.label}</span>
+        ${volHtml}
       </div>`;
-    });
+    }).join('');
+    
+    htmlRow += `<div id="lbhist_${sym}" style="display:none;padding:12px 16px;background:#0d1117;border-bottom:1px solid var(--border);border-left:2px solid ${tcfg.border};margin-bottom:-1px;">
+      <div style="font-size:.65rem;color:var(--ink3);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;font-weight:700;">Chronological History</div>
+      ${histRows}
+    </div>`;
+    return htmlRow;
   }
 
-  if(lbData.length) html += '</div>';
+  let htmlLeaderboard = '';
+  if(lbData.length){
+    htmlLeaderboard += '<div id="dv-leaderboard"><div class="dv-sec-label" style="margin-top:20px;">🏆 Symbol Leaderboard — Strong signal count</div>';
+    lbData.forEach(([sym,cnt],i)=>{
+      htmlLeaderboard += renderSymRow(sym, cnt, i+1);
+    });
+    htmlLeaderboard += '</div>';
+  }
+
+  const lbSyms = new Set(lbData.map(x => x[0]));
+  const otherData = Object.entries(symCount)
+    .filter(x => !lbSyms.has(x[0]))
+    .sort((a,b) => symLastMs[b[0]] - symLastMs[a[0]]);
+
+  let htmlOther = '';
+  if(otherData.length){
+    htmlOther += '<div class="dv-sec-label" style="margin-top:15px;">📊 Other Active Signals Today</div>';
+    otherData.forEach(([sym,cnt])=>{
+      htmlOther += renderSymRow(sym, cnt, null);
+    });
+  } else {
+    htmlOther += '<div style="text-align:center;color:var(--ink3);margin:30px 0;font-size:0.85rem;font-style:italic;">No other signals found today.</div>';
+  }
+
+  let html = `
+    <div style="display:flex;justify-content:center;margin:16px 0 24px;gap:12px;">
+      <button id="btn-view-timeline" class="dv-btn active" onclick="switchDvView('timeline')" style="padding:8px 24px;">⏱️ Timeline</button>
+      <button id="btn-view-symbols" class="dv-btn" onclick="switchDvView('symbols')" style="padding:8px 24px;background:transparent;border:1px solid var(--border);">📊 All Symbols</button>
+    </div>
+    
+    <div id="dv-view-timeline">
+      ${htmlTimeline}
+    </div>
+    
+    <div id="dv-view-symbols" style="display:none;">
+      ${htmlOther}
+    </div>
+    
+    ${htmlLeaderboard}
+  `;
+
   body.innerHTML = html;
   requestAnimationFrame(()=>setupChipOverflow(body));
 }
@@ -2219,6 +2257,25 @@ function buildDvDetail(r){
 function toggleLbHist(sym){
   const el = document.getElementById('lbhist_'+sym);
   if(el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+function switchDvView(view){
+  const tl = document.getElementById('dv-view-timeline');
+  const syms = document.getElementById('dv-view-symbols');
+  const btnTl = document.getElementById('btn-view-timeline');
+  const btnSyms = document.getElementById('btn-view-symbols');
+  
+  if (view === 'timeline') {
+    if(tl) tl.style.display = 'block';
+    if(syms) syms.style.display = 'none';
+    if(btnTl) { btnTl.classList.add('active'); btnTl.style.background = ''; btnTl.style.border = ''; }
+    if(btnSyms) { btnSyms.classList.remove('active'); btnSyms.style.background = 'transparent'; btnSyms.style.border = '1px solid var(--border)'; }
+  } else {
+    if(tl) tl.style.display = 'none';
+    if(syms) syms.style.display = 'block';
+    if(btnSyms) { btnSyms.classList.add('active'); btnSyms.style.background = ''; btnSyms.style.border = ''; }
+    if(btnTl) { btnTl.classList.remove('active'); btnTl.style.background = 'transparent'; btnTl.style.border = '1px solid var(--border)'; }
+  }
 }
 
 function dvCompToggle(panelId){

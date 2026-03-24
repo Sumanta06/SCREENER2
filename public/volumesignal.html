@@ -218,7 +218,6 @@
 
         #empty-state { text-align: center; color: #64748b; margin-top: 50px; font-style: italic; }
 
-<<<<<<< HEAD
         /* ── FADE for old signals ── */
         .row.faded { opacity: 0.4; }
 
@@ -249,8 +248,6 @@
         }
         .tooltip-box.visible { display: block; }
 
-=======
->>>>>>> 87b1f92a110349b650775178966a92be3efb6bc1
         @keyframes flashNewBullish { 0%{background:var(--flash-bull);transform:translateX(-5px)} 100%{background:var(--row-bg);transform:translateX(0)} }
         @keyframes flashNewBearish { 0%{background:var(--flash-bear);transform:translateX(-5px)} 100%{background:var(--row-bg);transform:translateX(0)} }
         .BULLISH.new-row { animation: flashNewBullish 0.8s ease-out forwards; }
@@ -261,15 +258,7 @@
         ══════════════════════════════════════ */
         @media (max-width: 640px) {
             main { padding: 8px 8px; }
-<<<<<<< HEAD
             .list-header { display: none; }
-=======
-
-            /* Hide column-header bar */
-            .list-header { display: none; }
-
-            /* Card: wrap all cols */
->>>>>>> 87b1f92a110349b650775178966a92be3efb6bc1
             .row {
                 flex-wrap: wrap;
                 padding: 11px 12px;
@@ -277,11 +266,6 @@
                 row-gap: 7px;
                 align-items: flex-start;
             }
-<<<<<<< HEAD
-=======
-
-            /* ── Line 1: Symbol | Badge | Spike pill ── */
->>>>>>> 87b1f92a110349b650775178966a92be3efb6bc1
             .row .col-symbol {
                 order: 1;
                 flex: 1;
@@ -304,11 +288,6 @@
                 justify-content: flex-end;
                 align-self: center;
             }
-<<<<<<< HEAD
-=======
-
-            /* ── Line 2: LTP (left) | Volume (right) ── */
->>>>>>> 87b1f92a110349b650775178966a92be3efb6bc1
             .row .col-price {
                 order: 4;
                 width: 50%;
@@ -322,11 +301,6 @@
                 text-align: right;
                 font-size: 13px;
             }
-<<<<<<< HEAD
-=======
-
-            /* ── Line 3: Time (left) | AvgVol (right) ── */
->>>>>>> 87b1f92a110349b650775178966a92be3efb6bc1
             .row .col-time {
                 order: 6;
                 width: 50%;
@@ -345,10 +319,6 @@
                 color: var(--text-muted);
             }
             .row .col-avgvol::before { content: "30D Avg: "; }
-<<<<<<< HEAD
-=======
-
->>>>>>> 87b1f92a110349b650775178966a92be3efb6bc1
             .spike-pill { font-size: 11px; padding: 3px 8px; }
             .type-badge { font-size: 9px; padding: 3px 7px; }
             .title h1   { font-size: 15px; }
@@ -368,10 +338,7 @@
                 <div class="pulse" id="live-indicator"></div>
                 <div class="time-box" id="clock">--:--:--</div>
                 <div class="time-box">Total Hits: <span id="sig-count">0</span></div>
-<<<<<<< HEAD
                 <button class="theme-toggle" onclick="downloadCSV()">⬇️ CSV</button>
-=======
->>>>>>> 87b1f92a110349b650775178966a92be3efb6bc1
                 <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn">🌙 Dark</button>
             </div>
         </div>
@@ -395,10 +362,6 @@
     <script>
         const PUBLIC_R2_URL = "https://pub-ced41a0bcdfc4c8da30ae906c5f3a3f7.r2.dev/signals/live_alerts.json";
 
-<<<<<<< HEAD
-=======
-        let previousDataStr = '';
->>>>>>> 87b1f92a110349b650775178966a92be3efb6bc1
         let currentSort = 'timestamp';
         let sortDesc = true;
 
@@ -450,7 +413,6 @@
                 const res = await fetch(PUBLIC_R2_URL + '?t=' + Date.now());
                 if (!res.ok) throw new Error("Fetch failed");
                 const json = await res.json();
-<<<<<<< HEAD
                 const incoming = json.signals || [];
 
                 let hasNew = false;
@@ -466,11 +428,6 @@
                 }
 
                 document.getElementById('sig-count').innerText = allSignals.size;
-=======
-                latestSignals = json.signals || [];
-                renderList(latestSignals);
-                document.getElementById('sig-count').innerText = latestSignals.length;
->>>>>>> 87b1f92a110349b650775178966a92be3efb6bc1
                 document.getElementById('live-indicator').style.backgroundColor = '#10b981';
                 document.getElementById('live-indicator').style.boxShadow = '0 0 10px #10b981';
 
@@ -487,11 +444,6 @@
                 document.getElementById('live-indicator').style.boxShadow = '0 0 10px #ef4444';
             }
         }
-<<<<<<< HEAD
-=======
-
-        let knownSymbols = new Set();
->>>>>>> 87b1f92a110349b650775178966a92be3efb6bc1
 
         function updateExistingRows() {
             // Silently update price/vol in existing DOM rows without any flash
@@ -520,19 +472,12 @@
             }
             document.getElementById('empty-state').style.display = 'none';
 
-<<<<<<< HEAD
             // Sort the signals
             let signals = Array.from(allSignals.values());
             signals.sort((a, b) => {
                 let valA = a[currentSort];
                 let valB = b[currentSort];
                 if (!['timestamp','symbol','type'].includes(currentSort)) {
-=======
-            let sortedSignals = [...signals].sort((a,b) => {
-                let valA = a[currentSort];
-                let valB = b[currentSort];
-                if (currentSort !== 'timestamp' && currentSort !== 'symbol' && currentSort !== 'type') {
->>>>>>> 87b1f92a110349b650775178966a92be3efb6bc1
                     valA = parseFloat(valA) || 0;
                     valB = parseFloat(valB) || 0;
                 }
@@ -542,7 +487,6 @@
             });
 
             let html = '';
-<<<<<<< HEAD
             const now = new Date();
 
             // Caution check: symbol+type seen in last 30 min
@@ -586,19 +530,6 @@
                 // Tooltip text
                 const tooltipText = getTooltip(s.type);
 
-=======
-            for(let s of sortedSignals) {
-                const isNew = !knownSymbols.has(s.symbol);
-                knownSymbols.add(s.symbol);
-
-                const isBull = (s.type || '').includes('BULLISH');
-                const typeClass = isBull ? 'BULLISH' : 'BEARISH';
-                const colorClass = isBull ? 'BULLISH-text' : 'BEARISH-text';
-                const newClass = isNew ? 'new-row' : '';
-
-                const avgVolHtml = s.avg_vol ? new Intl.NumberFormat('en-IN').format(s.avg_vol) : '--';
-
->>>>>>> 87b1f92a110349b650775178966a92be3efb6bc1
                 html += `
                 <div class="row ${typeClass} ${newClass} ${fadeClass}" data-key="${key}" data-tooltip="${tooltipText}" onclick="showTooltip(event, this)">
                     <div class="col-time">${s.timestamp}</div>
@@ -615,7 +546,6 @@
             list.innerHTML = html;
         }
 
-<<<<<<< HEAD
         function parseTimestamp(ts) {
             // ts format: "HH:MM:SS"
             const today = new Date();
@@ -682,8 +612,6 @@
             a.click();
         }
 
-=======
->>>>>>> 87b1f92a110349b650775178966a92be3efb6bc1
         setInterval(fetchData, 1500);
         fetchData();
     </script>

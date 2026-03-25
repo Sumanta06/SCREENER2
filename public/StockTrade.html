@@ -348,15 +348,18 @@ function renderAD(results, body, sub){
       <div style="flex:1;min-width:0;display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
         <span class="dv-lb-sym${_adBlink}">
           ${sym}
-          ${_adAge <= 15 ? `<span class="sym-blink" style="font-size:.65rem;font-weight:900;color:var(--g-text);padding:1px 5px;background:var(--g-dim);border:1px solid var(--g-mid);border-radius:4px;">NEW</span>` : ''}
+          ${_adAge <= 15 ? `<span class="pc-only sym-blink" style="font-size:.65rem;font-weight:900;color:var(--g-text);padding:1px 5px;background:var(--g-dim);border:1px solid var(--g-mid);border-radius:4px;margin-left:4px;">NEW</span>` : ''}
         </span>
+        ${lastTime?`<span style="margin-left:4px;font-size:.65rem;color:${_adTimeCol};white-space:nowrap;font-weight:700;display:flex;align-items:center;gap:4px;">
+          LAST SCAN--${lastTime}
+          ${_adAge <= 15 ? `<span class="mobile-only sym-blink" style="font-size:.65rem;font-weight:900;color:var(--g-text);padding:1px 5px;background:var(--g-dim);border:1px solid var(--g-mid);border-radius:4px;">NEW</span>` : ''}
+        </span>`:''}
         <div style="flex:1;"></div>
         <span style="display:inline-flex;align-items:center;gap:3px;font-size:.65rem;font-weight:700;
           padding:2px 8px;border-radius:4px;white-space:nowrap;
           color:${col};background:${bg};border:1px solid ${bdr};">
           ${label}
         </span>
-        ${lastTime?`<span style="font-size:.65rem;color:${_adTimeCol};white-space:nowrap;font-weight:700;">🕐 ${lastTime}</span>`:''}
       </div>
       <div style="display:flex; align-items:center; gap:10px;">
         <span class="dv-lb-count" style="font-weight:700;color:var(--ink);">${cnt} Signal${cnt!=1?'s':''}</span>
@@ -419,7 +422,7 @@ function renderAD(results, body, sub){
         <div class="lb-row-top">
           <div class="lb-sym${blink}">
             <span>${sym}</span>
-            ${ageMin <= 15 ? `<span class="sym-blink" style="font-size:.58rem;font-weight:900;color:var(--g-text);padding:0 4px;background:var(--g-dim);border:1px solid var(--g-mid);border-radius:3px;">NEW</span>` : ''}
+            ${ageMin <= 15 ? `<span class="sym-blink" style="font-size:.58rem;font-weight:900;color:var(--g-text);padding:0 4px;background:var(--g-dim);border:1px solid var(--g-mid);border-radius:3px;margin-left:4px;">NEW</span>` : ''}
           </div>
           <div class="lb-cnt" style="display:flex;gap:8px;font-size:.65rem;font-weight:700;">
             <span style="color:var(--teal-text);">▲${hist.filter(h=>h.type==='acc').length}</span>
@@ -1455,11 +1458,13 @@ input[type=range].tslider::-webkit-slider-thumb{-webkit-appearance:none;
   .dv-header{padding:12px 14px;}
   .dv-body{padding:10px 10px 40px;}
   .pc-only{display:none !important;}
+  .mobile-only{display:inline-flex !important;}
   .mobile-row2-btns{display:flex;gap:6px;align-items:center;width:100%;margin-top:4px;}
   .mobile-row2-btns .hbtn{flex:1;justify-content:center;height:32px;padding:0;font-size:.72rem;}
   .mobile-row2-btns .hbtn span{display:inline;}
   .modal-center-brand{display:none;}
 }
+.mobile-only{display:none !important;}
 </style>
 </head>
 <body>
@@ -2233,7 +2238,7 @@ function renderDayView(results){
         <div class="lb-row-top">
           <div class="lb-sym${blink}">
             <span>${sym}</span>
-            ${ageMin <= 15 ? `<span class="sym-blink" style="font-size:.58rem;font-weight:900;color:var(--g-text);padding:0 4px;background:var(--g-dim);border:1px solid var(--g-mid);border-radius:3px;">NEW</span>` : ''}
+            ${ageMin <= 15 ? `<span class="sym-blink" style="font-size:.58rem;font-weight:900;color:var(--g-text);padding:0 4px;background:var(--g-dim);border:1px solid var(--g-mid);border-radius:3px;margin-left:4px;">NEW</span>` : ''}
           </div>
           <div class="lb-cnt" style="display:flex;gap:8px;font-size:.65rem;font-weight:700;">
             <span style="color:var(--g-text);">▲${hist.filter(h=>bullTypes.has(h.type)).length}</span>
@@ -2345,8 +2350,12 @@ function renderDayView(results){
       <div style="flex:1;min-width:0;display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
         <span class="dv-lb-sym${_dvBlink}">
           ${sym}
-          ${_ageMin <= 15 ? `<span class="sym-blink" style="font-size:.65rem;font-weight:900;color:var(--g-text);padding:1px 5px;background:var(--g-dim);border:1px solid var(--g-mid);border-radius:4px;">NEW</span>` : ''}
+          ${_ageMin <= 15 ? `<span class="pc-only sym-blink" style="font-size:.65rem;font-weight:900;color:var(--g-text);padding:1px 5px;background:var(--g-dim);border:1px solid var(--g-mid);border-radius:4px;margin-left:4px;">NEW</span>` : ''}
         </span>
+        ${lastTime?`<span style="margin-left:4px;font-size:.65rem;color:${_timeCol};white-space:nowrap;font-weight:700;display:flex;align-items:center;gap:4px;">
+          LAST SCAN--${lastTime}
+          ${_ageMin <= 15 ? `<span class="mobile-only sym-blink" style="font-size:.65rem;font-weight:900;color:var(--g-text);padding:1px 5px;background:var(--g-dim);border:1px solid var(--g-mid);border-radius:4px;">NEW</span>` : ''}
+        </span>`:''}
         <div style="flex:1;"></div>
         <span style="display:inline-flex;align-items:center;gap:3px;font-size:.65rem;font-weight:700;
           padding:2px 8px;border-radius:4px;white-space:nowrap;
@@ -2356,7 +2365,6 @@ function renderDayView(results){
         ${strength==='CAUTION'
           ? `<span class="dv-caution-badge">⚠️ CAUTION</span>`
           : `<span class="dv-strong-badge">🔥 STRONG</span>`}
-        ${lastTime?`<span style="font-size:.65rem;color:${_timeCol};white-space:nowrap;font-weight:700;">🕐 ${lastTime}</span>`:''}
       </div>
       <div style="display:flex; align-items:center; gap:10px;">
         <span class="dv-lb-count" style="font-weight:700;">${cnt} Signal${cnt!=1?'s':''}</span>

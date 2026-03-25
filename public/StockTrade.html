@@ -289,7 +289,7 @@ function renderAD(results, body, sub){
         symLastTime[sym] = r.timeStr;
       }
       if(!symHistory[sym]) symHistory[sym] = [];
-      symHistory[sym].push({ timeStr: r.timeStr, type: 'acc', pricePct: s.pricePct||'0', oiPct: s.oiPct||'0' });
+      symHistory[sym].push({ timeStr: r.timeStr, ms, type: 'acc', pricePct: s.pricePct||'0', oiPct: s.oiPct||'0' });
       lbAccMap[sym] = (lbAccMap[sym]||0)+1;
     });
     
@@ -302,7 +302,7 @@ function renderAD(results, body, sub){
         symLastTime[sym] = r.timeStr;
       }
       if(!symHistory[sym]) symHistory[sym] = [];
-      symHistory[sym].push({ timeStr: r.timeStr, type: 'dist', pricePct: s.pricePct||'0', oiPct: s.oiPct||'0' });
+      symHistory[sym].push({ timeStr: r.timeStr, ms, type: 'dist', pricePct: s.pricePct||'0', oiPct: s.oiPct||'0' });
       lbDistMap[sym] = (lbDistMap[sym]||0)+1;
     });
 
@@ -322,7 +322,6 @@ function renderAD(results, body, sub){
         </div>
         ${hasSignals ? `<div class="chip-overflow-wrap" data-uid="adchip_${uid}">
           ${allAccChips.map(s=>`<span class="ad-chip acc" data-chip>◆ ${s.symbol}</span>`).join('')}
-          ${allDistChips.map(s=>`<span class="ad-chip dist" data-chip>◆ ${s.symbol}</span>`).join('')}
           <span class="chip-more-btn" id="adchip_${uid}_more" style="display:none;" onclick="chipShowAll('adchip_${uid}',event)"></span>
         </div>` : `<div style="font-size:.68rem;color:var(--ink3);font-style:italic;padding-top:2px;">No signals in this scan</div>`}
       </div>
@@ -343,16 +342,31 @@ function renderAD(results, body, sub){
     const _adAge    = (Date.now() - (symLastMs[sym]||0)) / 60000;
     const _adTimeCol= _adAge <= 19 ? 'var(--g-text)' : '#cc8800';
     const _adBlink  = _adAge <= 15 ? ' sym-blink' : '';
+
+    const hist = symHistory[sym] || [];
+    let isStreak = false, sIcon = '', sCol = '';
+    if (hist.length >= 2) {
+      const last = hist[hist.length-1], prev = hist[hist.length-2];
+      const sameCat = (last.type==='acc' && prev.type==='acc') || (last.type==='dist' && prev.type==='dist');
+      if (sameCat && (last.ms - prev.ms <= 15 * 60000)) {
+        isStreak = true;
+        sIcon = last.type==='acc' ? '▲▲' : '▼▼';
+        sCol = last.type==='acc' ? 'var(--g-text)' : 'var(--r-text)';
+      }
+    }
+    const streakHtml = isStreak ? `<span style="font-size:.68rem;font-weight:900;color:${sCol};margin-left:4px;letter-spacing:-1.5px;filter:drop-shadow(0 0 2px ${sCol}40);">${sIcon}</span>` : '';
     
-    let htmlRow = `<div class="dv-lb-item" style="cursor:pointer;position:relative;" onclick="toggleLbHist('${sym}_ad')">
+    let htmlRow = `<div class="dv-lb-item" style="cursor:pointer;position:relative;" onclick="toggleAdLbHist('${sym}_ad')">
       <div style="flex:1;min-width:0;display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
         <span class="dv-lb-sym${_adBlink}">
           ${sym}
           ${_adAge <= 15 ? `<span class="pc-only sym-blink" style="font-size:.65rem;font-weight:900;color:var(--g-text);padding:1px 5px;background:var(--g-dim);border:1px solid var(--g-mid);border-radius:4px;margin-left:4px;">NEW</span>` : ''}
+          <span class="pc-only">${streakHtml}</span>
         </span>
         ${lastTime?`<span style="margin-left:4px;font-size:.65rem;color:${_adTimeCol};white-space:nowrap;font-weight:700;display:flex;align-items:center;gap:4px;">
           LAST SIGNAL--${lastTime}
           ${_adAge <= 15 ? `<span class="mobile-only sym-blink" style="font-size:.65rem;font-weight:900;color:var(--g-text);padding:1px 5px;background:var(--g-dim);border:1px solid var(--g-mid);border-radius:4px;">NEW</span>` : ''}
+          <span class="mobile-only">${streakHtml}</span>
         </span>`:''}
         <div style="flex:1;"></div>
         <span style="display:inline-flex;align-items:center;gap:3px;font-size:.65rem;font-weight:700;
@@ -367,8 +381,8 @@ function renderAD(results, body, sub){
       </div>
     </div>`;
 
-    const hist = [...(symHistory[sym] || [])].reverse();
-    const histRows = hist.map(h => {
+    const revHist = [...(symHistory[sym] || [])].reverse();
+    const histRows = revHist.map(h => {
       const hIsAcc = h.type === 'acc';
       const hCol   = hIsAcc ? 'var(--teal-text)' : 'var(--orange-text)';
       const hLbl   = hIsAcc ? '◆ Accumulation' : '◆ Distribution';
@@ -2198,7 +2212,7 @@ function renderDayView(results){
       if(bearTypes.has(type)) lbBearMap[sym] = (lbBearMap[sym]||0)+1;
 
       if(!symHistory[sym]) symHistory[sym] = [];
-      symHistory[sym].push({ timeStr: r.timeStr, type, volPct });
+      symHistory[sym].push({ timeStr: r.timeStr, ms, type, volPct });
     }
   }
 
@@ -2337,6 +2351,9 @@ function renderDayView(results){
 
 
 
+  const BULL_TYPES = new Set(['long','cover','acc']);
+  const BEAR_TYPES = new Set(['short','unwind','dist']);
+
   function renderSymRow(sym, cnt) {
     const lastTime  = symLastTime[sym]  || '';
     const strength  = symStrength[sym]  || 'STRONG';
@@ -2345,16 +2362,32 @@ function renderDayView(results){
     const _ageMin   = (Date.now() - (symLastMs[sym]||0)) / 60000;
     const _timeCol  = _ageMin <= 19 ? 'var(--g-text)' : '#cc8800';
     const _dvBlink  = _ageMin <= 15 ? ' sym-blink' : '';
+
+    const hist = symHistory[sym] || [];
+    let isStreak = false, sIcon = '', sCol = '';
+    if (hist.length >= 2) {
+      const last = hist[hist.length-1], prev = hist[hist.length-2];
+      const bothBull = BULL_TYPES.has(last.type) && BULL_TYPES.has(prev.type);
+      const bothBear = BEAR_TYPES.has(last.type) && BEAR_TYPES.has(prev.type);
+      if ((bothBull || bothBear) && (last.ms - prev.ms <= 15 * 60000)) {
+        isStreak = true;
+        sIcon = bothBull ? '▲▲' : '▼▼';
+        sCol = bothBull ? 'var(--g-text)' : 'var(--r-text)';
+      }
+    }
+    const streakHtml = isStreak ? `<span style="font-size:.68rem;font-weight:900;color:${sCol};margin-left:4px;letter-spacing:-1.5px;filter:drop-shadow(0 0 2px ${sCol}40);">${sIcon}</span>` : '';
     
     let htmlRow = `<div class="dv-lb-item" style="cursor:pointer;position:relative;" onclick="toggleLbHist('${sym}')">
       <div style="flex:1;min-width:0;display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
         <span class="dv-lb-sym${_dvBlink}">
           ${sym}
           ${_ageMin <= 15 ? `<span class="pc-only sym-blink" style="font-size:.65rem;font-weight:900;color:var(--g-text);padding:1px 5px;background:var(--g-dim);border:1px solid var(--g-mid);border-radius:4px;margin-left:4px;">NEW</span>` : ''}
+          <span class="pc-only">${streakHtml}</span>
         </span>
         ${lastTime?`<span style="margin-left:4px;font-size:.65rem;color:${_timeCol};white-space:nowrap;font-weight:700;display:flex;align-items:center;gap:4px;">
           LAST SIGNAL--${lastTime}
           ${_ageMin <= 15 ? `<span class="mobile-only sym-blink" style="font-size:.65rem;font-weight:900;color:var(--g-text);padding:1px 5px;background:var(--g-dim);border:1px solid var(--g-mid);border-radius:4px;">NEW</span>` : ''}
+          <span class="mobile-only">${streakHtml}</span>
         </span>`:''}
         <div style="flex:1;"></div>
         <span style="display:inline-flex;align-items:center;gap:3px;font-size:.65rem;font-weight:700;
@@ -2372,8 +2405,8 @@ function renderDayView(results){
       </div>
     </div>`;
 
-    const hist = [...(symHistory[sym] || [])].reverse();
-    const histRows = hist.map(h => {
+    const revHist = [...(symHistory[sym] || [])].reverse();
+    const histRows = revHist.map(h => {
       const htcfg = LB_TYPE_CFG[h.type] || { icon:'·', label: h.type, col:'var(--ink2)' };
       const vpNum = parseFloat(h.volPct) || 0;
       const vSign = vpNum > 0 ? '+' : '';

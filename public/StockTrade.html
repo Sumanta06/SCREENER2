@@ -1479,6 +1479,48 @@ input[type=range].tslider::-webkit-slider-thumb{-webkit-appearance:none;
   .modal-center-brand{display:none;}
 }
 .mobile-only{display:none !important;}
+  :root {
+    --fresh-bg: rgba(255, 165, 0, 0.035);
+    --fresh-col: #ffa500;
+    --fresh-border: rgba(255, 165, 0, 0.2);
+  }
+  [data-theme="light"] {
+    --fresh-bg: rgba(255, 100, 0, 0.08);
+    --fresh-col: #d35400;
+    --fresh-border: rgba(211, 84, 0, 0.3);
+  }
+
+  .fresh-radar-box {
+    background: var(--fresh-bg);
+    border: 1px solid var(--fresh-border);
+    border-radius: 12px;
+    padding: 12px 10px;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2), 0 0 15px rgba(255, 165, 0, 0.05);
+    backdrop-filter: blur(8px);
+    position: relative;
+    overflow: hidden;
+  }
+  .fresh-radar-box::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--fresh-border), transparent);
+  }
+  .live-badge {
+    display: inline-flex; align-items:center; gap:5px;
+    background: var(--fresh-bg); color: var(--fresh-col);
+    padding: 2px 8px; border-radius: 20px; border: 1px solid var(--fresh-border);
+    font-size: 0.6rem; font-weight: 800; letter-spacing: 0.5px;
+    box-shadow: 0 0 8px rgba(255, 165, 0, 0.2);
+  }
+  .pulse-dot {
+    width: 6px; height: 6px; background: #ff4400; border-radius: 50%;
+    animation: pulse-red 1.5s infinite;
+  }
+  @keyframes pulse-red {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 68, 0, 0.7); }
+    70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(255, 68, 0, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 68, 0, 0); }
+  }
 </style>
 </head>
 <body>
@@ -2357,7 +2399,7 @@ function renderDayView(results){
   const BULL_TYPES = new Set(['long','cover','acc']);
   const BEAR_TYPES = new Set(['short','unwind','dist']);
 
-  function renderSymRow(sym, cnt) {
+  function renderSymRow(sym, cnt, isFresh = false) {
     const lastTime  = symLastTime[sym]  || '';
     const strength  = symStrength[sym]  || '';
     const type      = symType[sym]      || '';
@@ -2365,6 +2407,10 @@ function renderDayView(results){
     const _ageMin   = (Date.now() - (symLastMs[sym]||0)) / 60000;
     const _timeCol  = _ageMin <= 19 ? 'var(--g-text)' : '#cc8800';
     const _dvBlink  = _ageMin <= 15 ? ' sym-blink' : '';
+
+    const freshBg = isFresh ? 'background:var(--fresh-bg); border:1px solid var(--fresh-border); border-radius:8px; margin:2px 0; box-shadow:inset 0 0 10px rgba(255,165,0,0.05);' : '';
+    const freshSymStyle = isFresh ? 'color:var(--fresh-col); font-weight:850; font-size:.82rem; text-shadow:0 0 10px rgba(255,165,0,0.15); display:flex; align-items:center; gap:6px;' : '';
+    const freshPulse = isFresh ? '<div class="pulse-dot"></div>' : '';
 
     const hist = symHistory[sym] || [];
     let isStreak = false, sIcon = '', sCol = '';
@@ -2409,9 +2455,10 @@ function renderDayView(results){
        if(gap2 <= 21) { uiStrength = 'STRONG'; uiSInfo = `2 signals in ${Math.round(gap2)}m`; }
     }
     
-    let htmlRow = `<div class="dv-lb-item" style="cursor:pointer;position:relative;" onclick="toggleLbHist('${sym}')">
+    let htmlRow = `<div class="dv-lb-item" style="cursor:pointer;position:relative; ${freshBg}" onclick="toggleLbHist('${sym}')">
       <div style="flex:1;min-width:0;display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
-        <span class="dv-lb-sym${_dvBlink}">
+        <span class="dv-lb-sym${_dvBlink}" style="${freshSymStyle}">
+          ${freshPulse}
           ${sym}
           ${_ageMin <= 15 ? `<span class="pc-only sym-blink" style="font-size:.65rem;font-weight:900;color:var(--g-text);padding:1px 5px;background:var(--g-dim);border:1px solid var(--g-mid);border-radius:4px;margin-left:4px;">NEW</span>` : ''}
           <span class="pc-only">${streakHtml}</span>
@@ -2479,8 +2526,15 @@ function renderDayView(results){
 
   let htmlAllSymbols = '';
   if(freshData.length > 0) {
-    htmlAllSymbols += '<div class="dv-sec-label" style="margin-top:10px; color:var(--orange-text); display:flex; align-items:center; gap:8px;">🔥 FRESH RADAR (Within 11 Mins) <span style="font-size:0.6rem; background:var(--orange-dim); padding:2px 6px; border-radius:10px; border:1px solid var(--orange-mid);">LIVE</span></div>';
-    freshData.forEach(([sym,cnt]) => { htmlAllSymbols += renderSymRow(sym, cnt); });
+    htmlAllSymbols += `
+      <div class="dv-sec-label" style="margin-top:20px; color:var(--orange-text); display:flex; align-items:center; gap:10px;">
+        🔥 FRESH RADAR (Last 11 Mins) 
+        <div class="live-badge"><div class="pulse-dot"></div> LIVE</div>
+      </div>
+      <div class="fresh-radar-box">
+        ${freshData.map(([sym,cnt]) => renderSymRow(sym, cnt, true)).join('')}
+      </div>
+    `;
   }
 
   if(normalData.length){

@@ -2379,7 +2379,17 @@ function buildDvDetail(r){
 
 function toggleLbHist(sym){
   const el = document.getElementById('lbhist_'+sym);
-  if(el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  const wasClosed = el ? el.style.display === 'none' : false;
+  
+  // Close all open history details
+  document.querySelectorAll('div[id^="lbhist_"]').forEach(node => {
+    node.style.display = 'none';
+  });
+  
+  // If the clicked one was closed, open it now
+  if(el && wasClosed){
+    el.style.display = 'block';
+  }
 }
 
 function switchDvView(view){

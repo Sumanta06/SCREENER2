@@ -331,7 +331,7 @@ function renderAD(results, body, sub){
     </div>`;
   });
 
-  function renderAdSymRow(sym, cnt) {
+  function renderAdSymRow(sym, cnt, isFresh = false) {
     const lastTime  = symLastTime[sym] || '';
     const type      = symType[sym]     || '';
     const isAcc     = type === 'acc';
@@ -342,6 +342,10 @@ function renderAD(results, body, sub){
     const _adAge    = (Date.now() - (symLastMs[sym]||0)) / 60000;
     const _adTimeCol= _adAge <= 19 ? 'var(--g-text)' : '#cc8800';
     const _adBlink  = _adAge <= 15 ? ' sym-blink' : '';
+
+    const freshBg = isFresh ? 'background:var(--fresh-bg); border:1px solid var(--fresh-border); border-radius:8px; margin:2px 0; box-shadow:inset 0 0 10px rgba(255,165,0,0.05);' : '';
+    const freshSymStyle = isFresh ? 'color:var(--fresh-col); font-weight:850; font-size:.82rem; text-shadow:0 0 10px rgba(255,165,0,0.15); display:flex; align-items:center; gap:6px;' : '';
+    const freshPulse = isFresh ? '<div class="pulse-dot"></div>' : '';
 
     const hist = symHistory[sym] || [];
     let isStreak = false, sIcon = '', sCol = '';
@@ -355,10 +359,34 @@ function renderAD(results, body, sub){
       }
     }
     const streakHtml = isStreak ? `<span style="font-size:.68rem;font-weight:900;color:${sCol};margin-left:4px;letter-spacing:-1.5px;filter:drop-shadow(0 0 2px ${sCol}40);">${sIcon}</span>` : '';
+
+    let uiStrength = '', uiSInfo = '';
+    const streakItems = [];
+    if(hist.length > 0) {
+      const latestType = hist[hist.length-1].type;
+      for(let i = hist.length-1; i >= 0; i--) {
+        if(hist[i].type !== latestType) break;
+        streakItems.push(hist[i]);
+      }
+    }
+    const sc = streakItems.length;
+    if(sc >= 4) {
+       const gap4 = (streakItems[0].ms - streakItems[3].ms) / 60000;
+       if(gap4 <= 42) { uiStrength = 'CAUTION'; uiSInfo = `4 signals in ${Math.round(gap4)}m`; }
+    }
+    if(!uiStrength && sc >= 3) {
+       const gap3 = (streakItems[0].ms - streakItems[2].ms) / 60000;
+       if(gap3 <= 32) { uiStrength = 'STRONG'; uiSInfo = `3 signals in ${Math.round(gap3)}m`; }
+    }
+    if(!uiStrength && sc >= 2) {
+       const gap2 = (streakItems[0].ms - streakItems[1].ms) / 60000;
+       if(gap2 <= 21) { uiStrength = 'STRONG'; uiSInfo = `2 signals in ${Math.round(gap2)}m`; }
+    }
     
-    let htmlRow = `<div class="dv-lb-item" style="cursor:pointer;position:relative;" onclick="toggleAdLbHist('${sym}_ad')">
+    let htmlRow = `<div class="dv-lb-item" style="cursor:pointer;position:relative; ${freshBg}" onclick="toggleAdLbHist('${sym}_ad')">
       <div style="flex:1;min-width:0;display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
-        <span class="dv-lb-sym${_adBlink}">
+        <span class="dv-lb-sym${_adBlink}" style="${freshSymStyle}">
+          ${freshPulse}
           ${sym}
           ${_adAge <= 15 ? `<span class="pc-only sym-blink" style="font-size:.65rem;font-weight:900;color:var(--g-text);padding:1px 5px;background:var(--g-dim);border:1px solid var(--g-mid);border-radius:4px;margin-left:4px;">NEW</span>` : ''}
           <span class="pc-only">${streakHtml}</span>
@@ -373,6 +401,8 @@ function renderAD(results, body, sub){
           padding:2px 8px;border-radius:4px;white-space:nowrap;
           color:${col};background:${bg};border:1px solid ${bdr};">
           ${label}
+          ${uiStrength === 'STRONG' ? `<span style="margin-left:5px;font-size:0.6rem;background:#ff4400;color:#fff;padding:1px 5px;border-radius:4px;box-shadow:0 0 6px #ff440060;">🔥 STRONG</span>` : ''}
+          ${uiStrength === 'CAUTION' ? `<span style="margin-left:5px;font-size:0.6rem;background:#ffae00;color:#000;padding:1px 5px;border-radius:4px;box-shadow:0 0 6px #ffae0060;">⚠️ CAUTION</span>` : ''}
         </span>
       </div>
       <div style="display:flex; align-items:center; gap:10px;">
@@ -460,11 +490,37 @@ function renderAD(results, body, sub){
   const allData = Object.entries(symCount)
     .sort((a,b) => symLastMs[b[0]] - symLastMs[a[0]]);
 
+  const freshData = allData.filter(([s,c]) => {
+    const lastMs = symLastMs[s] || 0;
+    const ageMin = (Date.now() - lastMs) / 60000;
+    const d = new Date(lastMs);
+    const isPost320 = (d.getHours() === 15 && d.getMinutes() >= 20) || (d.getHours() > 15);
+    return isPost320 || (ageMin <= 11);
+  });
+  const normalData = allData.filter(([s,c]) => {
+    const lastMs = symLastMs[s] || 0;
+    const ageMin = (Date.now() - lastMs) / 60000;
+    const d = new Date(lastMs);
+    const isPost320 = (d.getHours() === 15 && d.getMinutes() >= 20) || (d.getHours() > 15);
+    return !isPost320 && (ageMin > 11);
+  });
+
   let htmlAllSymbols = '';
-  if(allData.length){
+  if(freshData.length){
+    htmlAllSymbols += `
+      <div class="ad-sec" style="margin-top:20px; color:var(--orange-text); display:flex; align-items:center; gap:10px;">
+        🔥 A/D FRESH RADAR (Last 11 Mins) 
+        <div class="live-badge"><div class="pulse-dot"></div> LIVE</div>
+      </div>
+      <div class="fresh-radar-box">
+        ${freshData.map(([sym,cnt]) => renderAdSymRow(sym, cnt, true)).join('')}
+      </div>
+    `;
+  }
+  if(normalData.length){
     htmlAllSymbols += '<div class="ad-sec" style="margin-top:10px;">📊 All Active A/D Signals Today</div>';
     htmlAllSymbols += '<div style="padding:6px 0 10px;"><input type="text" id="ad-sym-search" placeholder="🔍 Search symbol..." oninput="filterAdSymbols(this.value)" style="width:100%;padding:9px 14px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);color:var(--ink);font-family:\'Inter\',sans-serif;font-size:.78rem;outline:none;transition:border-color .2s;" onfocus="this.style.borderColor=\'var(--teal)\'" onblur="this.style.borderColor=\'var(--border2)\'"></div>';
-    allData.forEach(([sym,cnt])=>{
+    normalData.forEach(([sym,cnt])=>{
       htmlAllSymbols += renderAdSymRow(sym, cnt);
     });
   } else {

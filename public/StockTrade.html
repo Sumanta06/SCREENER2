@@ -250,6 +250,8 @@ function renderAD(results, body, sub){
   const symLastTime= {};
   const symLastMs  = {};
   const symHistory = {};
+  
+  const lbAccMap = {}, lbDistMap = {};
 
   sorted.forEach((r, idx) => {
     const comparisons = r.comparisons || [];
@@ -288,6 +290,7 @@ function renderAD(results, body, sub){
       }
       if(!symHistory[sym]) symHistory[sym] = [];
       symHistory[sym].push({ timeStr: r.timeStr, type: 'acc', pricePct: s.pricePct||'0', oiPct: s.oiPct||'0' });
+      lbAccMap[sym] = (lbAccMap[sym]||0)+1;
     });
     
     allDistChips.forEach(s => {
@@ -300,6 +303,7 @@ function renderAD(results, body, sub){
       }
       if(!symHistory[sym]) symHistory[sym] = [];
       symHistory[sym].push({ timeStr: r.timeStr, type: 'dist', pricePct: s.pricePct||'0', oiPct: s.oiPct||'0' });
+      lbDistMap[sym] = (lbDistMap[sym]||0)+1;
     });
 
     htmlTimeline += `<div class="ad-tl-item${hasSignals ? '' : ' no-sig'}" id="${uid}">
@@ -336,16 +340,19 @@ function renderAD(results, body, sub){
     const col       = isAcc ? 'var(--teal-text)' : 'var(--orange-text)';
     const bg        = isAcc ? 'var(--teal-dim)'  : 'var(--orange-dim)';
     const bdr       = isAcc ? 'var(--teal-mid)'  : 'var(--orange-mid)';
+    const _adAge    = (Date.now() - (symLastMs[sym]||0)) / 60000;
+    const _adTimeCol= _adAge <= 19 ? 'var(--g-text)' : '#cc8800';
+    const _adBlink  = _adAge <= 15 ? ' sym-blink' : '';
     
     let htmlRow = `<div class="dv-lb-item" style="cursor:pointer;position:relative;" onclick="toggleLbHist('${sym}_ad')">
       <div style="flex:1;min-width:0;display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
-        <span class="dv-lb-sym">${sym}</span>
+        <span class="dv-lb-sym${_adBlink}">${sym}</span>
         <span style="display:inline-flex;align-items:center;gap:3px;font-size:.65rem;font-weight:700;
           padding:2px 8px;border-radius:4px;white-space:nowrap;
           color:${col};background:${bg};border:1px solid ${bdr};">
           ${label}
         </span>
-        ${lastTime?`<span style="font-size:.6rem;color:var(--ink3);white-space:nowrap;">🕐 ${lastTime}</span>`:''}
+        ${lastTime?`<span style="font-size:.65rem;color:${_adTimeCol};white-space:nowrap;font-weight:700;">🕐 ${lastTime}</span>`:''}
       </div>
       <div style="display:flex; align-items:center; gap:10px;">
         <span class="dv-lb-count" style="font-weight:700;color:var(--ink);">${cnt} Signal${cnt!=1?'s':''}</span>
@@ -378,8 +385,50 @@ function renderAD(results, body, sub){
       <div style="font-size:.65rem;color:var(--ink3);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;font-weight:700;">Chronological History</div>
       ${histRows}
     </div>`;
-    return htmlRow;
+    return '<div class="ad-sym-wrap" data-sym="' + sym.toLowerCase() + '">' + htmlRow + '</div>';
   }
+
+  function getAdLbHtml(map, title, col, barCol){
+    const sorted = Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,5);
+    if(!sorted.length) return '';
+    const max = Math.max(...Object.values(map));
+    let html = `<div class="lb-col">
+      <div class="lb-side-title" style="color:${col}">🏆 ${title}</div>`;
+    sorted.forEach(([sym, cnt])=>{
+      const w = (cnt / max * 100).toFixed(1);
+      const ageMin = (Date.now() - (symLastMs[sym]||0)) / 60000;
+      const blink = ageMin <= 15 ? ' sym-blink' : '';
+      
+      const hist = [...(symHistory[sym] || [])].reverse();
+      const histRows = hist.map(h => {
+        const hIsAcc = h.type === 'acc';
+        const hCol   = hIsAcc ? 'var(--teal-text)' : 'var(--orange-text)';
+        const hLbl   = hIsAcc ? '◆ Acc' : '◆ Dist';
+        return `<div style="display:flex;justify-content:flex-start;gap:15px;padding:6px 0;border-bottom:1px solid var(--border);font-size:.62rem;">
+          <span style="color:var(--ink);font-family:'JetBrains Mono',monospace;width:55px;">🕐 ${h.timeStr}</span>
+          <span style="color:${hCol};font-weight:700;width:60px;">${hLbl}</span>
+          <span style="color:var(--ink2);margin-left:auto;">OI ${h.oiPct}%</span>
+        </div>`;
+      }).join('');
+
+      html += `<div class="lb-item" onclick="toggleLbHist('${sym}_ad_lb')">
+        <div class="lb-row-top">
+          <span class="lb-sym${blink}">${sym}</span>
+          <span class="lb-cnt">${cnt} Signals</span>
+        </div>
+        <div class="lb-bar-bg"><div class="lb-bar" style="width:${w}%;background:${barCol}"></div></div>
+        <div id="lbhist_${sym}_ad_lb" style="display:none;margin-top:10px;padding-top:10px;border-top:1px dashed var(--border);">
+          ${histRows}
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
+    return html;
+  }
+
+  const lbAccHtml  = getAdLbHtml(lbAccMap, 'Top Accumulation', 'var(--teal-text)', 'var(--teal)');
+  const lbDistHtml = getAdLbHtml(lbDistMap, 'Top Distribution', 'var(--orange-text)', 'var(--orange)');
+  const lbHtml = (lbAccHtml || lbDistHtml) ? `<div class="lb-grid">${lbAccHtml}${lbDistHtml}</div>` : '';
 
   const allData = Object.entries(symCount)
     .sort((a,b) => symLastMs[b[0]] - symLastMs[a[0]]);
@@ -387,6 +436,7 @@ function renderAD(results, body, sub){
   let htmlAllSymbols = '';
   if(allData.length){
     htmlAllSymbols += '<div class="ad-sec" style="margin-top:10px;">📊 All Active A/D Signals Today</div>';
+    htmlAllSymbols += '<div style="padding:6px 0 10px;"><input type="text" id="ad-sym-search" placeholder="🔍 Search symbol..." oninput="filterAdSymbols(this.value)" style="width:100%;padding:9px 14px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);color:var(--ink);font-family:\'Inter\',sans-serif;font-size:.78rem;outline:none;transition:border-color .2s;" onfocus="this.style.borderColor=\'var(--teal)\'" onblur="this.style.borderColor=\'var(--border2)\'"></div>';
     allData.forEach(([sym,cnt])=>{
       htmlAllSymbols += renderAdSymRow(sym, cnt);
     });
@@ -405,6 +455,7 @@ function renderAD(results, body, sub){
     </div>
     
     <div id="ad-view-symbols">
+      ${lbHtml}
       ${htmlAllSymbols}
     </div>
   `;
@@ -633,7 +684,22 @@ function buildADCard(r, type){
   --thead:#021f24; --modal-bg:rgba(2,55,61,.9);
 }
 
+/* ════════════════════════════════════════ LEADERBOARD */
+.lb-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-bottom:20px;padding:0 4px;}
+.lb-side-title{font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.lb-col{display:flex;flex-direction:column;gap:6px;}
+.lb-item{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;cursor:pointer;transition:all .15s;position:relative;overflow:hidden;}
+.lb-item:hover{border-color:var(--teal);background:var(--bg3);}
+.lb-row-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;position:relative;z-index:1;}
+.lb-sym{font-weight:800;font-size:.78rem;color:var(--ink);}
+.lb-cnt{font-size:.65rem;font-weight:700;color:var(--ink3);}
+.lb-bar-bg{height:4px;background:var(--border);border-radius:2px;overflow:hidden;position:relative;z-index:1;}
+.lb-bar{height:100%;border-radius:2px;transition:width .6s cubic-bezier(0.4, 0, 0.2, 1);}
+@media(max-width:600px){.lb-grid{grid-template-columns:1fr;}}
+
 /* ════════════════════════════════════════ RESET */
+@keyframes symBlink { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+.sym-blink { animation: symBlink 1.2s ease-in-out infinite; }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 html{scroll-behavior:smooth;}
 body{background:var(--bg);color:var(--ink);font-family:'Inter',sans-serif;
@@ -1652,7 +1718,7 @@ const TICONS      = {dark:'🌙',light:'☀️',teal:'🌊'};
 const K           = {th:'spurt_ul_th7'};
 
 let PRICE_THRESH  = 0.20;
-let OI_THRESH     = 2.0;
+let OI_THRESH     = 2.5;
 let _lastFresh    = null;
 let _lastBaseMap  = null;
 let _lastBaseTime = null;
@@ -2090,6 +2156,11 @@ function renderDayView(results){
   const symLastTime= {};
   const symLastMs  = {};
   const symHistory = {};
+  
+  const lbBullMap = {}, lbBearMap = {};
+  const bullTypes = new Set(['long','cover','acc']);
+  const bearTypes = new Set(['short','unwind','dist']);
+
   for(const r of results){
     const ms = r.savedAt ? new Date(r.savedAt).getTime() : 0;
     for(const s of (r.strong||[])){
@@ -2099,16 +2170,71 @@ function renderDayView(results){
       const strength = parts[2] || 'STRONG';
       const volPct   = parts[4] || '0';
       if(type === 'acc' || type === 'dist') continue; // acc/dist sirf A/D me
+      
       symCount[sym]     = (symCount[sym]||0)+1;
       symStrength[sym]  = strength;
       symType[sym]      = type;
       symLastTime[sym]  = r.timeStr;
       symLastMs[sym]    = ms;
       
+      if(bullTypes.has(type)) lbBullMap[sym] = (lbBullMap[sym]||0)+1;
+      if(bearTypes.has(type)) lbBearMap[sym] = (lbBearMap[sym]||0)+1;
+
       if(!symHistory[sym]) symHistory[sym] = [];
       symHistory[sym].push({ timeStr: r.timeStr, type, volPct });
     }
   }
+
+  const LB_TYPE_CFG = {
+    long   : { icon:'▲', label:'Long Buildup',   col:'var(--g-text)',      bg:'var(--g-dim)',      border:'var(--g-mid)'      },
+    short  : { icon:'▼', label:'Short Buildup',  col:'var(--r-text)',      bg:'var(--r-dim)',      border:'var(--r-mid)'      },
+    cover  : { icon:'↑', label:'Short Covering', col:'var(--teal-text)',   bg:'var(--teal-dim)',   border:'var(--teal-mid)'   },
+    unwind : { icon:'↓', label:'Long Unwinding', col:'var(--orange-text)', bg:'var(--orange-dim)', border:'var(--orange-mid)' },
+    acc    : { icon:'◆', label:'Accumulation',   col:'var(--b-text)',      bg:'var(--b-dim)',      border:'var(--b-mid)'      },
+    dist   : { icon:'◆', label:'Distribution',   col:'var(--purple-text)', bg:'var(--purple-dim)', border:'var(--purple-mid)' },
+  };
+
+  function getLbHtml(map, title, col, barCol){
+    const sorted = Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,5);
+    if(!sorted.length) return '';
+    const max = Math.max(...Object.values(map));
+    let html = `<div class="lb-col">
+      <div class="lb-side-title" style="color:${col}">🏆 ${title}</div>`;
+    sorted.forEach(([sym, cnt])=>{
+      const w = (cnt / max * 100).toFixed(1);
+      const ageMin = (Date.now() - (symLastMs[sym]||0)) / 60000;
+      const blink = ageMin <= 15 ? ' sym-blink' : '';
+      
+      const hist = [...(symHistory[sym] || [])].reverse();
+      const histRows = hist.map(h => {
+        const htcfg = LB_TYPE_CFG[h.type] || { icon:'·', label: h.type, col:'var(--ink2)' };
+        const vpNum = parseFloat(h.volPct) || 0;
+        const volHtml = vpNum !== 0 ? `<span style="color:${vpNum>0?'var(--g-text)':'var(--ink3)'};font-weight:600;margin-left:auto;">${vpNum>0?'+':''}${h.volPct}% Vol</span>` : '';
+        return `<div style="display:flex;justify-content:flex-start;gap:20px;padding:6px 0;border-bottom:1px solid var(--border);font-size:.62rem;">
+          <span style="color:var(--ink);font-family:'JetBrains Mono',monospace;width:55px;">🕐 ${h.timeStr}</span>
+          <span style="color:${htcfg.col};font-weight:700;width:90px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${htcfg.icon} ${htcfg.label}</span>
+          ${volHtml}
+        </div>`;
+      }).join('');
+
+      html += `<div class="lb-item" onclick="toggleLbHist('${sym}_lb')">
+        <div class="lb-row-top">
+          <span class="lb-sym${blink}">${sym}</span>
+          <span class="lb-cnt">${cnt} Signals</span>
+        </div>
+        <div class="lb-bar-bg"><div class="lb-bar" style="width:${w}%;background:${barCol}"></div></div>
+        <div id="lbhist_${sym}_lb" style="display:none;margin-top:10px;padding-top:10px;border-top:1px dashed var(--border);">
+          ${histRows}
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
+    return html;
+  }
+
+  const lbBullHtml = getLbHtml(lbBullMap, 'Bullish Leaders', 'var(--g-text)', 'var(--g)');
+  const lbBearHtml = getLbHtml(lbBearMap, 'Bearish Leaders', 'var(--r-text)', 'var(--r)');
+  const lbHtml = (lbBullHtml || lbBearHtml) ? `<div class="lb-grid">${lbBullHtml}${lbBearHtml}</div>` : '';
   
   const lbData = Object.entries(symCount)
     .sort((a,b) => symLastMs[b[0]] - symLastMs[a[0]])
@@ -2186,24 +2312,20 @@ function renderDayView(results){
     </div>`;
   });
 
-  const LB_TYPE_CFG = {
-    long   : { icon:'▲', label:'Long Buildup',   col:'var(--g-text)',      bg:'var(--g-dim)',      border:'var(--g-mid)'      },
-    short  : { icon:'▼', label:'Short Buildup',  col:'var(--r-text)',      bg:'var(--r-dim)',      border:'var(--r-mid)'      },
-    cover  : { icon:'↑', label:'Short Covering', col:'var(--teal-text)',   bg:'var(--teal-dim)',   border:'var(--teal-mid)'   },
-    unwind : { icon:'↓', label:'Long Unwinding', col:'var(--orange-text)', bg:'var(--orange-dim)', border:'var(--orange-mid)' },
-    acc    : { icon:'◆', label:'Accumulation',   col:'var(--b-text)',      bg:'var(--b-dim)',      border:'var(--b-mid)'      },
-    dist   : { icon:'◆', label:'Distribution',   col:'var(--purple-text)', bg:'var(--purple-dim)', border:'var(--purple-mid)' },
-  };
+
 
   function renderSymRow(sym, cnt) {
     const lastTime  = symLastTime[sym]  || '';
     const strength  = symStrength[sym]  || 'STRONG';
     const type      = symType[sym]      || '';
     const tcfg      = LB_TYPE_CFG[type] || { icon:'·', label: type, col:'var(--ink2)', bg:'var(--bg2)', border:'var(--border)' };
+    const _ageMin   = (Date.now() - (symLastMs[sym]||0)) / 60000;
+    const _timeCol  = _ageMin <= 19 ? 'var(--g-text)' : '#cc8800';
+    const _dvBlink  = _ageMin <= 15 ? ' sym-blink' : '';
     
     let htmlRow = `<div class="dv-lb-item" style="cursor:pointer;position:relative;" onclick="toggleLbHist('${sym}')">
       <div style="flex:1;min-width:0;display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
-        <span class="dv-lb-sym">${sym}</span>
+        <span class="dv-lb-sym${_dvBlink}">${sym}</span>
         <span style="display:inline-flex;align-items:center;gap:3px;font-size:.65rem;font-weight:700;
           padding:2px 8px;border-radius:4px;white-space:nowrap;
           color:${tcfg.col};background:${tcfg.bg};border:1px solid ${tcfg.border};">
@@ -2212,7 +2334,7 @@ function renderDayView(results){
         ${strength==='CAUTION'
           ? `<span class="dv-caution-badge">⚠️ CAUTION</span>`
           : `<span class="dv-strong-badge">🔥 STRONG</span>`}
-        ${lastTime?`<span style="font-size:.6rem;color:var(--ink3);white-space:nowrap;">🕐 ${lastTime}</span>`:''}
+        ${lastTime?`<span style="font-size:.65rem;color:${_timeCol};white-space:nowrap;font-weight:700;">🕐 ${lastTime}</span>`:''}
       </div>
       <div style="display:flex; align-items:center; gap:10px;">
         <span class="dv-lb-count" style="font-weight:700;">${cnt} Signal${cnt!=1?'s':''}</span>
@@ -2239,7 +2361,7 @@ function renderDayView(results){
       <div style="font-size:.65rem;color:var(--ink3);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;font-weight:700;">Chronological History</div>
       ${histRows}
     </div>`;
-    return htmlRow;
+    return '<div class="dv-sym-wrap" data-sym="' + sym.toLowerCase() + '">' + htmlRow + '</div>';
   }
 
   const allData = Object.entries(symCount)
@@ -2248,6 +2370,7 @@ function renderDayView(results){
   let htmlAllSymbols = '';
   if(allData.length){
     htmlAllSymbols += '<div class="dv-sec-label" style="margin-top:10px;">📊 All Active Signals Today</div>';
+    htmlAllSymbols += '<div style="padding:6px 0 10px;"><input type="text" id="dv-sym-search" placeholder="🔍 Search symbol..." oninput="filterDvSymbols(this.value)" style="width:100%;padding:9px 14px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);color:var(--ink);font-family:\'Inter\',sans-serif;font-size:.78rem;outline:none;transition:border-color .2s;" onfocus="this.style.borderColor=\'var(--teal)\'" onblur="this.style.borderColor=\'var(--border2)\'"></div>';
     allData.forEach(([sym,cnt])=>{
       htmlAllSymbols += renderSymRow(sym, cnt);
     });
@@ -2266,6 +2389,7 @@ function renderDayView(results){
     </div>
     
     <div id="dv-view-symbols">
+      ${lbHtml}
       ${htmlAllSymbols}
     </div>
   `;
@@ -2390,6 +2514,22 @@ function toggleLbHist(sym){
   if(el && wasClosed){
     el.style.display = 'block';
   }
+}
+
+function filterDvSymbols(q){
+  q = q.toLowerCase().trim();
+  document.querySelectorAll('#dv-view-symbols .dv-sym-wrap').forEach(wrap => {
+    const show = !q || wrap.dataset.sym.includes(q);
+    wrap.style.display = show ? '' : 'none';
+  });
+}
+
+function filterAdSymbols(q){
+  q = q.toLowerCase().trim();
+  document.querySelectorAll('#ad-view-symbols .ad-sym-wrap').forEach(wrap => {
+    const show = !q || wrap.dataset.sym.includes(q);
+    wrap.style.display = show ? '' : 'none';
+  });
 }
 
 function switchDvView(view){

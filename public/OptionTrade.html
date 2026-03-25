@@ -367,14 +367,43 @@ td.gold-c{color:var(--gold);}
 .dv-strong-badge{display:inline-flex;align-items:center;gap:3px;font-size:.62rem;font-weight:800;padding:3px 8px;border-radius:5px;flex-shrink:0;background:#4a3800;color:#ffd666 !important;border:1.5px solid #cc9900;}
 .dv-caution-badge{display:inline-flex;align-items:center;gap:3px;font-size:.62rem;font-weight:800;padding:3px 8px;border-radius:5px;flex-shrink:0;background:#4a2200;color:#ffaa66 !important;border:1.5px solid #cc5500;}
 
-/* Leaderboard */
-.dv-lb-item{display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;margin-bottom:5px;}
-.dv-lb-rank{font-size:.7rem;font-weight:700;color:var(--ink3);width:18px;text-align:center;flex-shrink:0;}
-.dv-lb-sym{font-size:.82rem;font-weight:700;flex:1;}
-.dv-lb-bar-wrap{flex:2;display:flex;align-items:center;gap:8px;}
-.dv-lb-bar-bg{flex:1;height:5px;background:var(--bg3);border-radius:3px;overflow:hidden;}
-.dv-lb-bar-fill{height:100%;background:var(--gold);border-radius:3px;transition:width .4s ease;}
-.dv-lb-count{font-size:.75rem;font-weight:700;color:var(--gold);min-width:24px;text-align:right;}
+/* View Switcher */
+.dv-sw-wrap{display:flex;background:var(--bg2);border-radius:8px;padding:3px;margin:12px 0 8px;border:1px solid var(--border2);}
+.dv-sw-btn{flex:1;text-align:center;font-size:.72rem;font-weight:700;padding:7px 0;border-radius:6px;cursor:pointer;color:var(--ink3);transition:all .15s;}
+.dv-sw-btn:hover{color:var(--ink);}
+.dv-sw-btn.active{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.3);border:1px solid var(--border);}
+.dv-view-area{display:none;}
+.dv-view-area.active{display:block;animation:fadeIn .25s ease;}
+
+/* Sub-View Switcher */
+.dv-subsw-btn{flex:1;text-align:center;font-size:.72rem;font-weight:700;padding:7px 0;border-radius:6px;cursor:pointer;color:var(--ink3);transition:all .15s;}
+.dv-subsw-btn.active{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.3);border:1px solid var(--border);}
+.dv-subview-area{display:none;}
+.dv-subview-area.active{display:block;animation:fadeIn .25s ease;}
+
+/* All Symbols View */
+.dv-sym-wrap{padding-bottom:10px;}
+.dv-sym-item{background:var(--card);border:1px solid var(--border);border-radius:9px;margin-bottom:7px;overflow:hidden;transition:border-color .15s;}
+.dv-sym-item:hover{border-color:#a855f7;}
+.dv-sym-item.expanded{border-color:#a855f7;}
+.dv-sym-head{padding:11px 16px;cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;transition:background .15s;}
+.dv-sym-head:hover{background:var(--bg2);}
+.dv-sym-item.expanded .dv-sym-head{background:var(--bg2);}
+.dvs-left{display:flex;align-items:center;gap:10px;}
+.dvs-sym{font-size:.85rem;font-weight:800;color:var(--ink);letter-spacing:.3px;}
+.dvs-type{font-size:.62rem;font-weight:700;padding:2px 8px;border-radius:4px;background:var(--border);color:var(--ink);text-transform:uppercase;}
+.dvs-right{display:flex;align-items:center;gap:14px;}
+.dvs-time{font-size:.7rem;font-weight:700;color:#a855f7;}
+.dvs-cnt{font-size:.72rem;font-weight:800;color:var(--gold);background:var(--gold-dim);padding:3px 10px;border-radius:12px;border:1px solid var(--gold-mid);text-align:center;min-width:34px;letter-spacing:.5px;}
+.dv-sym-hist{display:none;border-top:1px solid var(--border);background:var(--bg1);}
+.dv-sym-hist.open{display:block;}
+.dv-sym-hist table{width:100%;border-collapse:collapse;min-width:480px;}
+.dv-sym-hist th{font-size:.58rem;font-weight:700;color:var(--ink3);padding:8px 14px;text-align:left;border-bottom:1px solid var(--border);background:var(--thead);text-transform:uppercase;letter-spacing:.5px;}
+.dv-sym-hist th.r{text-align:right;}
+.dv-sym-hist td{font-size:.72rem;padding:8px 14px;border-bottom:1px solid var(--border2);color:var(--ink);}
+.dv-sym-hist tr:last-child td{border-bottom:none;}
+.dv-sym-hist tr:nth-child(even){background:rgba(0,0,0,.02);}
+[data-theme="white"] .dv-sym-hist tr:nth-child(even){background:rgba(255,255,255,.03);}
 
 /* Type pill for flat table */
 .type-fut{display:inline-flex;align-items:center;padding:2px 7px;border-radius:20px;font-size:11px;font-weight:600;background:rgba(168,85,247,.12);color:#a855f7;}
@@ -1062,22 +1091,7 @@ function renderDayView(results){
 
   sub.textContent=`${results.length} scan${results.length>1?'s':''} today`;
 
-  const symCount={}, symStrength={}, symType={}, symDir={}, symFirstTime={};
-  for(const r of results){
-    for(const s of (r.strong||[])){
-      const [sym,,signalType,,strength,cnt] = s.split(':');
-      symCount[sym]=(symCount[sym]||0)+1;
-      symStrength[sym]=strength;
-      symType[sym]=signalType;
-      if(!symFirstTime[sym]) symFirstTime[sym]=r.timeStr12;
-    }
-  }
-  const lbData=Object.entries(symCount).sort((a,b)=>b[1]-a[1]).slice(0,10);
-  const maxCount=lbData[0]?.[1]||1;
-  const maxBull=Math.max(...results.map(r=>r.bullCount||0),1);
-  const maxBear=Math.max(...results.map(r=>r.bearCount||0),1);
-
-  let html='<div class="dv-sec-label">📅 Scan Timeline — newest first</div>';
+  let htmlTimeline='<div class="dv-sec-label">📅 Scan Timeline — newest first</div>';
   const sorted=[...results].reverse();
 
   sorted.forEach((r,idx)=>{
@@ -1104,7 +1118,7 @@ function renderDayView(results){
       <span class="chip-more-btn" id="dvchip_${uid}_more" style="display:none;" onclick="chipShowAll('dvchip_${uid}',event)"></span>
     </div>`;
 
-    html+=`<div class="dv-tl-item ${dom}" id="${uid}">
+    htmlTimeline+=`<div class="dv-tl-item ${dom}" id="${uid}">
       <div class="dv-tl-head" onclick="dvToggle('${uid}')">
         <div class="dv-tl-row1">
           <span class="dv-tl-time">🕐 ${r.timeStr12}</span>
@@ -1123,48 +1137,158 @@ function renderDayView(results){
     </div>`;
   });
 
-  if(lbData.length){
-    const lbIdx=[], lbFut=[], lbOpt=[];
-    lbData.forEach(([sym,cnt])=>{
-      const type=symType[sym]||'';
-      if(INDEX_SYMS.has(sym)) lbIdx.push([sym,cnt]);
-      else if(type==='FUT') lbFut.push([sym,cnt]);
-      else lbOpt.push([sym,cnt]);
-    });
-
-    const renderLb=(data, title)=>{
-      if(!data.length) return '';
-      let h=`<div class="dv-sec-label" style="margin-top:20px;">🏆 ${title} Leaderboard</div>`;
-      data.slice(0,5).forEach(([sym,cnt],i)=>{
-        const firstTime=symFirstTime[sym]||'';
-        const strength=symStrength[sym]||'STRONG';
-        const signalType=symType[sym]||'';
-        h+=`<div class="dv-lb-item">
-          <span class="dv-lb-rank">${i+1}</span>
-          <div style="flex:1;min-width:0;display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
-            <span class="dv-lb-sym">${sym}</span>
-            <span style="font-size:.65rem;font-weight:700;padding:2px 8px;border-radius:4px;white-space:nowrap;background:var(--bg2);color:var(--ink2);border:1px solid var(--border);">${signalType}</span>
-            ${strength==='CAUTION'?`<span class="dv-caution-badge">&#9888;&#65039; CAUTION</span>`:`<span class="dv-strong-badge">&#128293; STRONG</span>`}
-            ${firstTime?`<span style="font-size:.6rem;color:var(--ink3);white-space:nowrap;">🕐 ${firstTime}</span>`:''}
-          </div>
-          <div class="dv-lb-bar-wrap">
-            <div class="dv-lb-bar-bg"><div class="dv-lb-bar-fill" style="width:${Math.round(cnt/maxCount*100)}%"></div></div>
-            <span class="dv-lb-count">${cnt}×</span>
-          </div>
-        </div>`;
+  const symMap = {};
+  const sortedAsc = [...results].sort((a,b)=> (a.savedAt||0) - (b.savedAt||0));
+  sortedAsc.forEach((r) => {
+    const timeStr = r.timeStr12 || '';
+    const scanMs  = r.savedAt || 0;
+    const strongSet = new Set((r.strong||[]).map(s=>s.split(':')[0]));
+    (r.comparisons||[]).forEach(comp => {
+      (comp.signals||[]).forEach(s => {
+        const parts=s.split('|');
+        const sym=parts[0], type=parts[1], signalType=parts[2];
+        const ltpChngPct=parseFloat(parts[3])||0;
+        const oiChngPct=parseFloat(parts[4])||0;
+        const ltpPrice=parseFloat(parts[5])||0;
+        const isBull=(parts[9]||'BULL')==='BULL';
+        const strVal = strongSet.has(sym) ? 'STRONG' : '';
+        const isIdx = INDEX_SYMS.has(sym);
+        const isFut = type === 'FUT';
+        const rowKey = sym + '|' + type;
+        if(!symMap[rowKey]){
+          symMap[rowKey] = { sym, type, isIdx, isFut, cnt: 0, lastMs: 0, lastTime: '', history: [] };
+        }
+        const histArr = symMap[rowKey].history;
+        const lastHist = histArr[histArr.length-1];
+        if(lastHist && lastHist.time === timeStr) return;
+        symMap[rowKey].cnt++;
+        symMap[rowKey].lastMs = scanMs;
+        symMap[rowKey].lastTime = timeStr;
+        histArr.push({ time: timeStr, signalType, isBull, ltpPct: ltpChngPct, oiPct: oiChngPct, ltp: ltpPrice, str: strVal });
       });
-      return h;
-    };
+    });
+  });
 
-    html+=`<div id="dv-leaderboard">
-      ${renderLb(lbIdx, 'Index')}
-      ${renderLb(lbFut, 'Stock Futures')}
-      ${renderLb(lbOpt, 'Stock Options')}
-    </div>`;
+  const idxArr = [], futArr = [], optArr = [];
+  Object.values(symMap).forEach(obj => {
+    if(obj.isIdx) idxArr.push(obj);
+    else if(obj.isFut) futArr.push(obj);
+    else optArr.push(obj);
+  });
+  const byTime = (a,b) => b.lastMs - a.lastMs;
+  idxArr.sort(byTime); futArr.sort(byTime); optArr.sort(byTime);
+
+  function renderSymGroup(arr, title, icon) {
+    if(!arr.length) return '';
+    let h = '';
+    arr.forEach((obj, i) => {
+      const uid = 'sym_' + title.replace(/\s+/g,'') + '_' + i;
+      h += `<div class="dv-sym-item" id="${uid}">
+        <div class="dv-sym-head" onclick="dvToggleSym('${uid}')">
+          <div class="dvs-left">
+            <span class="dvs-sym">${obj.sym}</span>
+            <span class="dvs-type">${obj.type}</span>
+          </div>
+          <div class="dvs-right">
+            <span class="dvs-time">🕐 ${obj.lastTime}</span>
+            <span class="dvs-cnt">${obj.cnt}x</span>
+          </div>
+        </div>
+        <div class="dv-sym-hist" id="${uid}_hist">
+          <div class="tscroll"><table>
+            <thead><tr><th>Time</th><th>Signal</th><th class="r">Price%</th><th class="r">OI%</th><th class="r">LTP</th></tr></thead>
+            <tbody>
+              ${[...obj.history].reverse().map(hLine => `
+                <tr>
+                  <td style="font-weight:700;white-space:nowrap;color:var(--ink2)">${hLine.time}</td>
+                  <td><span class="pill ${hLine.isBull?'bull':'bear'}">${hLine.signalType} ${hLine.isBull?'🟢':'🔴'}</span>${hLine.str?` <span class="dv-strong-badge" style="transform:scale(0.8);transform-origin:left;margin-left:4px;">🔥</span>`:''}</td>
+                  <td class="r ${hLine.ltpPct>=0?'bull-c':'bear-c'}">${hLine.ltpPct>0?'+':''}${hLine.ltpPct.toFixed(1)}%</td>
+                  <td class="r ${hLine.oiPct>=0?'bull-c':'bear-c'}">${hLine.oiPct>0?'+':''}${hLine.oiPct.toFixed(1)}%</td>
+                  <td class="r" style="font-family:'JetBrains Mono',monospace;color:var(--ink);font-weight:700;">₹${hLine.ltp.toFixed(2)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table></div>
+        </div>
+      </div>`;
+    });
+    return h;
   }
 
-  body.innerHTML=html;
+  let htmlAllSymbols = `
+    <div class="dv-sw-wrap">
+      <div class="dv-subsw-btn ${_dvSubMode==='idx'?'active':''}" id="dv-btn-idx" onclick="switchDvSub('idx')">📈 Index Option</div>
+      <div class="dv-subsw-btn ${_dvSubMode==='opt'?'active':''}" id="dv-btn-opt" onclick="switchDvSub('opt')">📊 Stock Option</div>
+      <div class="dv-subsw-btn ${_dvSubMode==='fut'?'active':''}" id="dv-btn-fut" onclick="switchDvSub('fut')">📉 Stock Future</div>
+    </div>
+    <div class="dv-subview-area ${_dvSubMode==='idx'?'active':''}" id="dv-view-idx">
+      ${renderSymGroup(idxArr, 'IndexOptions', '')||'<div style="text-align:center;color:var(--ink3);padding:20px;font-size:.8rem;">No Index Options</div>'}
+    </div>
+    <div class="dv-subview-area ${_dvSubMode==='opt'?'active':''}" id="dv-view-opt">
+      ${renderSymGroup(optArr, 'StockOptions', '')||'<div style="text-align:center;color:var(--ink3);padding:20px;font-size:.8rem;">No Stock Options</div>'}
+    </div>
+    <div class="dv-subview-area ${_dvSubMode==='fut'?'active':''}" id="dv-view-fut">
+      ${renderSymGroup(futArr, 'StockFutures', '')||'<div style="text-align:center;color:var(--ink3);padding:20px;font-size:.8rem;">No Stock Futures</div>'}
+    </div>
+  `;
+
+  body.innerHTML = `
+    <div class="dv-sw-wrap">
+      <div class="dv-sw-btn" id="dv-btn-tl" onclick="switchDvView('tl')">⏱️ Timeline</div>
+      <div class="dv-sw-btn ${_dvMode==='sym'?'active':''}" id="dv-btn-sym" onclick="switchDvView('sym')">📊 All Symbols</div>
+    </div>
+    <div class="dv-view-area ${_dvMode==='tl'?'active':''}" id="dv-view-tl">
+      ${htmlTimeline}
+    </div>
+    <div class="dv-view-area ${_dvMode==='sym'?'active':''}" id="dv-view-sym">
+      ${htmlAllSymbols}
+    </div>
+  `;
   requestAnimationFrame(()=>setupChipOverflow(body));
+}
+
+let _dvMode = 'sym';
+let _dvSubMode = 'idx';
+function switchDvView(mode){
+  _dvMode = mode;
+  document.getElementById('dv-btn-tl').classList.remove('active');
+  document.getElementById('dv-btn-sym').classList.remove('active');
+  document.getElementById('dv-view-tl').classList.remove('active');
+  document.getElementById('dv-view-sym').classList.remove('active');
+  if(mode==='tl'){
+    document.getElementById('dv-btn-tl').classList.add('active');
+    document.getElementById('dv-view-tl').classList.add('active');
+  }else{
+    document.getElementById('dv-btn-sym').classList.add('active');
+    document.getElementById('dv-view-sym').classList.add('active');
+  }
+}
+
+function switchDvSub(mode){
+  _dvSubMode = mode;
+  ['idx','opt','fut'].forEach(m => {
+    const btn = document.getElementById('dv-btn-'+m);
+    const view = document.getElementById('dv-view-'+m);
+    if(btn) btn.classList.remove('active');
+    if(view) view.classList.remove('active');
+  });
+  const tBtn = document.getElementById('dv-btn-'+mode);
+  const tView = document.getElementById('dv-view-'+mode);
+  if(tBtn) tBtn.classList.add('active');
+  if(tView) tView.classList.add('active');
+}
+
+function dvToggleSym(uid){
+  const item = document.getElementById(uid);
+  const hist = document.getElementById(uid+'_hist');
+  const isOpen = hist.classList.contains('open');
+  document.querySelectorAll('.dv-sym-hist.open').forEach(el=>el.classList.remove('open'));
+  document.querySelectorAll('.dv-sym-item.expanded').forEach(el=>el.classList.remove('expanded'));
+  if(!isOpen){
+    hist.classList.add('open');
+    item.classList.add('expanded');
+    setTimeout(()=>item.scrollIntoView({behavior:'smooth',block:'nearest'}), 50);
+  }
 }
 
 /* ── buildDvDetail ── */

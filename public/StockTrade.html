@@ -417,11 +417,14 @@ function renderAD(results, body, sub){
 
       html += `<div class="lb-item" onclick="toggleLbHist('${sym}_ad_lb')">
         <div class="lb-row-top">
-          <div style="display:flex;align-items:center;gap:4px;">
-            <span class="lb-sym${blink}">${sym}</span>
+          <div class="lb-sym${blink}">
+            <span>${sym}</span>
             ${ageMin <= 15 ? `<span class="sym-blink" style="font-size:.58rem;font-weight:900;color:var(--g-text);padding:0 4px;background:var(--g-dim);border:1px solid var(--g-mid);border-radius:3px;">NEW</span>` : ''}
           </div>
-          <span class="lb-cnt">${cnt} Signals</span>
+          <div class="lb-cnt" style="display:flex;gap:8px;font-size:.65rem;font-weight:700;">
+            <span style="color:var(--teal-text);">▲${hist.filter(h=>h.type==='acc').length}</span>
+            <span style="color:var(--orange-text);">▼${hist.filter(h=>h.type==='dist').length}</span>
+          </div>
         </div>
         <div class="lb-bar-bg"><div class="lb-bar" style="width:${w}%;background:${barCol}"></div></div>
         <div id="lbhist_${sym}_ad_lb" style="display:none;margin-top:10px;padding-top:10px;border-top:1px dashed var(--border);">
@@ -2228,11 +2231,14 @@ function renderDayView(results){
 
       html += `<div class="lb-item" onclick="toggleLbHist('${sym}_lb')">
         <div class="lb-row-top">
-          <div style="display:flex;align-items:center;gap:4px;">
-            <span class="lb-sym${blink}">${sym}</span>
+          <div class="lb-sym${blink}">
+            <span>${sym}</span>
             ${ageMin <= 15 ? `<span class="sym-blink" style="font-size:.58rem;font-weight:900;color:var(--g-text);padding:0 4px;background:var(--g-dim);border:1px solid var(--g-mid);border-radius:3px;">NEW</span>` : ''}
           </div>
-          <span class="lb-cnt">${cnt} Signals</span>
+          <div class="lb-cnt" style="display:flex;gap:8px;font-size:.65rem;font-weight:700;">
+            <span style="color:var(--g-text);">▲${hist.filter(h=>bullTypes.has(h.type)).length}</span>
+            <span style="color:var(--r-text);">▼${hist.filter(h=>bearTypes.has(h.type)).length}</span>
+          </div>
         </div>
         <div class="lb-bar-bg"><div class="lb-bar" style="width:${w}%;background:${barCol}"></div></div>
         <div id="lbhist_${sym}_lb" style="display:none;margin-top:10px;padding-top:10px;border-top:1px dashed var(--border);">

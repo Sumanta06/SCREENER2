@@ -435,7 +435,7 @@ function renderAD(results, body, sub){
       html += `<div class="lb-item" onclick="toggleLbHist('${sym}_ad_lb')">
         <div class="lb-row-top">
           <div class="lb-sym${blink}">
-            <span>${sym}</span>
+            <span>${sym} <span style="font-size:.6rem; color:var(--ink3); margin-left:6px; font-weight:normal;">🕑 ${symLastTime[sym]}</span></span>
             ${ageMin <= 15 ? `<span class="sym-blink" style="font-size:.58rem;font-weight:900;color:var(--g-text);padding:0 4px;background:var(--g-dim);border:1px solid var(--g-mid);border-radius:3px;margin-left:4px;">NEW</span>` : ''}
           </div>
           <div class="lb-cnt" style="display:flex;gap:8px;font-size:.65rem;font-weight:700;">
@@ -2187,6 +2187,7 @@ function renderDayView(results){
   const symLastTime= {};
   const symLastMs  = {};
   const symHistory = {};
+  const symStreakInfo = {};
   
   const lbBullMap = {}, lbBearMap = {};
   const bullTypes = new Set(['long','cover','acc']);
@@ -2198,13 +2199,15 @@ function renderDayView(results){
       const parts    = s.split(':');
       const sym      = parts[0];
       const type     = parts[1] || '';
-      const strength = parts[2] || 'STRONG';
+      const strength = parts[2] || '';
       const volPct   = parts[4] || '0';
-      if(type === 'acc' || type === 'dist') continue; // acc/dist sirf A/D me
+      const sInfo    = parts[5] || '';
+      if(type === 'acc' || type === 'dist') continue;
       
       symCount[sym]     = (symCount[sym]||0)+1;
       symStrength[sym]  = strength;
       symType[sym]      = type;
+      symStreakInfo[sym]= sInfo;
       symLastTime[sym]  = r.timeStr;
       symLastMs[sym]    = ms;
       
@@ -2251,7 +2254,7 @@ function renderDayView(results){
       html += `<div class="lb-item" onclick="toggleLbHist('${sym}_lb')">
         <div class="lb-row-top">
           <div class="lb-sym${blink}">
-            <span>${sym}</span>
+            <span>${sym} <span style="font-size:.6rem; color:var(--ink3); margin-left:6px; font-weight:normal;">🕑 ${symLastTime[sym]}</span></span>
             ${ageMin <= 15 ? `<span class="sym-blink" style="font-size:.58rem;font-weight:900;color:var(--g-text);padding:0 4px;background:var(--g-dim);border:1px solid var(--g-mid);border-radius:3px;margin-left:4px;">NEW</span>` : ''}
           </div>
           <div class="lb-cnt" style="display:flex;gap:8px;font-size:.65rem;font-weight:700;">
@@ -2356,7 +2359,7 @@ function renderDayView(results){
 
   function renderSymRow(sym, cnt) {
     const lastTime  = symLastTime[sym]  || '';
-    const strength  = symStrength[sym]  || 'STRONG';
+    const strength  = symStrength[sym]  || '';
     const type      = symType[sym]      || '';
     const tcfg      = LB_TYPE_CFG[type] || { icon:'·', label: type, col:'var(--ink2)', bg:'var(--bg2)', border:'var(--border)' };
     const _ageMin   = (Date.now() - (symLastMs[sym]||0)) / 60000;
@@ -2365,6 +2368,8 @@ function renderDayView(results){
 
     const hist = symHistory[sym] || [];
     let isStreak = false, sIcon = '', sCol = '';
+    
+    // Existing 15min streak (Double Arrow)
     if (hist.length >= 2) {
       const last = hist[hist.length-1], prev = hist[hist.length-2];
       const bothBull = BULL_TYPES.has(last.type) && BULL_TYPES.has(prev.type);
@@ -2376,6 +2381,33 @@ function renderDayView(results){
       }
     }
     const streakHtml = isStreak ? `<span style="font-size:.68rem;font-weight:900;color:${sCol};margin-left:4px;letter-spacing:-1.5px;filter:drop-shadow(0 0 2px ${sCol}40);">${sIcon}</span>` : '';
+
+    // NEW 21/32/42 Momentum Logic (Blaze/Caution)
+    let uiStrength = '', uiSInfo = '';
+    const streakItems = [];
+    if(hist.length > 0) {
+      const latest = hist[hist.length-1];
+      const latestCat = BULL_TYPES.has(latest.type) ? 'BULL' : 'BEAR';
+      for(let i = hist.length-1; i >= 0; i--) {
+        const item = hist[i];
+        const itemCat = BULL_TYPES.has(item.type) ? 'BULL' : 'BEAR';
+        if(itemCat !== latestCat) break;
+        streakItems.push(item);
+      }
+    }
+    const sc = streakItems.length;
+    if(sc >= 4) {
+       const gap4 = (streakItems[0].ms - streakItems[3].ms) / 60000;
+       if(gap4 <= 42) { uiStrength = 'CAUTION'; uiSInfo = `4 signals in ${Math.round(gap4)}m`; }
+    }
+    if(!uiStrength && sc >= 3) {
+       const gap3 = (streakItems[0].ms - streakItems[2].ms) / 60000;
+       if(gap3 <= 32) { uiStrength = 'STRONG'; uiSInfo = `3 signals in ${Math.round(gap3)}m`; }
+    }
+    if(!uiStrength && sc >= 2) {
+       const gap2 = (streakItems[0].ms - streakItems[1].ms) / 60000;
+       if(gap2 <= 21) { uiStrength = 'STRONG'; uiSInfo = `2 signals in ${Math.round(gap2)}m`; }
+    }
     
     let htmlRow = `<div class="dv-lb-item" style="cursor:pointer;position:relative;" onclick="toggleLbHist('${sym}')">
       <div style="flex:1;min-width:0;display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
@@ -2395,9 +2427,9 @@ function renderDayView(results){
           color:${tcfg.col};background:${tcfg.bg};border:1px solid ${tcfg.border};">
           ${tcfg.icon} ${tcfg.label}
         </span>
-        ${strength==='CAUTION'
-          ? `<span class="dv-caution-badge">⚠️ CAUTION</span>`
-          : `<span class="dv-strong-badge">🔥 STRONG</span>`}
+        ${uiStrength==='CAUTION'
+          ? `<span class="dv-caution-badge" onclick="alert('Logic: ${uiSInfo}')">⚠️ CAUTION</span>`
+          : uiStrength==='STRONG' ? `<span class="dv-strong-badge" onclick="alert('Logic: ${uiSInfo}')">🔥 STRONG</span>` : ''}
       </div>
       <div style="display:flex; align-items:center; gap:10px;">
         <span class="dv-lb-count" style="font-weight:700;">${cnt} Signal${cnt!=1?'s':''}</span>
@@ -2430,14 +2462,34 @@ function renderDayView(results){
   const allData = Object.entries(symCount)
     .sort((a,b) => symLastMs[b[0]] - symLastMs[a[0]]);
 
+  const freshData  = allData.filter(([s,c]) => {
+    const lastMs = symLastMs[s] || 0;
+    const ageMin = (Date.now() - lastMs) / 60000;
+    const d = new Date(lastMs);
+    const isPost320 = (d.getHours() === 15 && d.getMinutes() >= 20) || (d.getHours() > 15);
+    return isPost320 || (ageMin <= 11);
+  });
+  const normalData = allData.filter(([s,c]) => {
+    const lastMs = symLastMs[s] || 0;
+    const ageMin = (Date.now() - lastMs) / 60000;
+    const d = new Date(lastMs);
+    const isPost320 = (d.getHours() === 15 && d.getMinutes() >= 20) || (d.getHours() > 15);
+    return !isPost320 && (ageMin > 11);
+  });
+
   let htmlAllSymbols = '';
-  if(allData.length){
-    htmlAllSymbols += '<div class="dv-sec-label" style="margin-top:10px;">📊 All Active Signals Today</div>';
+  if(freshData.length > 0) {
+    htmlAllSymbols += '<div class="dv-sec-label" style="margin-top:10px; color:var(--orange-text); display:flex; align-items:center; gap:8px;">🔥 FRESH RADAR (Within 11 Mins) <span style="font-size:0.6rem; background:var(--orange-dim); padding:2px 6px; border-radius:10px; border:1px solid var(--orange-mid);">LIVE</span></div>';
+    freshData.forEach(([sym,cnt]) => { htmlAllSymbols += renderSymRow(sym, cnt); });
+  }
+
+  if(normalData.length){
+    htmlAllSymbols += '<div class="dv-sec-label" style="margin-top:20px;">📊 All Active Signals Today</div>';
     htmlAllSymbols += '<div style="padding:6px 0 10px;"><input type="text" id="dv-sym-search" placeholder="🔍 Search symbol..." oninput="filterDvSymbols(this.value)" style="width:100%;padding:9px 14px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);color:var(--ink);font-family:\'Inter\',sans-serif;font-size:.78rem;outline:none;transition:border-color .2s;" onfocus="this.style.borderColor=\'var(--teal)\'" onblur="this.style.borderColor=\'var(--border2)\'"></div>';
-    allData.forEach(([sym,cnt])=>{
+    normalData.forEach(([sym,cnt])=>{
       htmlAllSymbols += renderSymRow(sym, cnt);
     });
-  } else {
+  } else if(freshData.length === 0) {
     htmlAllSymbols += '<div style="text-align:center;color:var(--ink3);margin:30px 0;font-size:0.85rem;font-style:italic;">No signals found today.</div>';
   }
 
@@ -2476,8 +2528,8 @@ function buildDvDetail(r){
 
   const strongMap = {};
   (r.strong || []).forEach(s => {
-    const [sym, type, strength, cnt] = s.split(':');
-    strongMap[sym] = { type, strength: strength||'STRONG', confirmCount: parseInt(cnt)||2 };
+    const [sym, type, strength, cnt, vp, sInfo] = s.split(':');
+    strongMap[sym] = { type, strength, confirmCount: parseInt(cnt)||2, streakInfo: sInfo||'' };
   });
 
   const allRows = [];
@@ -2537,9 +2589,11 @@ function buildDvDetail(r){
       : 'color:#ff8899;background:#4a0010;border:1.5px solid #cc0033;';
     let strengthBadge = '';
     if(isStrong){
-      strengthBadge = sInfo.strength === 'CAUTION'
-        ? `<span class="dv-caution-badge" style="color:#ffaa66;background:#4a2200;border:1.5px solid #cc5500;">⚠️ CAUTION</span>`
-        : `<span class="dv-strong-badge" style="color:#ffd666;background:#4a3800;border:1.5px solid #cc9900;">🔥 STRONG</span>`;
+      if (sInfo.strength === 'CAUTION') {
+         strengthBadge = `<span class="dv-caution-badge" style="color:#ffaa66;background:#4a2200;border:1.5px solid #cc5500;cursor:pointer;" onclick="alert('Logic: ${sInfo.streakInfo}')">⚠️ CAUTION</span>`;
+      } else if (sInfo.strength === 'STRONG') {
+         strengthBadge = `<span class="dv-strong-badge" style="color:#ffd666;background:#4a3800;border:1.5px solid #cc9900;cursor:pointer;" onclick="alert('Logic: ${sInfo.streakInfo}')">🔥 STRONG</span>`;
+      }
     }
     return `<tr style="opacity:${p.stale.opacity};">
       <td style="font-family:'JetBrains Mono',monospace;font-size:.68rem;color:inherit;white-space:nowrap;">${p.baseTimeStr}</td>

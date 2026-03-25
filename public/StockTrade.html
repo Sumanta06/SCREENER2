@@ -2684,7 +2684,11 @@ async function loadBaselines(){
       sel.value = _allBaselines[0].key;
     }
     onBaseChange();
-  } catch(e){console.error('List failed:',e);}
+  } catch(e){
+    console.error('List failed:',e);
+    const sel = document.getElementById('base-select');
+    if(sel) sel.options[0].text = '⚠️ Error loading list';
+  }
 }
 
 function onBaseChange(){

@@ -351,7 +351,7 @@ function renderAD(results, body, sub){
           ${_adAge <= 15 ? `<span class="pc-only sym-blink" style="font-size:.65rem;font-weight:900;color:var(--g-text);padding:1px 5px;background:var(--g-dim);border:1px solid var(--g-mid);border-radius:4px;margin-left:4px;">NEW</span>` : ''}
         </span>
         ${lastTime?`<span style="margin-left:4px;font-size:.65rem;color:${_adTimeCol};white-space:nowrap;font-weight:700;display:flex;align-items:center;gap:4px;">
-          LAST SCAN--${lastTime}
+          LAST SIGNAL--${lastTime}
           ${_adAge <= 15 ? `<span class="mobile-only sym-blink" style="font-size:.65rem;font-weight:900;color:var(--g-text);padding:1px 5px;background:var(--g-dim);border:1px solid var(--g-mid);border-radius:4px;">NEW</span>` : ''}
         </span>`:''}
         <div style="flex:1;"></div>
@@ -2353,7 +2353,7 @@ function renderDayView(results){
           ${_ageMin <= 15 ? `<span class="pc-only sym-blink" style="font-size:.65rem;font-weight:900;color:var(--g-text);padding:1px 5px;background:var(--g-dim);border:1px solid var(--g-mid);border-radius:4px;margin-left:4px;">NEW</span>` : ''}
         </span>
         ${lastTime?`<span style="margin-left:4px;font-size:.65rem;color:${_timeCol};white-space:nowrap;font-weight:700;display:flex;align-items:center;gap:4px;">
-          LAST SCAN--${lastTime}
+          LAST SIGNAL--${lastTime}
           ${_ageMin <= 15 ? `<span class="mobile-only sym-blink" style="font-size:.65rem;font-weight:900;color:var(--g-text);padding:1px 5px;background:var(--g-dim);border:1px solid var(--g-mid);border-radius:4px;">NEW</span>` : ''}
         </span>`:''}
         <div style="flex:1;"></div>

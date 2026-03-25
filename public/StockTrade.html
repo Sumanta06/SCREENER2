@@ -483,8 +483,8 @@ function renderAD(results, body, sub){
     return html;
   }
 
-  const lbAccHtml  = getAdLbHtml(lbAccMap, 'Top Accumulation', 'var(--teal-text)', 'var(--teal)');
-  const lbDistHtml = getAdLbHtml(lbDistMap, 'Top Distribution', 'var(--orange-text)', 'var(--orange)');
+  const lbAccHtml  = getAdLbHtml(lbAccMap, 'Bullish Leaders', 'var(--teal-text)', 'var(--teal)');
+  const lbDistHtml = getAdLbHtml(lbDistMap, 'Bearish Leaders', 'var(--orange-text)', 'var(--orange)');
   const lbHtml = (lbAccHtml || lbDistHtml) ? `<div class="lb-grid">${lbAccHtml}${lbDistHtml}</div>` : '';
 
   const allData = Object.entries(symCount)
@@ -505,9 +505,9 @@ function renderAD(results, body, sub){
     return !isPost320 && (ageMin > 11);
   });
 
-  let htmlAllSymbols = '';
+  let freshHtml = '';
   if(freshData.length){
-    htmlAllSymbols += `
+    freshHtml = `
       <div class="ad-sec" style="margin-top:20px; color:var(--orange-text); display:flex; align-items:center; gap:10px;">
         🔥 A/D FRESH RADAR (Last 11 Mins) 
         <div class="live-badge"><div class="pulse-dot"></div> LIVE</div>
@@ -517,14 +517,16 @@ function renderAD(results, body, sub){
       </div>
     `;
   }
+  
+  let normalHtml = '';
   if(normalData.length){
-    htmlAllSymbols += '<div class="ad-sec" style="margin-top:10px;">📊 All Active A/D Signals Today</div>';
-    htmlAllSymbols += '<div style="padding:6px 0 10px;"><input type="text" id="ad-sym-search" placeholder="🔍 Search symbol..." oninput="filterAdSymbols(this.value)" style="width:100%;padding:9px 14px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);color:var(--ink);font-family:\'Inter\',sans-serif;font-size:.78rem;outline:none;transition:border-color .2s;" onfocus="this.style.borderColor=\'var(--teal)\'" onblur="this.style.borderColor=\'var(--border2)\'"></div>';
+    normalHtml += '<div class="ad-sec" style="margin-top:10px;">📊 All Active A/D Signals Today</div>';
+    normalHtml += '<div style="padding:6px 0 10px;"><input type="text" id="ad-sym-search" placeholder="🔍 Search symbol..." oninput="filterAdSymbols(this.value)" style="width:100%;padding:9px 14px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);color:var(--ink);font-family:\'Inter\',sans-serif;font-size:.78rem;outline:none;transition:border-color .2s;" onfocus="this.style.borderColor=\'var(--teal)\'" onblur="this.style.borderColor=\'var(--border2)\'"></div>';
     normalData.forEach(([sym,cnt])=>{
-      htmlAllSymbols += renderAdSymRow(sym, cnt);
+      normalHtml += renderAdSymRow(sym, cnt);
     });
   } else {
-    htmlAllSymbols += '<div style="text-align:center;color:var(--ink3);margin:30px 0;font-size:0.85rem;font-style:italic;">No A/D signals found today.</div>';
+    normalHtml += '<div style="text-align:center;color:var(--ink3);margin:30px 0;font-size:0.85rem;font-style:italic;">No A/D signals found today.</div>';
   }
 
   let html = `
@@ -538,8 +540,9 @@ function renderAD(results, body, sub){
     </div>
     
     <div id="ad-view-symbols">
+      ${freshHtml}
       ${lbHtml}
-      ${htmlAllSymbols}
+      ${normalHtml}
     </div>
   `;
 
@@ -2580,9 +2583,9 @@ function renderDayView(results){
     return !isPost320 && (ageMin > 11);
   });
 
-  let htmlAllSymbols = '';
+  let freshHtml = '';
   if(freshData.length > 0) {
-    htmlAllSymbols += `
+    freshHtml = `
       <div class="dv-sec-label" style="margin-top:20px; color:var(--orange-text); display:flex; align-items:center; gap:10px;">
         🔥 FRESH RADAR (Last 11 Mins) 
         <div class="live-badge"><div class="pulse-dot"></div> LIVE</div>
@@ -2593,14 +2596,15 @@ function renderDayView(results){
     `;
   }
 
+  let normalHtml = '';
   if(normalData.length){
-    htmlAllSymbols += '<div class="dv-sec-label" style="margin-top:20px;">📊 All Active Signals Today</div>';
-    htmlAllSymbols += '<div style="padding:6px 0 10px;"><input type="text" id="dv-sym-search" placeholder="🔍 Search symbol..." oninput="filterDvSymbols(this.value)" style="width:100%;padding:9px 14px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);color:var(--ink);font-family:\'Inter\',sans-serif;font-size:.78rem;outline:none;transition:border-color .2s;" onfocus="this.style.borderColor=\'var(--teal)\'" onblur="this.style.borderColor=\'var(--border2)\'"></div>';
+    normalHtml += '<div class="dv-sec-label" style="margin-top:20px;">📊 All Active Signals Today</div>';
+    normalHtml += '<div style="padding:6px 0 10px;"><input type="text" id="dv-sym-search" placeholder="🔍 Search symbol..." oninput="filterDvSymbols(this.value)" style="width:100%;padding:9px 14px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);color:var(--ink);font-family:\'Inter\',sans-serif;font-size:.78rem;outline:none;transition:border-color .2s;" onfocus="this.style.borderColor=\'var(--teal)\'" onblur="this.style.borderColor=\'var(--border2)\'"></div>';
     normalData.forEach(([sym,cnt])=>{
-      htmlAllSymbols += renderSymRow(sym, cnt);
+      normalHtml += renderSymRow(sym, cnt);
     });
   } else if(freshData.length === 0) {
-    htmlAllSymbols += '<div style="text-align:center;color:var(--ink3);margin:30px 0;font-size:0.85rem;font-style:italic;">No signals found today.</div>';
+    normalHtml += '<div style="text-align:center;color:var(--ink3);margin:30px 0;font-size:0.85rem;font-style:italic;">No signals found today.</div>';
   }
 
   let html = `
@@ -2614,8 +2618,9 @@ function renderDayView(results){
     </div>
     
     <div id="dv-view-symbols">
+      ${freshHtml}
       ${lbHtml}
-      ${htmlAllSymbols}
+      ${normalHtml}
     </div>
   `;
 

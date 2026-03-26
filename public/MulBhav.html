@@ -243,7 +243,6 @@
       gap: 16px;
     }
 
-    /* ── HEADER ── */
     header {
       background: rgba(15, 17, 23, .95);
       border-bottom: 1px solid var(--border);
@@ -299,6 +298,23 @@
       display: flex;
       align-items: center;
       gap: 10px;
+    }
+
+    .theme-toggle {
+      background: none;
+      border: none;
+      font-size: 1.2rem;
+      cursor: pointer;
+      padding: 5px;
+      transition: transform 0.2s;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .theme-toggle:hover {
+      transform: scale(1.15);
     }
 
     #hdate {
@@ -3019,7 +3035,10 @@
       });
     }
 
-    ['fi', 'fi2'].forEach(id => document.getElementById(id).addEventListener('change', e => { if (e.target.files[0]) loadZip(e.target.files[0]); }));
+    ['fi', 'fi2'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('change', e => { if (e.target.files[0]) loadZip(e.target.files[0]); });
+    });
 
     // REFERENCE ZIP LISTENER
     document.getElementById('fi-ref').addEventListener('change', e => { if (e.target.files[0]) loadReferenceZip(e.target.files[0]); });
@@ -3031,13 +3050,12 @@
     document.addEventListener('dragover', e => e.preventDefault());
     document.addEventListener('drop', e => { e.preventDefault(); if (us.classList.contains('gone')) { const f = e.dataTransfer.files[0]; if (f && f.name.endsWith('.zip')) loadZip(f); } });
 
-    // Theme Toggle Logic — cycles: dark → light → ocean
-    const THEMES = ['dark', 'light', 'ocean'];
-    const THEME_ICONS = { dark: '🌑', light: '🌤️', ocean: '🌊' };
+    // Theme Toggle Logic — cycles: dark → light
+    const THEMES = ['dark', 'light'];
+    const THEME_ICONS = { dark: '🌑', light: '☀️' };
     function applyTheme(t) {
-      document.body.classList.remove('light-theme', 'ocean-theme');
+      document.body.classList.remove('light-theme');
       if (t === 'light') document.body.classList.add('light-theme');
-      if (t === 'ocean') document.body.classList.add('ocean-theme');
       const btn = document.getElementById('theme-btn');
       if (btn) btn.textContent = THEME_ICONS[t] || '🌑';
       localStorage.setItem('theme', t);

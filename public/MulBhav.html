@@ -1764,9 +1764,7 @@
       <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn">🌑</button>
       <span id="hdate">—</span>
       
-      <!-- Historical Access -->
-      <select id="h-list" class="hbtn" style="background:var(--bg3); padding-right: 25px;" onchange="loadHistorical(this.value)">
-        <option value="">Historical Data</option>
+      <select id="h-list" class="hbtn" style="background:var(--bg3); padding-right: 25px; min-width: 130px;" onchange="loadHistorical(this.value)">
       </select>
 
       <span id="hexp"
@@ -1779,8 +1777,7 @@
       <button class="hbtn" id="refetch-btn" style="background:var(--blue-lt); color:var(--blue); border-color:var(--blue-md); font-size: 0.6rem; padding: 4px 8px;"
         onclick="fetchFromNSE()">♻️ Re-fetch</button>
 
-      <input type="file" id="fi2" accept=".zip" style="display:none;">
-      <button class="hbtn" onclick="document.getElementById('fi2').click()">↑ New ZIP</button>
+      <button class="hbtn" style="background:var(--purp-lt); color:var(--purp); border-color:var(--purp-md);" onclick="exportMaster()">📥 Master CSV</button>
     </div>
   </header>
 
@@ -1855,7 +1852,10 @@
               <div class="ph-sub" id="oi-exp-lbl">Recent expiry — Price + OI change</div>
             </div>
           </div>
-          <span class="pbadge" id="oi-b">—</span>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <button class="hbtn" style="background:var(--bull-lt); color:var(--bull); border-color:var(--bull-md); padding: 4px 8px; font-size: 0.65rem;" onclick="exportOI()">📥 CSV</button>
+            <span class="pbadge" id="oi-b">—</span>
+          </div>
         </div>
         <div class="oi-warn" id="oi-warn-banner"><span style="font-size:16px;flex-shrink:0">⚠️</span>
           <div><strong>Sirf signal — seedha buy mat karo!</strong> Long Build dikhna matlab price abhi upar jayegi, ye
@@ -1893,7 +1893,10 @@
               <div class="ph-sub" id="pcr-exp-lbl">Recent expiry — OI PCR + Vol PCR</div>
             </div>
           </div>
-          <span class="pbadge" id="pcr-b">—</span>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <button class="hbtn" style="background:var(--blue-lt); color:var(--blue); border-color:var(--blue-md); padding: 4px 8px; font-size: 0.65rem;" onclick="exportPCR()">📥 CSV</button>
+            <span class="pbadge" id="pcr-b">—</span>
+          </div>
         </div>
         <div class="pcr-explainer">
           <div class="pe-item bull">
@@ -1944,7 +1947,10 @@
               <div class="ph-sub" id="mp-exp-lbl">Recent expiry — Click row for full pain table</div>
             </div>
           </div>
-          <span class="pbadge">Near Expiry</span>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <button class="hbtn" style="background:var(--gold-lt); color:var(--gold); border-color:var(--gold-md); padding: 4px 8px; font-size: 0.65rem;" onclick="exportMP()">📥 CSV</button>
+            <span class="pbadge">Near Expiry</span>
+          </div>
         </div>
         <div class="tipbox">💡 <strong>Max Pain</strong> = Option sellers minimum loss point. &nbsp;<span
             style="color:var(--bear)">CE Wall</span> = Resistance &nbsp;|&nbsp; <span style="color:var(--bull)">PE
@@ -2003,7 +2009,10 @@
               <div class="ph-sub">Spot ≥ CE Wall — Call writers under pressure 🟢 Bullish signal</div>
             </div>
           </div>
-          <span class="pbadge" id="cwt-b">—</span>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <button class="hbtn" style="background:var(--blue-lt); color:var(--blue); border-color:var(--blue-md); padding: 4px 8px; font-size: 0.65rem;" onclick="exportCWT()">📥 CSV</button>
+            <span class="pbadge" id="cwt-b">—</span>
+          </div>
         </div>
         <div class="tipbox" style="color:var(--bull);">💡 Spot ne CE Wall ko touch/cross kiya → Call writers forced to
           cover → <strong>Upward squeeze possible</strong></div>
@@ -2027,7 +2036,10 @@
               <div class="ph-sub">Spot ≤ PE Wall — Put writers under pressure 🔴 Bearish signal</div>
             </div>
           </div>
-          <span class="pbadge" id="pwt-b">—</span>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <button class="hbtn" style="background:var(--bear-lt); color:var(--bear); border-color:var(--bear-md); padding: 4px 8px; font-size: 0.65rem;" onclick="exportPWT()">📥 CSV</button>
+            <span class="pbadge" id="pwt-b">—</span>
+          </div>
         </div>
         <div class="tipbox" style="color:var(--bear);">💡 Spot ne PE Wall ko touch/break kiya → Put writers forced to
           cover → <strong>Downward squeeze possible</strong></div>
@@ -2177,11 +2189,14 @@
           
           // Populate historical dropdown
           const hl = document.getElementById('h-list');
-          hl.innerHTML = '<option value="">Historical Data</option>';
+          hl.innerHTML = ''; // Start clean
           data.dates.forEach(d => {
             const opt = document.createElement('option');
             opt.value = d; opt.innerText = d; hl.appendChild(opt);
           });
+          if (CURRENT_LOADED_DATE) hl.value = CURRENT_LOADED_DATE;
+          else hl.value = LATEST_DATE;
+
         } else {
           document.getElementById('u-status').innerText = 'No automated data found yet. Please fetch manually.';
         }
@@ -2210,6 +2225,116 @@
         document.getElementById('h-list').value = date;
       } catch (e) { alert('Error: ' + e.message); }
       finally { document.getElementById('refetch-btn').innerHTML = '♻️ Re-fetch'; }
+    }
+
+    // ─────────────────────────────────────────────
+    // CSV EXPORT LOGIC
+    // ─────────────────────────────────────────────
+    function downloadCSV(csv, filename) {
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", filename);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function exportOI() {
+      const tab = D.oiTab; // long, short, etc.
+      let rows = [['Symbol', 'Price', 'Chg%', 'OI(K)', 'Signal']];
+      const items = D.oiList || [];
+      items.forEach(i => {
+        rows.push([i.sym, i.close, i.pct.toFixed(2), (i.oi / 1000).toFixed(1), i.sg.l.toUpperCase()]);
+      });
+      const csv = rows.map(r => r.join(',')).join('\n');
+      downloadCSV(csv, `OI_Buildup_${tab}_${CURRENT_LOADED_DATE}.csv`);
+    }
+
+    function exportPCR() {
+      let rows = [['Symbol', 'OI_PCR', 'Vol_PCR', 'Signal']];
+      (D.pcrList || []).forEach(p => {
+        const sig = p.pcrOI > 1.2 ? 'BULL' : (p.pcrOI < 0.8 ? 'BEAR' : 'NEUTRAL');
+        rows.push([p.s, p.pcrOI.toFixed(2), p.pcrVol.toFixed(2), sig]);
+      });
+      const csv = rows.map(r => r.join(',')).join('\n');
+      downloadCSV(csv, `PCR_Data_${CURRENT_LOADED_DATE}.csv`);
+    }
+
+    function exportMP() {
+      let rows = [['Symbol', 'Spot', 'Futures', 'Max Pain', 'CE Wall', 'PE Wall', 'CE Gap%', 'PE Gap%']];
+      Object.keys(D.mp).forEach(sym => {
+        const m = D.mp[sym]; if (!m) return;
+        rows.push([sym, m.spot, m.fut, m.mp, m.ceW, m.peW, m.ceG.toFixed(2), m.peG.toFixed(2)]);
+      });
+      const csv = rows.map(r => r.join(',')).join('\n');
+      downloadCSV(csv, `Max_Pain_Data_${CURRENT_LOADED_DATE}.csv`);
+    }
+
+    function exportCWT() {
+      let rows = [['Symbol', 'Spot', 'CE Wall', 'Gap', 'CE OI(K)']];
+      (D.cwtList || []).forEach(m => {
+        rows.push([m.sym, m.spot, m.ceW, m.gap.toFixed(2), (m.oi / 1000).toFixed(1)]);
+      });
+      const csv = rows.map(r => r.join(',')).join('\n');
+      downloadCSV(csv, `Call_Writer_Traps_${CURRENT_LOADED_DATE}.csv`);
+    }
+
+    function exportPWT() {
+      let rows = [['Symbol', 'Spot', 'PE Wall', 'Gap', 'PE OI(K)']];
+      (D.pwtList || []).forEach(m => {
+        rows.push([m.sym, m.spot, m.peW, m.gap.toFixed(2), (m.oi / 1000).toFixed(1)]);
+      });
+      const csv = rows.map(r => r.join(',')).join('\n');
+      downloadCSV(csv, `Put_Writer_Traps_${CURRENT_LOADED_DATE}.csv`);
+    }
+
+    function exportMaster() {
+      let csv = `--- MARKET DATA SUMMARY (${CURRENT_LOADED_DATE}) ---\n\n`;
+      
+      // 1. OI Section
+      csv += `--- OI BUILDUP SIGNALS (${D.oiTab.toUpperCase()}) ---\n`;
+      csv += `Symbol,Price,Chg%,OI(K),Signal\n`;
+      (D.oiList || []).forEach(i => {
+        csv += `${i.sym},${i.close},${i.pct.toFixed(2)},${(i.oi / 1000).toFixed(1)},${i.sg.l.toUpperCase()}\n`;
+      });
+      csv += `\n`;
+
+      // 2. PCR Section
+      csv += `--- PUT-CALL RATIO DATA ---\n`;
+      csv += `Symbol,OI_PCR,Vol_PCR,Signal\n`;
+      (D.pcrList || []).forEach(p => {
+        const sig = p.pcrOI > 1.2 ? 'BULL' : (p.pcrOI < 0.8 ? 'BEAR' : 'NEUTRAL');
+        csv += `${p.s},${p.pcrOI.toFixed(2)},${p.pcrVol.toFixed(2)},${sig}\n`;
+      });
+      csv += `\n`;
+
+      // 3. Max Pain Section
+      csv += `--- MAX PAIN DATA ---\n`;
+      csv += `Symbol,Spot,Futures,Max Pain,CE Wall,PE Wall,CE Gap%,PE Gap%\n`;
+      Object.keys(D.mp).forEach(sym => {
+        const m = D.mp[sym]; if (!m) return;
+        csv += `${sym},${m.spot},${m.fut},${m.mp},${m.ceW},${m.peW},${m.ceG.toFixed(2)},${m.peG.toFixed(2)}\n`;
+      });
+      csv += `\n`;
+
+      // 4. Writer Traps
+      csv += `--- CALL WRITER TRAPS ---\n`;
+      csv += `Symbol,Spot,CE Wall,Gap,CE OI(K)\n`;
+      (D.cwtList || []).forEach(m => {
+        csv += `${m.sym},${m.spot},${m.ceW},${m.gap.toFixed(2)},${(m.oi / 1000).toFixed(1)}\n`;
+      });
+      csv += `\n`;
+
+      csv += `--- PUT WRITER TRAPS ---\n`;
+      csv += `Symbol,Spot,PE Wall,Gap,PE OI(K)\n`;
+      (D.pwtList || []).forEach(m => {
+        csv += `${m.sym},${m.spot},${m.peW},${m.gap.toFixed(2)},${(m.oi / 1000).toFixed(1)}\n`;
+      });
+
+      downloadCSV(csv, `Master_Market_Data_${CURRENT_LOADED_DATE}.csv`);
     }
 
     async function fetchFromNSE() {
@@ -2452,7 +2577,16 @@
         const ceWall = ss.reduce((mx, s) => d.s[s].c > d.s[mx].c ? s : mx, ss[0]);
         const peWall = ss.reduce((mx, s) => d.s[s].p > d.s[mx].p ? s : mx, ss[0]);
         const spot = d.u || (D.fut[sym] ? D.fut[sym].close : 0);
-        if (spot > 0 && mpStrike > 0) D.mp[sym] = { spot, fut: (D.fut[sym] ? D.fut[sym].close : 0), mp: mpStrike, gap: +((mpStrike - spot) / spot * 100).toFixed(2), ceWall, peWall, painTable };
+        if (spot > 0 && mpStrike > 0) {
+          D.mp[sym] = { 
+             spot, fut: (D.fut[sym] ? D.fut[sym].close : 0), 
+             mp: mpStrike, gap: +((mpStrike - spot) / spot * 100).toFixed(2), 
+             ceW: ceWall, peW: peWall, 
+             ceG: +((ceWall - spot) / spot * 100).toFixed(2),
+             peG: +((spot - peWall) / spot * 100).toFixed(2),
+             painTable 
+          };
+        }
       });
     }
 
@@ -2572,6 +2706,7 @@
       else if (D.oiTab === 'short_unwind') data = all.filter(d => d.sg.l === 'Short Unwind').sort((a, b) => b.pct - a.pct);
       else data = all.filter(d => d.sg.l === 'Long Unwind').sort((a, b) => a.pct - b.pct);
       if (q) data = data.filter(d => d.sym.toLowerCase().includes(q));
+      D.oiList = data; // Save for export
       // Column sort override
       if (D.oiColSort.c) {
         const { c, d } = D.oiColSort;
@@ -2649,6 +2784,7 @@
       else if (D.pcrTab === 'bear') fil = data.filter(d => d.pcrOI < 0.8).sort((a, b) => a.pcrOI - b.pcrOI);
       else fil = [...data].sort((a, b) => b.pcrOI - a.pcrOI);
       if (q) fil = fil.filter(d => d.s.toLowerCase().includes(q));
+      D.pcrList = fil; // Save for export
       document.getElementById('pcr-b').textContent = fil.length + ' / ' + data.length + ' stocks';
       const avg = data.length ? data.reduce((s, d) => s + d.pcrOI, 0) / data.length : 0;
       const ac = avg > 1.2 ? 'bull' : avg < 0.8 ? 'bear' : 'neutral';
@@ -2709,13 +2845,10 @@
         const pdCls = pd >= 0 ? 'bull' : 'bear';
         const pdTxt = pd >= 0 ? `+${pd.toFixed(2)}% P` : `${pd.toFixed(2)}% D`;
 
-        // CE dist: how far spot is FROM ce wall (negative = spot below ce wall = normal, positive = broken)
-        const ceDist = d.ceWall > 0 ? ((d.ceWall - d.spot) / d.spot * 100) : null;
-        const peDist = d.peWall > 0 ? ((d.spot - d.peWall) / d.spot * 100) : null;
-        const ceBroken = ceDist !== null && ceDist <= 0;
-        const peBroken = peDist !== null && peDist <= 0;
-        const ceDistTxt = ceBroken ? '🔴 Broken' : (ceDist !== null ? '+' + ceDist.toFixed(1) + '%' : '—');
-        const peDistTxt = peBroken ? '🟢 Broken' : (peDist !== null ? '+' + peDist.toFixed(1) + '%' : '—');
+        const ceBroken = d.ceG <= 0;
+        const peBroken = d.peG <= 0;
+        const ceDistTxt = ceBroken ? '🔴 Broken' : '+' + d.ceG.toFixed(1) + '%';
+        const peDistTxt = peBroken ? '🟢 Broken' : '+' + d.peG.toFixed(1) + '%';
         const ceDistCls = ceBroken ? 'bear' : 'bull';
         const peDistCls = peBroken ? 'bull' : 'bear';
 
@@ -2727,8 +2860,8 @@
         <div style="font-size:0.75rem;color:var(--${pdCls});margin-top:2px;font-weight:600;">${pdTxt}</div>
       </div>
       <span class="num gold">${d.mp}</span>
-      <span class="num bear">${d.ceWall}</span>
-      <span class="num bull">${d.peWall}</span>
+      <span class="num bear">${d.ceW}</span>
+      <span class="num bull">${d.peW}</span>
       <div style="text-align:right">
         <span class="num ${ceDistCls}" style="${ceBroken ? 'font-size:.7rem;font-weight:700;' : ''}">${ceDistTxt}</span>
       </div>
@@ -3006,17 +3139,21 @@
     function rWriterTraps() {
       const mpArr = Object.entries(D.mp).map(([sym, v]) => ({ sym, ...v }));
 
-      // Call Writer Trap: spot >= ceWall (or within 1% below)
+      // Call Writer Trap: spot >= ceW (or within 1% below)
       const cwt = mpArr
-        .filter(d => d.spot > 0 && d.ceWall > 0 && d.spot >= (d.ceWall * 0.99))
-        .map(d => ({ ...d, cwtGap: +((d.spot - d.ceWall) / d.ceWall * 100).toFixed(2) }))
+        .filter(d => d.spot > 0 && d.ceW > 0 && d.spot >= (d.ceW * 0.99))
+        .map(d => ({ ...d, cwtGap: +((d.spot - d.ceW) / d.ceW * 100).toFixed(2) }))
         .sort((a, b) => b.cwtGap - a.cwtGap);
 
-      // Put Writer Trap: spot <= peWall (or within 1% above)
+      // Put Writer Trap: spot <= peW (or within 1% above)
       const pwt = mpArr
-        .filter(d => d.spot > 0 && d.peWall > 0 && d.spot <= (d.peWall * 1.01))
-        .map(d => ({ ...d, pwtGap: +((d.peWall - d.spot) / d.peWall * 100).toFixed(2) }))
+        .filter(d => d.spot > 0 && d.peW > 0 && d.spot <= (d.peW * 1.01))
+        .map(d => ({ ...d, pwtGap: +((d.peW - d.spot) / d.peW * 100).toFixed(2) }))
         .sort((a, b) => b.pwtGap - a.pwtGap);
+
+      // Save for CSV export
+      D.cwtList = cwt.map(d => ({ sym: d.sym, spot: d.spot, ceW: d.ceW, gap: d.cwtGap, oi: D.ceOi[d.sym] || 0 }));
+      D.pwtList = pwt.map(d => ({ sym: d.sym, spot: d.spot, peW: d.peW, gap: d.pwtGap, oi: D.peOi[d.sym] || 0 }));
 
       document.getElementById('cwt-b').textContent = cwt.length + ' stocks';
       document.getElementById('pwt-b').textContent = pwt.length + ' stocks';
@@ -3024,8 +3161,8 @@
       const cwtRow = d => `
     <div class="row" style="display:grid;grid-template-columns:1.8fr 1fr 1fr 1fr 1fr;gap:10px;padding:8px 20px;">
       <div style="display:flex;align-items:center;gap:5px;">${symSpan(d.sym)}${sigIcon(d.cwtGap > 0 ? 'ce_broken' : 'ce_near')}</div>
-      <span class="num muted">₹${d.spot.toFixed(2)}</span>
-      <span class="num bear">${d.ceWall}</span>
+      <span class="num blue">₹${d.spot.toFixed(2)}</span>
+      <span class="num bear">${d.ceW}</span>
       <span class="num bull">${d.cwtGap >= 0 ? '+' : ''}${d.cwtGap}%</span>
       <span class="num muted">${D.ceOi[d.sym] ? (D.ceOi[d.sym] / 1000).toFixed(1) + 'K' : '—'}</span>
     </div>`;
@@ -3033,8 +3170,8 @@
       const pwtRow = d => `
     <div class="row" style="display:grid;grid-template-columns:1.8fr 1fr 1fr 1fr 1fr;gap:10px;padding:8px 20px;">
       <div style="display:flex;align-items:center;gap:5px;">${symSpan(d.sym)}${sigIcon(d.pwtGap > 0 ? 'pe_broken' : 'pe_near')}</div>
-      <span class="num muted">₹${d.spot.toFixed(2)}</span>
-      <span class="num bull">${d.peWall}</span>
+      <span class="num blue">₹${d.spot.toFixed(2)}</span>
+      <span class="num bull">${d.peW}</span>
       <span class="num bear">-${d.pwtGap}%</span>
       <span class="num muted">${D.peOi[d.sym] ? (D.peOi[d.sym] / 1000).toFixed(1) + 'K' : '—'}</span>
     </div>`;

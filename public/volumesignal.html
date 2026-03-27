@@ -764,7 +764,7 @@
                 const newTagHtml = isRecentlyNew ? ' <span class="new-tag">NEW</span>' : '';
                 
                 const avgVolVal = s.avg_vol ? new Intl.NumberFormat('en-IN').format(s.avg_vol) : '--';
-                const vwapVal = s.vwap ? `₹${parseFloat(s.vwap).toFixed(2)}` : '--';
+                const vwapVal = (s.vwap && parseFloat(s.vwap) > 0) ? `₹${parseFloat(s.vwap).toFixed(2)}` : '--';
                 const priceVal = `₹${parseFloat(s.ltp).toFixed(2)}`;
                 const volVal = new Intl.NumberFormat('en-IN').format(s.volume);
                 const spikeVal = `${s.vol_ratio}x Vol`;

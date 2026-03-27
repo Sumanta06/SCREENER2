@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Live Scalping Feed</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230a1628'/%3E%3Ctext x='32' y='43' text-anchor='middle' font-family='Arial,sans-serif' font-weight='bold' font-size='30' fill='white'%3EVT%3C/text%3E%3C/svg%3E">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         :root[data-theme="dark"] {
@@ -29,6 +28,7 @@
             --flash-bull: #065f46;
             --flash-bear: #7f1d1d;
             --shadow: 0 2px 8px rgba(0,0,0,0.4);
+            --blaze-glow: 0 0 15px rgba(96, 165, 250, 0.4);
         }
         :root[data-theme="light"] {
             --bg: #f0f4f8;
@@ -52,6 +52,7 @@
             --flash-bull: #d1fae5;
             --flash-bear: #fee2e2;
             --shadow: 0 2px 8px rgba(0,0,0,0.08);
+            --blaze-glow: 0 0 15px rgba(30, 64, 175, 0.2);
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -117,7 +118,7 @@
             font-family: monospace;
             white-space: nowrap;
         }
-        .theme-toggle {
+        .control-btn {
             background: rgba(0,0,0,0.2);
             border: 1px solid rgba(255,255,255,0.25);
             border-radius: 20px;
@@ -127,8 +128,12 @@
             color: #fff;
             white-space: nowrap;
             transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
-        .theme-toggle:hover { background: rgba(0,0,0,0.4); }
+        .control-btn:hover { background: rgba(0,0,0,0.4); }
+        .control-btn.active { background: #3b82f6; border-color: #60a5fa; }
 
         main {
             padding: 12px 20px;
@@ -136,6 +141,18 @@
             max-width: 1200px;
             margin: 0 auto;
             width: 100%;
+        }
+
+        /* ── BLAZE ANIMATION ── */
+        @keyframes blaze-effect {
+            0% { box-shadow: 0 0 0 var(--blaze-glow); }
+            50% { box-shadow: 0 0 20px var(--blaze-glow); border-color: #60a5fa; }
+            100% { box-shadow: 0 0 0 var(--blaze-glow); }
+        }
+        .blaze {
+            animation: blaze-effect 2s infinite ease-in-out;
+            border-color: #3b82f6 !important;
+            background: rgba(59, 130, 246, 0.05) !important;
         }
 
         /* ── DESKTOP COLUMN HEADERS ── */
@@ -160,12 +177,13 @@
         }
         .sort-icon { display: inline-block; margin-left: 4px; margin-top: -2px; }
 
-        .col-time   { width: 100px; flex-shrink: 0; }
-        .col-symbol { width: 180px; flex-shrink: 0; }
-        .col-type   { width: 160px; flex-shrink: 0; }
-        .col-price  { width: 120px; text-align: right; flex-shrink: 0; }
-        .col-vol    { width: 140px; text-align: right; flex-shrink: 0; }
-        .col-avgvol { width: 140px; text-align: right; flex-shrink: 0; }
+        .col-time   { width: 90px; flex-shrink: 0; }
+        .col-symbol { width: 160px; flex-shrink: 0; }
+        .col-type   { width: 140px; flex-shrink: 0; }
+        .col-price  { width: 110px; text-align: right; flex-shrink: 0; }
+        .col-vwap   { width: 110px; text-align: right; flex-shrink: 0; color: #60a5fa; }
+        .col-vol    { width: 130px; text-align: right; flex-shrink: 0; }
+        .col-avgvol { width: 130px; text-align: right; flex-shrink: 0; }
         .col-spike  { flex: 1; text-align: right; display: flex; justify-content: flex-end; }
 
         /* ── ROWS ── */
@@ -178,16 +196,18 @@
             padding: 14px 20px;
             border-radius: 6px;
             border-left: 4px solid transparent;
+            border: 1px solid transparent; /* for blaze */
             transition: background 0.2s;
             box-shadow: var(--shadow);
         }
         .row:hover { background: var(--row-hover); }
-        .BULLISH { border-left-color: var(--bull); }
-        .BEARISH { border-left-color: var(--bear); }
+        .BULLISH, .SUPER.BULLISH { border-left-color: var(--bull); }
+        .BEARISH, .SUPER.BEARISH { border-left-color: var(--bear); }
 
         .row .col-time   { color: #94a3b8; font-family: monospace; font-size: 13px; }
         .row .col-symbol { font-weight: 700; font-size: 16px; color: var(--text-bright); }
-        .row .col-price  { font-family: monospace; font-size: 15px; font-weight: 600; line-height: 1.2; }
+        .row .col-price  { font-family: monospace; font-size: 15px; font-weight: 700; line-height: 1.2; }
+        .row .col-vwap   { font-family: monospace; font-size: 14px; font-weight: 600; }
         .row .col-vol    { font-family: monospace; font-size: 14px; font-weight: 700; color: var(--text-bright); }
         .row .col-avgvol { font-family: monospace; font-size: 13px; color: #64748b; }
 
@@ -199,7 +219,7 @@
             padding: 3px 8px;
             border-radius: 4px;
             font-size: 10px;
-            font-weight: 700;
+            font-weight: 800;
         }
         .BULLISH .type-badge { background: var(--bull-bg); color: var(--bull-text); }
         .BEARISH .type-badge { background: var(--bear-bg); color: var(--bear-text); }
@@ -219,36 +239,6 @@
 
         #empty-state { text-align: center; color: #64748b; margin-top: 50px; font-style: italic; }
 
-        /* ── FADE for old signals ── */
-        .row.faded { opacity: 0.4; }
-
-        /* ── CAUTION badge ── */
-        .caution-badge {
-            display: inline-block;
-            margin-left: 6px;
-            font-size: 13px;
-            cursor: pointer;
-            vertical-align: middle;
-        }
-
-        /* ── TOOLTIP ── */
-        .tooltip-box {
-            display: none;
-            position: fixed;
-            z-index: 9999;
-            background: #1e293b;
-            border: 1px solid #334155;
-            border-radius: 8px;
-            padding: 12px 16px;
-            max-width: 320px;
-            font-size: 13px;
-            line-height: 1.6;
-            color: #e2e8f0;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-            pointer-events: none;
-        }
-        .tooltip-box.visible { display: block; }
-
         @keyframes flashNewBullish { 0%{background:var(--flash-bull);transform:translateX(-5px)} 100%{background:var(--row-bg);transform:translateX(0)} }
         @keyframes flashNewBearish { 0%{background:var(--flash-bear);transform:translateX(-5px)} 100%{background:var(--row-bg);transform:translateX(0)} }
         .BULLISH.new-row { animation: flashNewBullish 0.8s ease-out forwards; }
@@ -259,7 +249,11 @@
         ══════════════════════════════════════ */
         @media (max-width: 640px) {
             main { padding: 8px 8px; }
+
+            /* Hide column-header bar */
             .list-header { display: none; }
+
+            /* Card: wrap all cols */
             .row {
                 flex-wrap: wrap;
                 padding: 11px 12px;
@@ -267,6 +261,8 @@
                 row-gap: 7px;
                 align-items: flex-start;
             }
+
+            /* ── Line 1: Symbol | Badge | Spike pill ── */
             .row .col-symbol {
                 order: 1;
                 flex: 1;
@@ -289,21 +285,32 @@
                 justify-content: flex-end;
                 align-self: center;
             }
+
+            /* ── Line 2: LTP (left) | Volume (right) ── */
             .row .col-price {
                 order: 4;
-                width: 50%;
+                width: 40%;
                 text-align: left;
                 font-size: 15px;
                 font-weight: 700;
             }
-            .row .col-vol {
+            .row .col-vwap {
                 order: 5;
-                width: 50%;
+                width: 30%;
+                text-align: center;
+                color: #60a5fa;
+                font-size: 13px;
+            }
+            .row .col-vol {
+                order: 6;
+                width: 30%;
                 text-align: right;
                 font-size: 13px;
             }
+
+            /* ── Line 3: Time (left) | AvgVol (right) ── */
             .row .col-time {
-                order: 6;
+                order: 7;
                 width: 50%;
                 font-size: 11px;
                 color: var(--text-sub);
@@ -311,7 +318,7 @@
                 border-top: 1px solid var(--border);
             }
             .row .col-avgvol {
-                order: 7;
+                order: 8;
                 width: 50%;
                 text-align: right;
                 font-size: 11px;
@@ -320,12 +327,14 @@
                 color: var(--text-muted);
             }
             .row .col-avgvol::before { content: "30D Avg: "; }
+
             .spike-pill { font-size: 11px; padding: 3px 8px; }
             .type-badge { font-size: 9px; padding: 3px 7px; }
             .title h1   { font-size: 15px; }
             .time-box   { font-size: 11px; padding: 4px 7px; }
-            .theme-toggle { font-size: 11px; padding: 4px 9px; }
+            .control-btn { font-size: 11px; padding: 4px 9px; }
             .signal-list { gap: 5px; }
+            .row .col-vwap::before { content: "V: "; color: #94a3b8; font-size: 9px; }
         }
     </style>
 </head>
@@ -333,14 +342,13 @@
     <header>
         <div class="header-content">
             <div class="title">
-                <h1>📡 Scalping Feed</h1>
+                <h1>📡 Price Vol Radar</h1>
             </div>
             <div class="status">
                 <div class="pulse" id="live-indicator"></div>
                 <div class="time-box" id="clock">--:--:--</div>
-                <div class="time-box">Total Hits: <span id="sig-count">0</span></div>
-                <button class="theme-toggle" onclick="downloadCSV()">⬇️ CSV</button>
-                <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn">🌙 Dark</button>
+                <button class="control-btn" onclick="toggleSound()" id="sound-btn">🔇 Mute</button>
+                <button class="control-btn" onclick="toggleTheme()" id="theme-btn">🌙 Dark</button>
             </div>
         </div>
     </header>
@@ -351,29 +359,32 @@
             <div class="col-symbol" onclick="setSort('symbol')"    data-sort="symbol">Symbol <span class="sort-icon"></span></div>
             <div class="col-type"   onclick="setSort('type')"      data-sort="type">Signal <span class="sort-icon"></span></div>
             <div class="col-price"  onclick="setSort('ltp')"       data-sort="ltp">LTP <span class="sort-icon"></span></div>
-            <div class="col-vol"    onclick="setSort('volume')"    data-sort="volume">Volume <span class="sort-icon"></span></div>
-            <div class="col-avgvol" onclick="setSort('avg_vol')"   data-sort="avg_vol">30D Avg Vol <span class="sort-icon"></span></div>
-            <div class="col-spike"  onclick="setSort('vol_ratio')" data-sort="vol_ratio" style="padding-right:15px;">Spike Power <span class="sort-icon"></span></div>
+            <div class="col-vwap"   onclick="setSort('vwap')"      data-sort="vwap">VWAP <span class="sort-icon"></span></div>
+            <div class="col-vol"    onclick="setSort('volume')"    data-sort="volume">Vol Today <span class="sort-icon"></span></div>
+            <div class="col-avgvol" onclick="setSort('avg_vol')"   data-sort="avg_vol">30D Avg <span class="sort-icon"></span></div>
+            <div class="col-spike"  onclick="setSort('vol_ratio')" data-sort="vol_ratio" style="padding-right:15px;">Power <span class="sort-icon"></span></div>
         </div>
         <div id="empty-state">Connecting to Serverless Feed...</div>
         <div class="signal-list" id="list"></div>
     </main>
-    <div class="tooltip-box" id="tooltip"></div>
+
+    <audio id="alert-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
 
     <script>
         const PUBLIC_R2_URL = "https://pub-ced41a0bcdfc4c8da30ae906c5f3a3f7.r2.dev/signals/live_alerts.json";
 
         let currentSort = 'timestamp';
         let sortDesc = true;
+        let latestSignals = [];
+        let soundEnabled = false;
+        let lastSignalDate = 0;
 
-        // =====================================================
-        // FIX: Master signal store — APPEND ONLY in frontend too
-        // Key = symbol::type  (same as Python engine)
-        // allSignals = Map of unique_key -> signal object
-        // New signals are added, existing ones update ltp/vol ONLY
-        // Nothing is EVER removed from this Map
-        // =====================================================
-        const allSignals = new Map();
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const btn = document.getElementById('sound-btn');
+            btn.textContent = soundEnabled ? '🔊 Sound' : '🔇 Mute';
+            btn.classList.toggle('active', soundEnabled);
+        }
 
         function setSort(key) {
             if (currentSort === key) {
@@ -383,13 +394,15 @@
                 sortDesc = true;
             }
             updateHeaders();
-            renderList();
+            if(latestSignals.length > 0) {
+                renderList(latestSignals);
+            }
         }
 
         function updateHeaders() {
             document.querySelectorAll('.list-header div').forEach(el => {
                 const icon = el.querySelector('.sort-icon');
-                if (!icon) return;
+                if(!icon) return;
                 if (el.getAttribute('data-sort') === currentSort) {
                     icon.innerText = sortDesc ? '↓' : '↑';
                 } else {
@@ -414,71 +427,56 @@
                 const res = await fetch(PUBLIC_R2_URL + '?t=' + Date.now());
                 if (!res.ok) throw new Error("Fetch failed");
                 const json = await res.json();
-                const incoming = json.signals || [];
-
-                let hasNew = false;
-
-                for (const sig of incoming) {
-                    // Unique key = symbol::type::timestamp — har signal alag row
-                    const key = `${sig.symbol}::${sig.type}::${sig.timestamp}`;
-
-                    if (!allSignals.has(key)) {
-                        allSignals.set(key, { ...sig, _isNew: true });
-                        hasNew = true;
+                
+                // Play sound if new signal added
+                const updatedTime = new Date(json.last_updated).getTime();
+                if (soundEnabled && lastSignalDate > 0 && updatedTime > lastSignalDate) {
+                    if (json.signals.length > latestSignals.length) {
+                        document.getElementById('alert-sound').play().catch(e => {});
                     }
                 }
+                lastSignalDate = updatedTime;
 
-                document.getElementById('sig-count').innerText = allSignals.size;
+                latestSignals = json.signals || [];
+                renderList(latestSignals);
                 document.getElementById('live-indicator').style.backgroundColor = '#10b981';
                 document.getElementById('live-indicator').style.boxShadow = '0 0 10px #10b981';
-
-                // Only re-render if something new arrived (perf optimization)
-                if (hasNew) {
-                    renderList();
-                } else {
-                    // Just update ltp/vol in-place without rebuilding DOM
-                    updateExistingRows();
-                }
-
             } catch (err) {
                 document.getElementById('live-indicator').style.backgroundColor = '#ef4444';
                 document.getElementById('live-indicator').style.boxShadow = '0 0 10px #ef4444';
             }
         }
 
-        function updateExistingRows() {
-            // Silently update price/vol in existing DOM rows without any flash
-            for (const [key, s] of allSignals.entries()) {
-                const row = document.querySelector(`[data-key="${CSS.escape(key)}"]`);
-                if (!row) continue;
-                const priceEl = row.querySelector('.col-price');
-                const volEl   = row.querySelector('.col-vol');
-                const spikeEl = row.querySelector('.spike-pill');
-                const timeEl  = row.querySelector('.col-time');
-                if (priceEl) priceEl.textContent = `₹${parseFloat(s.ltp).toFixed(2)}`;
-                if (volEl)   volEl.textContent   = new Intl.NumberFormat('en-IN').format(s.volume);
-                if (spikeEl) spikeEl.textContent = `${s.vol_ratio}x Vol`;
-                if (timeEl)  timeEl.textContent  = s.timestamp;
-            }
+        function isRecentlyCreated(timestampStr) {
+            if (!timestampStr) return false;
+            try {
+                const now = new Date();
+                const [h, m, s] = timestampStr.split(':').map(Number);
+                const signalTime = new Date();
+                signalTime.setHours(h, m, s);
+                
+                const diffMs = now - signalTime;
+                const diffMins = diffMs / (1000 * 60);
+                
+                // If the signal is from today and less than 10 mins old
+                return diffMins >= 0 && diffMins <= 10;
+            } catch(e) { return false; }
         }
 
-        function renderList() {
+        function renderList(signals) {
             const list = document.getElementById('list');
-
-            if (allSignals.size === 0) {
+            if (signals.length === 0) {
                 document.getElementById('empty-state').style.display = 'block';
-                document.getElementById('empty-state').innerText = 'Listening for live volume spikes...';
+                document.getElementById('empty-state').innerText = 'Listening for live Volume + VWAP breakouts...';
                 list.innerHTML = '';
                 return;
             }
             document.getElementById('empty-state').style.display = 'none';
 
-            // Sort the signals
-            let signals = Array.from(allSignals.values());
-            signals.sort((a, b) => {
+            let sortedSignals = [...signals].sort((a,b) => {
                 let valA = a[currentSort];
                 let valB = b[currentSort];
-                if (!['timestamp','symbol','type'].includes(currentSort)) {
+                if (['ltp', 'vwap', 'volume', 'avg_vol', 'vol_ratio'].includes(currentSort)) {
                     valA = parseFloat(valA) || 0;
                     valB = parseFloat(valB) || 0;
                 }
@@ -488,133 +486,34 @@
             });
 
             let html = '';
-            const now = new Date();
-
-            // Caution check: symbol+type seen in last 30 min
-            const recentSymbols = new Map(); // symbol -> latest timestamp seen
-
-            for (const s of signals) {
-                const sym = s.symbol;
-                const sigTime = parseTimestamp(s.timestamp);
-                if (!recentSymbols.has(sym)) {
-                    recentSymbols.set(sym, sigTime);
-                } else {
-                    if (sigTime > recentSymbols.get(sym)) recentSymbols.set(sym, sigTime);
-                }
-            }
-
-            // Track how many times each symbol appears
-            const symbolCount = new Map();
-            for (const s of signals) {
-                symbolCount.set(s.symbol, (symbolCount.get(s.symbol) || 0) + 1);
-            }
-
-            for (const s of signals) {
-                const key        = `${s.symbol}::${s.type}::${s.timestamp}`;
-                const isBull     = (s.type || '').includes('BULLISH');
-                const isStrong   = (s.type || '').includes('STRONG');
-                const typeClass  = isBull ? 'BULLISH' : 'BEARISH';
+            for(let s of sortedSignals) {
+                const isBull = (s.type || '').includes('BULLISH');
+                const typeClass = isBull ? 'BULLISH' : 'BEARISH';
                 const colorClass = isBull ? 'BULLISH-text' : 'BEARISH-text';
-                const newClass   = s._isNew ? 'new-row' : '';
+                const blazeClass = isRecentlyCreated(s.timestamp) ? 'blaze' : '';
+
                 const avgVolHtml = s.avg_vol ? new Intl.NumberFormat('en-IN').format(s.avg_vol) : '--';
-
-                // Fade if older than 15 min
-                const sigTime    = parseTimestamp(s.timestamp);
-                const ageMinutes = (now - sigTime) / 60000;
-                const fadeClass  = ageMinutes > 15 ? 'faded' : '';
-
-                // Caution if same symbol appeared more than once
-                const cautionHtml = symbolCount.get(s.symbol) > 1
-                    ? `<span class="caution-badge" title="Same stock ne 30 min mein dobara signal diya">⚠️</span>`
-                    : '';
-
-                // Tooltip text
-                const tooltipText = getTooltip(s.type);
+                const vwapHtml = s.vwap ? parseFloat(s.vwap).toFixed(2) : '--';
 
                 html += `
-                <div class="row ${typeClass} ${newClass} ${fadeClass}" data-key="${key}" data-tooltip="${tooltipText}" onclick="showTooltip(event, this)">
+                <div class="row ${typeClass} ${blazeClass}">
                     <div class="col-time">${s.timestamp}</div>
-                    <div class="col-symbol">${s.symbol}${cautionHtml}</div>
+                    <div class="col-symbol">${s.symbol}</div>
                     <div class="col-type"><span class="type-badge">${s.type}</span></div>
                     <div class="col-price ${colorClass}">₹${parseFloat(s.ltp).toFixed(2)}</div>
+                    <div class="col-vwap">₹${vwapHtml}</div>
                     <div class="col-vol">${new Intl.NumberFormat('en-IN').format(s.volume)}</div>
                     <div class="col-avgvol">${avgVolHtml}</div>
                     <div class="col-spike"><span class="spike-pill">${s.vol_ratio}x Vol</span></div>
-                </div>`;
-
-                s._isNew = false;
+                </div>
+                `;
             }
             list.innerHTML = html;
         }
 
-        function parseTimestamp(ts) {
-            // ts format: "HH:MM:SS"
-            const today = new Date();
-            const [h, m, s] = ts.split(':').map(Number);
-            return new Date(today.getFullYear(), today.getMonth(), today.getDate(), h, m, s);
-        }
-
-        function getTooltip(type) {
-            const tips = {
-                'STRONG BULLISH': '📈 Strong Bullish: Price open aur close dono se upar hai, heavy volume spike. Potential breakout. Stop loss open price ke neeche rakho — reverse bhi ho sakta hai.',
-                'BULLISH':        '📊 Bullish: Volume spike hai, price upar ja rahi hai. Moderate momentum. Confirm hone ka wait karo, fir entry lo.',
-                'STRONG BEARISH': '📉 Strong Bearish: Price open aur close dono se neeche hai, heavy volume spike. Potential breakdown. Stop loss open price ke upar rakho — bounce bhi ho sakta hai.',
-                'BEARISH':        '📊 Bearish: Volume spike hai, price neeche ja rahi hai. Moderate selling pressure. Confirm hone ka wait karo.',
-            };
-            return (tips[type] || 'Volume spike detected.').replace(/'/g, '&#39;');
-        }
-
-        const tooltip = document.getElementById('tooltip');
-        let tooltipTimeout;
-
-        function showTooltip(e, row) {
-            const text = row.getAttribute('data-tooltip');
-            if (!text) return;
-            tooltip.textContent = text;
-            tooltip.classList.add('visible');
-            moveTooltip(e);
-            clearTimeout(tooltipTimeout);
-            tooltipTimeout = setTimeout(() => tooltip.classList.remove('visible'), 4000);
-        }
-
-        function moveTooltip(e) {
-            const x = Math.min(e.clientX + 12, window.innerWidth - 340);
-            const y = Math.min(e.clientY + 12, window.innerHeight - 120);
-            tooltip.style.left = x + 'px';
-            tooltip.style.top  = y + 'px';
-        }
-
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.row')) tooltip.classList.remove('visible');
-        });
-
-        function downloadCSV() {
-            if (allSignals.size === 0) { alert('Koi signal nahi hai abhi.'); return; }
-            const headers = ['Time','Symbol','Signal','LTP','Prev LTP','Open','Volume','30D Avg Vol','Vol Ratio','Spike Bar'];
-            const rows = Array.from(allSignals.values())
-                .sort((a,b) => a.timestamp > b.timestamp ? -1 : 1)
-                .map(s => [
-                    s.timestamp,
-                    s.symbol,
-                    s.type,
-                    s.ltp,
-                    s.prev_ltp || '',
-                    s.open,
-                    s.volume,
-                    s.avg_vol,
-                    s.vol_ratio,
-                    s.spike_bar
-                ]);
-            const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
-            const today = new Date().toISOString().slice(0,10);
-            const a = document.createElement('a');
-            a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-            a.download = `signals_${today}.csv`;
-            a.click();
-        }
-
         setInterval(fetchData, 1500);
         fetchData();
+        updateHeaders();
     </script>
 </body>
 </html>

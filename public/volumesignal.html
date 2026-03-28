@@ -171,6 +171,96 @@
             border-color: #60a5fa;
         }
 
+        /* ── MODE SWITCH ── */
+        .mode-switch {
+            display: flex;
+            align-items: center;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 20px;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        .mode-switch button {
+            background: transparent;
+            border: none;
+            color: rgba(255,255,255,0.55);
+            font-size: 11px;
+            font-weight: 700;
+            padding: 5px 12px;
+            cursor: pointer;
+            letter-spacing: 0.5px;
+            transition: background 0.2s, color 0.2s;
+        }
+        .mode-switch button.active-mode {
+            background: #3b82f6;
+            color: #fff;
+            border-radius: 20px;
+        }
+        .mode-switch button.active-mode.mock {
+            background: #f59e0b;
+        }
+
+        /* ── INDEX TICKER BAR ── */
+        .index-bar {
+            background: rgba(0,0,0,0.35);
+            border-bottom: 1px solid var(--border);
+            padding: 6px 20px;
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .index-chip {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .index-name {
+            color: #94a3b8;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        .index-price {
+            color: var(--text-bright);
+            font-family: monospace;
+            font-size: 14px;
+            font-weight: 700;
+        }
+        .index-chg {
+            font-family: monospace;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 1px 7px;
+            border-radius: 4px;
+        }
+        .index-chg.pos { background: rgba(16,185,129,0.15); color: #34d399; }
+        .index-chg.neg { background: rgba(239,68,68,0.15); color: #f87171; }
+        .index-chg.neu { background: rgba(100,116,139,0.15); color: #94a3b8; }
+        .index-dot {
+            width: 5px; height: 5px; border-radius: 50%;
+            background: #334155;
+            flex-shrink: 0;
+        }
+
+        /* ── MOCK MODE BANNER ── */
+        .mock-banner {
+            display: none;
+            background: linear-gradient(90deg, rgba(245,158,11,0.15), rgba(245,158,11,0.05));
+            border-bottom: 1px solid rgba(245,158,11,0.3);
+            text-align: center;
+            padding: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #f59e0b;
+            letter-spacing: 1px;
+        }
+        .mock-banner.visible { display: block; }
+
         main {
             padding: 12px 20px;
             flex: 1;
@@ -247,41 +337,54 @@
         }
 
         .col-time {
-            width: 90px;
+            width: 80px;
             flex-shrink: 0;
         }
 
         .col-symbol {
-            width: 160px;
-            flex-shrink: 0;
-        }
-
-        .col-type {
             width: 140px;
             flex-shrink: 0;
         }
 
+        .col-type {
+            width: 130px;
+            flex-shrink: 0;
+        }
+
         .col-price {
-            width: 110px;
+            width: 95px;
             text-align: right;
             flex-shrink: 0;
         }
 
         .col-vwap {
-            width: 110px;
+            width: 95px;
             text-align: right;
             flex-shrink: 0;
             color: #60a5fa;
         }
 
+        .col-sma {
+            width: 95px;
+            text-align: right;
+            flex-shrink: 0;
+            color: #a78bfa;
+        }
+
+        .col-rsi {
+            width: 75px;
+            text-align: right;
+            flex-shrink: 0;
+        }
+
         .col-vol {
-            width: 130px;
+            width: 110px;
             text-align: right;
             flex-shrink: 0;
         }
 
         .col-avgvol {
-            width: 130px;
+            width: 110px;
             text-align: right;
             flex-shrink: 0;
         }
@@ -351,6 +454,23 @@
             font-size: 14px;
             font-weight: 600;
         }
+
+        .row .col-sma {
+            font-family: monospace;
+            font-size: 13px;
+            font-weight: 600;
+            color: #a78bfa;
+        }
+
+        .row .col-rsi {
+            font-family: monospace;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .rsi-hot  { color: #f87171; } /* >70 overbought */
+        .rsi-cold { color: #34d399; } /* <30 oversold   */
+        .rsi-mid  { color: #94a3b8; } /* 30–70 neutral  */
 
         .row .col-vol {
             font-family: monospace;
@@ -575,11 +695,186 @@
                 gap: 5px;
             }
 
+            .row .col-sma { display: none; }
+            .row .col-rsi { display: none; }
+
             .row .col-vwap::before {
                 content: "V: ";
                 color: #94a3b8;
                 font-size: 9px;
             }
+        }
+
+        /* ══════════════════════════════════════
+           P&L SYSTEM STYLES
+        ══════════════════════════════════════ */
+
+        /* Strategy Modal Overlay */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 500;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-overlay.open { display: flex; }
+        .modal-box {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 24px;
+            width: 90%;
+            max-width: 520px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+        }
+        .modal-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #f8fafc;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .strategy-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+        .strategy-card {
+            background: #1e293b;
+            border: 2px solid #334155;
+            border-radius: 8px;
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .strategy-card:hover { border-color: #60a5fa; background: #1e3a5f; }
+        .strategy-card.selected { border-color: #3b82f6; background: rgba(59,130,246,0.12); }
+        .strat-name { font-size: 13px; font-weight: 800; color: #f8fafc; margin-bottom: 4px; }
+        .strat-desc { font-size: 10px; color: #64748b; line-height: 1.5; }
+        .strat-tag {
+            display: inline-block;
+            font-size: 9px;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-top: 5px;
+        }
+        .strat-tag.green { background: rgba(16,185,129,0.2); color: #34d399; }
+        .strat-tag.amber { background: rgba(245,158,11,0.2); color: #fbbf24; }
+        .strat-tag.red   { background: rgba(239,68,68,0.2);  color: #f87171; }
+        .strat-tag.blue  { background: rgba(96,165,250,0.2); color: #93c5fd; }
+        .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+        .modal-btn {
+            padding: 8px 20px;
+            border-radius: 6px;
+            border: none;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .modal-btn.cancel { background: #1e293b; color: #94a3b8; border: 1px solid #334155; }
+        .modal-btn.confirm { background: #3b82f6; color: #fff; }
+        .modal-btn.confirm:hover { background: #2563eb; }
+
+        /* P&L Summary Bar */
+        .pnl-bar {
+            display: none;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid #1e293b;
+            border-radius: 8px;
+            padding: 10px 16px;
+            margin-bottom: 12px;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .pnl-bar.active { display: flex; }
+        .pnl-stat { display: flex; flex-direction: column; align-items: center; min-width: 70px; }
+        .pnl-stat-label { font-size: 9px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.8px; }
+        .pnl-stat-val { font-size: 15px; font-weight: 800; font-family: monospace; margin-top: 1px; }
+        .pnl-divider { width: 1px; height: 30px; background: #1e293b; flex-shrink: 0; }
+        .pnl-strategy-label {
+            flex: 1;
+            font-size: 11px;
+            font-weight: 700;
+            color: #60a5fa;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .pnl-clear-btn {
+            background: transparent;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            color: #64748b;
+            font-size: 10px;
+            padding: 4px 10px;
+            cursor: pointer;
+            font-weight: 700;
+        }
+        .pnl-clear-btn:hover { color: #ef4444; border-color: #ef4444; }
+
+        /* Active Trades Panel */
+        .trades-section {
+            display: none;
+            margin-bottom: 14px;
+        }
+        .trades-section.active { display: block; }
+        .trades-header {
+            font-size: 10px;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 6px;
+            padding: 0 4px;
+        }
+        .trade-row {
+            display: flex;
+            align-items: center;
+            background: var(--row-bg);
+            border-radius: 6px;
+            padding: 10px 14px;
+            margin-bottom: 5px;
+            border-left: 3px solid transparent;
+            gap: 10px;
+            font-size: 12px;
+            box-shadow: var(--shadow);
+        }
+        .trade-row.bull { border-left-color: var(--bull); }
+        .trade-row.bear { border-left-color: var(--bear); }
+        .trade-row.win  { border-left-color: #10b981; opacity: 0.7; }
+        .trade-row.loss { border-left-color: #ef4444; opacity: 0.7; }
+        .trade-sym { font-weight: 800; font-size: 13px; width: 100px; flex-shrink: 0; color: var(--text-bright); }
+        .trade-entry { color: #94a3b8; font-family: monospace; width: 80px; flex-shrink: 0; }
+        .trade-sl { color: #f87171; font-family: monospace; width: 80px; flex-shrink: 0; }
+        .trade-tgt { color: #34d399; font-family: monospace; width: 80px; flex-shrink: 0; }
+        .trade-pnl { font-family: monospace; font-weight: 800; width: 80px; text-align: right; flex-shrink: 0; }
+        .trade-pnl.pos { color: #10b981; }
+        .trade-pnl.neg { color: #ef4444; }
+        .trade-status {
+            font-size: 9px;
+            font-weight: 800;
+            padding: 2px 7px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            margin-left: auto;
+            flex-shrink: 0;
+        }
+        .trade-status.open  { background: rgba(96,165,250,0.15); color: #93c5fd; }
+        .trade-status.target { background: rgba(16,185,129,0.2); color: #34d399; }
+        .trade-status.sl    { background: rgba(239,68,68,0.2);  color: #f87171; }
+        .trade-trail { font-size: 9px; color: #f59e0b; margin-left: 4px; }
+
+        @media (max-width: 640px) {
+            .strategy-grid { grid-template-columns: 1fr; }
+            .trade-entry, .trade-sl, .trade-tgt { display: none; }
+            .trade-sym { width: 80px; }
         }
     </style>
 </head>
@@ -591,15 +886,81 @@
                 <h1>📡 Price Vol Radar</h1>
             </div>
             <div class="status">
+                <div class="mode-switch">
+                    <button id="real-btn" class="active-mode" onclick="setMode('real')">LIVE</button>
+                    <button id="mock-btn" class="mock" onclick="setMode('mock')">MOCK</button>
+                </div>
                 <div class="pulse" id="live-indicator"></div>
                 <div class="time-box" id="clock">--:--:--</div>
                 <button class="control-btn" onclick="toggleSound()" id="sound-btn">🔇 Mute</button>
+                <button class="control-btn" onclick="openStrategyModal()" id="strat-btn">⚙️ Strategy</button>
                 <button class="control-btn" onclick="toggleTheme()" id="theme-btn">🌙 Dark</button>
             </div>
         </div>
     </header>
 
+    <!-- INDEX TICKER BAR -->
+    <div class="index-bar" id="index-bar">
+        <div class="index-chip">
+            <span class="index-name">NIFTY 50</span>
+            <span class="index-price" id="nifty-price">--</span>
+            <span class="index-chg neu" id="nifty-chg">--</span>
+        </div>
+        <div class="index-dot"></div>
+        <div class="index-chip">
+            <span class="index-name">BANK NIFTY</span>
+            <span class="index-price" id="bn-price">--</span>
+            <span class="index-chg neu" id="bn-chg">--</span>
+        </div>
+    </div>
+    <div class="mock-banner" id="mock-banner">⚠️ MOCK MODE — Simulated Signals Only</div>
+
+    <!-- STRATEGY MODAL -->
+    <div class="modal-overlay" id="strat-modal">
+        <div class="modal-box">
+            <div class="modal-title">⚙️ Select P&L Strategy</div>
+            <div class="strategy-grid" id="strat-grid">
+                <!-- Filled by JS -->
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn cancel" onclick="closeStrategyModal()">Cancel</button>
+                <button class="modal-btn confirm" onclick="applyStrategy()">Apply Strategy</button>
+            </div>
+        </div>
+    </div>
+
     <main>
+        <!-- P&L SUMMARY BAR -->
+        <div class="pnl-bar" id="pnl-bar">
+            <div class="pnl-strategy-label" id="pnl-strat-label">📊 --</div>
+            <div class="pnl-divider"></div>
+            <div class="pnl-stat">
+                <span class="pnl-stat-label">Total P&L</span>
+                <span class="pnl-stat-val" id="pnl-total" style="color:#94a3b8">₹0</span>
+            </div>
+            <div class="pnl-divider"></div>
+            <div class="pnl-stat">
+                <span class="pnl-stat-label">Trades</span>
+                <span class="pnl-stat-val" id="pnl-count" style="color:#f8fafc">0</span>
+            </div>
+            <div class="pnl-divider"></div>
+            <div class="pnl-stat">
+                <span class="pnl-stat-label">Win %</span>
+                <span class="pnl-stat-val" id="pnl-winpct" style="color:#f8fafc">0%</span>
+            </div>
+            <div class="pnl-divider"></div>
+            <div class="pnl-stat">
+                <span class="pnl-stat-label">Open</span>
+                <span class="pnl-stat-val" id="pnl-open" style="color:#93c5fd">0</span>
+            </div>
+            <button class="pnl-clear-btn" onclick="clearTrades()">🗑 Reset</button>
+        </div>
+
+        <!-- ACTIVE TRADES -->
+        <div class="trades-section" id="trades-section">
+            <div class="trades-header">📈 Virtual Trades</div>
+            <div id="trades-list"></div>
+        </div>
         <div class="list-header" title="Click any header to Sort data!">
             <div class="col-time" onclick="setSort('timestamp')" data-sort="timestamp">Time <span
                     class="sort-icon">↓</span></div>
@@ -609,8 +970,9 @@
             </div>
             <div class="col-price" onclick="setSort('ltp')" data-sort="ltp">LTP <span class="sort-icon"></span></div>
             <div class="col-vwap" onclick="setSort('vwap')" data-sort="vwap">VWAP <span class="sort-icon"></span></div>
-            <div class="col-vol" onclick="setSort('volume')" data-sort="volume">Vol Today <span
-                    class="sort-icon"></span></div>
+            <div class="col-sma" onclick="setSort('sma_10')" data-sort="sma_10" style="color:#a78bfa">SMA<small style="font-size:9px;opacity:0.7">(50m)</small> <span class="sort-icon"></span></div>
+            <div class="col-rsi" onclick="setSort('rsi_60')" data-sort="rsi_60" style="color:#f59e0b">RSI<small style="font-size:9px;opacity:0.7">(5h)</small> <span class="sort-icon"></span></div>
+            <div class="col-vol" onclick="setSort('volume')" data-sort="volume">Vol Today <span class="sort-icon"></span></div>
             <div class="col-avgvol" onclick="setSort('avg_vol')" data-sort="avg_vol">30D Avg <span
                     class="sort-icon"></span></div>
             <div class="col-spike" onclick="setSort('vol_ratio')" data-sort="vol_ratio" style="padding-right:15px;">
@@ -624,13 +986,33 @@
         preload="auto"></audio>
 
     <script>
-        const PUBLIC_R2_URL = "https://pub-ced41a0bcdfc4c8da30ae906c5f3a3f7.r2.dev/signals/live_alerts.json";
+        const LIVE_URL  = "https://pub-ced41a0bcdfc4c8da30ae906c5f3a3f7.r2.dev/signals/live_alerts.json";
+        const MOCK_URL  = "https://pub-ced41a0bcdfc4c8da30ae906c5f3a3f7.r2.dev/signals/mock_alerts.json";
+
+        let currentMode = 'real';
+        let PUBLIC_R2_URL = LIVE_URL;
 
         let currentSort = 'timestamp';
         let sortDesc = true;
         let latestSignals = [];
         let soundEnabled = false;
         let lastSignalDate = 0;
+
+        function setMode(mode) {
+            currentMode = mode;
+            PUBLIC_R2_URL = mode === 'mock' ? MOCK_URL : LIVE_URL;
+
+            document.getElementById('real-btn').classList.toggle('active-mode', mode === 'real');
+            document.getElementById('mock-btn').classList.toggle('active-mode', mode === 'mock');
+            document.getElementById('mock-banner').classList.toggle('visible', mode === 'mock');
+
+            // Reset signals on switch
+            latestSignals = [];
+            document.getElementById('list').innerHTML = '';
+            document.getElementById('empty-state').style.display = 'block';
+            document.getElementById('empty-state').innerText = 'Switching feed...';
+            fetchData();
+        }
 
         function toggleSound() {
             soundEnabled = !soundEnabled;
@@ -647,20 +1029,14 @@
                 sortDesc = true;
             }
             updateHeaders();
-            if (latestSignals.length > 0) {
-                renderList(latestSignals);
-            }
+            if (latestSignals.length > 0) renderList(latestSignals);
         }
 
         function updateHeaders() {
             document.querySelectorAll('.list-header div').forEach(el => {
                 const icon = el.querySelector('.sort-icon');
                 if (!icon) return;
-                if (el.getAttribute('data-sort') === currentSort) {
-                    icon.innerText = sortDesc ? '↓' : '↑';
-                } else {
-                    icon.innerText = '';
-                }
+                icon.innerText = el.getAttribute('data-sort') === currentSort ? (sortDesc ? '↓' : '↑') : '';
             });
         }
 
@@ -675,23 +1051,46 @@
             document.getElementById('clock').innerText = new Date().toLocaleTimeString('en-US', { hour12: false });
         }, 1000);
 
+        function renderIndices(indices) {
+            if (!indices) return;
+            const entries = [
+                { id: 'nifty', key: 'NIFTY 50' },
+                { id: 'bn',    key: 'BANK NIFTY' }
+            ];
+            entries.forEach(({ id, key }) => {
+                const d = indices[key];
+                if (!d) return;
+                const price = parseFloat(d.price);
+                const pct   = parseFloat(d.pct);
+                const chg   = parseFloat(d.change);
+                document.getElementById(`${id}-price`).innerText = price.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                const chgEl = document.getElementById(`${id}-chg`);
+                const sign  = chg >= 0 ? '+' : '';
+                chgEl.innerText = `${sign}${chg.toFixed(2)} (${sign}${pct.toFixed(2)}%)`;
+                chgEl.className = `index-chg ${pct > 0 ? 'pos' : pct < 0 ? 'neg' : 'neu'}`;
+            });
+        }
+
         async function fetchData() {
             try {
                 const res = await fetch(PUBLIC_R2_URL + '?t=' + Date.now());
                 if (!res.ok) throw new Error("Fetch failed");
                 const json = await res.json();
 
-                // Play sound if new signal added
+                // Index bar
+                renderIndices(json.indices);
+
                 const updatedTime = new Date(json.last_updated).getTime();
                 if (soundEnabled && lastSignalDate > 0 && updatedTime > lastSignalDate) {
                     if (json.signals.length > latestSignals.length) {
-                        document.getElementById('alert-sound').play().catch(e => { });
+                        document.getElementById('alert-sound').play().catch(e => {});
                     }
                 }
                 lastSignalDate = updatedTime;
 
                 latestSignals = json.signals || [];
                 renderList(latestSignals);
+                processPnlTick(latestSignals);
                 document.getElementById('live-indicator').style.backgroundColor = '#10b981';
                 document.getElementById('live-indicator').style.boxShadow = '0 0 10px #10b981';
             } catch (err) {
@@ -707,19 +1106,23 @@
                 const [h, m, s] = timestampStr.split(':').map(Number);
                 const signalTime = new Date();
                 signalTime.setHours(h, m, s, 0);
-
-                const diffMs = now - signalTime;
-                const diffMins = diffMs / (1000 * 60);
-
-                // If the signal is from today and less than 10 mins old
+                const diffMins = (now - signalTime) / 60000;
                 return diffMins >= 0 && diffMins <= 10;
             } catch (e) { return false; }
         }
 
+        function getSignalClass(type) {
+            // Handles: BULLISH, MOCK BULLISH, BULL BREAKOUT, BULL REVERSAL
+            //          BEARISH, MOCK BEARISH, BEAR BREAKOUT, BEAR REVERSAL
+            const t = (type || '').toUpperCase();
+            if (t.includes('BULL')) return 'BULLISH';
+            if (t.includes('BEAR')) return 'BEARISH';
+            return 'BEARISH';
+        }
+
         function renderList(signals) {
             const list = document.getElementById('list');
-            
-            // If new signals are empty but we already have data, keep the old data!
+
             if (signals.length === 0 && list.children.length === 0) {
                 document.getElementById('empty-state').style.display = 'block';
                 document.getElementById('empty-state').innerText = 'Listening for live Volume + VWAP breakouts...';
@@ -727,21 +1130,16 @@
                 return;
             }
             if (signals.length === 0) return;
-
             document.getElementById('empty-state').style.display = 'none';
 
             const uniqueMap = new Map();
-            signals.forEach(s => {
-                if (!uniqueMap.has(s.symbol)) uniqueMap.set(s.symbol, s);
-            });
+            signals.forEach(s => { if (!uniqueMap.has(s.symbol)) uniqueMap.set(s.symbol, s); });
             let uniqueSignals = Array.from(uniqueMap.values());
 
-            let sortedSignals = uniqueSignals.sort((a,b) => {
-                let valA = a[currentSort];
-                let valB = b[currentSort];
-                if (['ltp', 'vwap', 'volume', 'avg_vol', 'vol_ratio'].includes(currentSort)) {
-                    valA = parseFloat(valA) || 0;
-                    valB = parseFloat(valB) || 0;
+            let sortedSignals = uniqueSignals.sort((a, b) => {
+                let valA = a[currentSort], valB = b[currentSort];
+                if (['ltp','vwap','volume','avg_vol','vol_ratio'].includes(currentSort)) {
+                    valA = parseFloat(valA) || 0; valB = parseFloat(valB) || 0;
                 }
                 if (valA < valB) return sortDesc ? 1 : -1;
                 if (valA > valB) return sortDesc ? -1 : 1;
@@ -754,20 +1152,21 @@
             });
 
             sortedSignals.forEach((s, index) => {
-                const isBull = (s.type || '').includes('BULLISH');
-                const typeClass = isBull ? 'BULLISH' : 'BEARISH';
-                const colorClass = isBull ? 'BULLISH-text' : 'BEARISH-text';
+                const typeClass   = getSignalClass(s.type);
+                const colorClass  = typeClass === 'BULLISH' ? 'BULLISH-text' : 'BEARISH-text';
                 const isRecentlyNew = isRecentlyCreated(s.timestamp);
-                const blazeGlow = '#3b82f6';
-        const newTagColor = '#ef4444';
-                const blazeClass = isRecentlyNew ? 'blaze new-row' : '';
-                const newTagHtml = isRecentlyNew ? ' <span class="new-tag">NEW</span>' : '';
-                
+                const blazeClass  = isRecentlyNew ? 'blaze new-row' : '';
+                const newTagHtml  = isRecentlyNew ? ' <span class="new-tag">NEW</span>' : '';
+
                 const avgVolVal = s.avg_vol ? new Intl.NumberFormat('en-IN').format(s.avg_vol) : '--';
-                const vwapVal = (s.vwap && parseFloat(s.vwap) > 0) ? `₹${parseFloat(s.vwap).toFixed(2)}` : '--';
-                const priceVal = `₹${parseFloat(s.ltp).toFixed(2)}`;
-                const volVal = new Intl.NumberFormat('en-IN').format(s.volume);
-                const spikeVal = `${s.vol_ratio}x Vol`;
+                const vwapVal   = (s.vwap && parseFloat(s.vwap) > 0) ? `₹${parseFloat(s.vwap).toFixed(2)}` : '--';
+                const priceVal  = `₹${parseFloat(s.ltp).toFixed(2)}`;
+                const volVal    = new Intl.NumberFormat('en-IN').format(s.volume);
+                const spikeVal  = `${s.vol_ratio}x Vol`;
+                const smaVal    = (s.sma_10 && parseFloat(s.sma_10) > 0) ? `₹${parseFloat(s.sma_10).toFixed(2)}` : '--';
+                const rsiRaw    = parseFloat(s.rsi_60);
+                const rsiVal    = isNaN(rsiRaw) ? '--' : rsiRaw.toFixed(1);
+                const rsiClass  = isNaN(rsiRaw) ? 'rsi-mid' : rsiRaw > 70 ? 'rsi-hot' : rsiRaw < 30 ? 'rsi-cold' : 'rsi-mid';
 
                 let row = list.querySelector(`[data-symbol="${s.symbol}"]`);
                 if (!row) {
@@ -780,6 +1179,8 @@
                         <div class="col-type"><span class="type-badge">${s.type}</span></div>
                         <div class="col-price ${colorClass}">${priceVal}</div>
                         <div class="col-vwap">${vwapVal}</div>
+                        <div class="col-sma">${smaVal}</div>
+                        <div class="col-rsi ${rsiClass}">${rsiVal}</div>
                         <div class="col-vol">${volVal}</div>
                         <div class="col-avgvol">${avgVolVal}</div>
                         <div class="col-spike"><span class="spike-pill">${spikeVal}</span></div>
@@ -789,21 +1190,19 @@
                     if (row.className !== `row ${typeClass} ${blazeClass}`) row.className = `row ${typeClass} ${blazeClass}`;
                     const timeEl = row.querySelector('.col-time');
                     if (timeEl.innerText !== s.timestamp) timeEl.innerText = s.timestamp;
-                    
                     const symbolEl = row.querySelector('.col-symbol');
-                    const expectedSymbolHtml = `${s.symbol}${newTagHtml}`;
-                    if (symbolEl.innerHTML !== expectedSymbolHtml) symbolEl.innerHTML = expectedSymbolHtml;
-
+                    if (symbolEl.innerHTML !== `${s.symbol}${newTagHtml}`) symbolEl.innerHTML = `${s.symbol}${newTagHtml}`;
                     const typeEl = row.querySelector('.type-badge');
                     if (typeEl.innerText !== s.type) typeEl.innerText = s.type;
                     const priceEl = row.querySelector('.col-price');
                     if (priceEl.innerText !== priceVal) priceEl.innerText = priceVal;
-                    if (!priceEl.classList.contains(colorClass)) {
-                        priceEl.classList.remove('BULLISH-text', 'BEARISH-text');
-                        priceEl.classList.add(colorClass);
-                    }
+                    if (!priceEl.classList.contains(colorClass)) { priceEl.classList.remove('BULLISH-text','BEARISH-text'); priceEl.classList.add(colorClass); }
                     const vwapEl = row.querySelector('.col-vwap');
                     if (vwapEl.innerText !== vwapVal) vwapEl.innerText = vwapVal;
+                    const smaEl = row.querySelector('.col-sma');
+                    if (smaEl && smaEl.innerText !== smaVal) smaEl.innerText = smaVal;
+                    const rsiEl = row.querySelector('.col-rsi');
+                    if (rsiEl) { if (rsiEl.innerText !== rsiVal) rsiEl.innerText = rsiVal; rsiEl.className = `col-rsi ${rsiClass}`; }
                     const volEl = row.querySelector('.col-vol');
                     if (volEl.innerText !== volVal) volEl.innerText = volVal;
                     const avgVolEl = row.querySelector('.col-avgvol');
@@ -814,6 +1213,320 @@
                 if (list.children[index] !== row) list.insertBefore(row, list.children[index]);
             });
         }
+
+        // ══════════════════════════════════════
+        // P&L STRATEGY SYSTEM
+        // ══════════════════════════════════════
+
+        const STRATEGIES = [
+            {
+                id: 'scalper',
+                name: '⚡ Scalper',
+                targetPct: 0.6,
+                slPct: 0.3,
+                trailType: 'step',
+                trailStep: 0.5,    // every ₹0.5 price move
+                trailShift: 0.25,  // SL moves ₹0.25
+                tag: 'green',
+                tagText: 'Low Risk · Fast',
+                desc: 'Target +0.6% / SL -0.3%\nTrail: ₹0.5 move → SL +₹0.25'
+            },
+            {
+                id: 'conservative',
+                name: '🛡 Conservative',
+                targetPct: 1.0,
+                slPct: 0.5,
+                trailType: 'breakeven',
+                trailStep: null,
+                trailShift: null,
+                tag: 'blue',
+                tagText: 'Safe · Breakeven Trail',
+                desc: 'Target +1% / SL -0.5%\nTrail: SL→Entry when 50% target hit'
+            },
+            {
+                id: 'moderate',
+                name: '⚖️ Moderate',
+                targetPct: 1.5,
+                slPct: 0.7,
+                trailType: 'step',
+                trailStep: 1.0,
+                trailShift: 0.5,
+                tag: 'blue',
+                tagText: 'Balanced · Step Trail',
+                desc: 'Target +1.5% / SL -0.7%\nTrail: ₹1 move → SL +₹0.5'
+            },
+            {
+                id: 'aggressive',
+                name: '🔥 Aggressive',
+                targetPct: 2.0,
+                slPct: 0.8,
+                trailType: 'step',
+                trailStep: 1.0,
+                trailShift: 0.8,
+                tag: 'amber',
+                tagText: 'High RR · Fast Trail',
+                desc: 'Target +2% / SL -0.8%\nTrail: ₹1 move → SL +₹0.8'
+            },
+            {
+                id: 'momentum',
+                name: '🚀 Momentum',
+                targetPct: 2.5,
+                slPct: 1.0,
+                trailType: 'parabolic',
+                trailStep: null,
+                trailShift: null,
+                tag: 'amber',
+                tagText: 'Parabolic Trail',
+                desc: 'Target +2.5% / SL -1%\nTrail: Parabolic (locks more as moves)'
+            },
+            {
+                id: 'swing',
+                name: '🌊 Swing',
+                targetPct: 3.5,
+                slPct: 1.2,
+                trailType: 'percent',
+                trailStep: null,
+                trailShift: null,
+                tag: 'red',
+                tagText: 'Wide · % Trail',
+                desc: 'Target +3.5% / SL -1.2%\nTrail: SL stays 0.8% below high'
+            }
+        ];
+
+        let activeStrategy = null;
+        let pendingStrategy = null;
+        let trades = {}; // keyed by symbol
+        let closedTrades = [];
+
+        // ── Modal ──
+        function openStrategyModal() {
+            const grid = document.getElementById('strat-grid');
+            grid.innerHTML = '';
+            STRATEGIES.forEach(s => {
+                const card = document.createElement('div');
+                card.className = 'strategy-card' + (activeStrategy && activeStrategy.id === s.id ? ' selected' : '');
+                card.onclick = () => {
+                    document.querySelectorAll('.strategy-card').forEach(c => c.classList.remove('selected'));
+                    card.classList.add('selected');
+                    pendingStrategy = s;
+                };
+                card.innerHTML = `
+                    <div class="strat-name">${s.name}</div>
+                    <div class="strat-desc">${s.desc.replace(/\n/g,'<br>')}</div>
+                    <span class="strat-tag ${s.tag}">${s.tagText}</span>
+                `;
+                grid.appendChild(card);
+            });
+            pendingStrategy = activeStrategy;
+            document.getElementById('strat-modal').classList.add('open');
+        }
+
+        function closeStrategyModal() {
+            document.getElementById('strat-modal').classList.remove('open');
+        }
+
+        function applyStrategy() {
+            if (!pendingStrategy) return closeStrategyModal();
+            activeStrategy = pendingStrategy;
+            // Clear old trades on strategy change
+            trades = {}; closedTrades = [];
+            document.getElementById('pnl-bar').classList.add('active');
+            document.getElementById('trades-section').classList.add('active');
+            document.getElementById('pnl-strat-label').textContent = `📊 ${activeStrategy.name}  |  T: +${activeStrategy.targetPct}%  SL: -${activeStrategy.slPct}%`;
+            document.getElementById('strat-btn').style.background = '#3b82f6';
+            updatePnlBar();
+            renderTrades();
+            closeStrategyModal();
+        }
+
+        function clearTrades() {
+            trades = {}; closedTrades = [];
+            updatePnlBar();
+            renderTrades();
+        }
+
+        // ── Trade Engine ──
+        function openTrade(signal) {
+            if (!activeStrategy) return;
+            if (trades[signal.symbol]) return; // already open
+            const isBull = getSignalClass(signal.type) === 'BULLISH';
+            const entry = parseFloat(signal.ltp);
+            if (!entry || entry <= 0) return;
+            const mult = isBull ? 1 : -1;
+            const target = entry * (1 + mult * activeStrategy.targetPct / 100);
+            const sl     = entry * (1 - mult * activeStrategy.slPct / 100);
+            trades[signal.symbol] = {
+                symbol: signal.symbol,
+                direction: isBull ? 'bull' : 'bear',
+                entry,
+                target,
+                sl,
+                currentSl: sl,
+                high: entry, // price high watermark for bull
+                low: entry,  // price low watermark for bear
+                stepAccum: 0, // accumulated price movement for step trail
+                status: 'open',
+                pnl: 0,
+                entryTime: signal.timestamp
+            };
+        }
+
+        function updateTrailingStop(trade, ltp) {
+            const s = activeStrategy;
+            const isBull = trade.direction === 'bull';
+
+            if (isBull) {
+                if (ltp > trade.high) trade.high = ltp;
+                const move = trade.high - trade.entry;
+
+                if (s.trailType === 'step') {
+                    // Every trailStep ₹ gained, shift SL up by trailShift ₹
+                    const steps = Math.floor(move / s.trailStep);
+                    const newSl = trade.entry - (trade.entry * s.slPct / 100) + steps * s.trailShift;
+                    if (newSl > trade.currentSl) trade.currentSl = newSl;
+
+                } else if (s.trailType === 'breakeven') {
+                    // When price hits 50% of target distance, SL = entry
+                    const halfTarget = (trade.target - trade.entry) * 0.5;
+                    if (move >= halfTarget && trade.currentSl < trade.entry) {
+                        trade.currentSl = trade.entry;
+                    }
+
+                } else if (s.trailType === 'parabolic') {
+                    // Parabolic: trail accelerates — lock more % as price moves
+                    const pct = move / trade.entry;
+                    const lockPct = Math.min(pct * 0.6, s.slPct / 100); // lock up to 60% of move
+                    const newSl = trade.entry + (move - move * lockPct);
+                    if (newSl > trade.currentSl && newSl < ltp) trade.currentSl = Math.max(trade.currentSl, newSl);
+
+                } else if (s.trailType === 'percent') {
+                    // Always stay 0.8% below the highest price
+                    const newSl = trade.high * (1 - 0.8 / 100);
+                    if (newSl > trade.currentSl) trade.currentSl = newSl;
+                }
+
+                // Check exits
+                if (ltp >= trade.target) { trade.status = 'target'; trade.pnl = trade.target - trade.entry; }
+                else if (ltp <= trade.currentSl) { trade.status = 'sl'; trade.pnl = trade.currentSl - trade.entry; }
+
+            } else {
+                // BEAR trade — direction reversed
+                if (ltp < trade.low) trade.low = ltp;
+                const move = trade.entry - trade.low;
+
+                if (s.trailType === 'step') {
+                    const steps = Math.floor(move / s.trailStep);
+                    const newSl = trade.entry + (trade.entry * s.slPct / 100) - steps * s.trailShift;
+                    if (newSl < trade.currentSl) trade.currentSl = newSl;
+
+                } else if (s.trailType === 'breakeven') {
+                    const halfTarget = (trade.entry - trade.target) * 0.5;
+                    if (move >= halfTarget && trade.currentSl > trade.entry) trade.currentSl = trade.entry;
+
+                } else if (s.trailType === 'parabolic') {
+                    const pct = move / trade.entry;
+                    const lockPct = Math.min(pct * 0.6, s.slPct / 100);
+                    const newSl = trade.entry - (move - move * lockPct);
+                    if (newSl < trade.currentSl && newSl > ltp) trade.currentSl = Math.min(trade.currentSl, newSl);
+
+                } else if (s.trailType === 'percent') {
+                    const newSl = trade.low * (1 + 0.8 / 100);
+                    if (newSl < trade.currentSl) trade.currentSl = newSl;
+                }
+
+                if (ltp <= trade.target) { trade.status = 'target'; trade.pnl = trade.entry - trade.target; }
+                else if (ltp >= trade.currentSl) { trade.status = 'sl'; trade.pnl = trade.currentSl - trade.entry; }
+            }
+        }
+
+        function processPnlTick(signals) {
+            if (!activeStrategy) return;
+
+            signals.forEach(sig => {
+                const ltp = parseFloat(sig.ltp);
+                if (!ltp || ltp <= 0) return;
+
+                // Open new trade if signal and no existing trade for symbol
+                if (!trades[sig.symbol] && !closedTrades.find(t => t.symbol === sig.symbol)) {
+                    openTrade(sig);
+                }
+
+                const trade = trades[sig.symbol];
+                if (!trade || trade.status !== 'open') return;
+
+                updateTrailingStop(trade, ltp);
+                trade.pnl = trade.direction === 'bull'
+                    ? ltp - trade.entry
+                    : trade.entry - ltp;
+
+                // Move closed trades out
+                if (trade.status !== 'open') {
+                    closedTrades.push({ ...trade });
+                    delete trades[sig.symbol];
+                }
+            });
+
+            updatePnlBar();
+            renderTrades();
+        }
+
+        function updatePnlBar() {
+            const all = [...Object.values(trades), ...closedTrades];
+            const closed = closedTrades;
+            const wins = closed.filter(t => t.status === 'target').length;
+            const totalPnl = [...Object.values(trades).map(t => t.pnl), ...closed.map(t => t.pnl)]
+                .reduce((a, b) => a + b, 0);
+
+            const pnlEl = document.getElementById('pnl-total');
+            pnlEl.textContent = (totalPnl >= 0 ? '+' : '') + '₹' + totalPnl.toFixed(2);
+            pnlEl.style.color = totalPnl > 0 ? '#10b981' : totalPnl < 0 ? '#ef4444' : '#94a3b8';
+
+            document.getElementById('pnl-count').textContent = all.length;
+            document.getElementById('pnl-open').textContent = Object.keys(trades).length;
+            const winPct = closed.length > 0 ? Math.round((wins / closed.length) * 100) : 0;
+            const winEl = document.getElementById('pnl-winpct');
+            winEl.textContent = winPct + '%';
+            winEl.style.color = winPct >= 50 ? '#10b981' : '#ef4444';
+        }
+
+        function renderTrades() {
+            const list = document.getElementById('trades-list');
+            list.innerHTML = '';
+            const allTrades = [
+                ...Object.values(trades),
+                ...closedTrades.slice().reverse()
+            ];
+            if (allTrades.length === 0) {
+                list.innerHTML = '<div style="color:#64748b;font-size:12px;padding:8px 4px;font-style:italic;">Waiting for signals to open virtual trades...</div>';
+                return;
+            }
+            allTrades.slice(0, 15).forEach(t => {
+                const row = document.createElement('div');
+                const pnlClass = t.pnl >= 0 ? 'pos' : 'neg';
+                const pnlSign = t.pnl >= 0 ? '+' : '';
+                let statusClass = 'open', statusText = 'OPEN';
+                if (t.status === 'target') { statusClass = 'target'; statusText = '✅ TARGET'; }
+                if (t.status === 'sl')     { statusClass = 'sl';     statusText = '❌ SL HIT'; }
+                const trailIcon = t.status === 'open' && (t.currentSl !== (t.direction === 'bull'
+                    ? t.entry * (1 - activeStrategy.slPct / 100)
+                    : t.entry * (1 + activeStrategy.slPct / 100))) ? ' 🔄' : '';
+                row.className = `trade-row ${t.direction} ${t.status !== 'open' ? t.status === 'target' ? 'win' : 'loss' : ''}`;
+                row.innerHTML = `
+                    <div class="trade-sym">${t.symbol}</div>
+                    <div class="trade-entry">E: ₹${t.entry.toFixed(2)}</div>
+                    <div class="trade-sl">SL: ₹${t.currentSl.toFixed(2)}${trailIcon}</div>
+                    <div class="trade-tgt">T: ₹${t.target.toFixed(2)}</div>
+                    <div class="trade-pnl ${pnlClass}">${pnlSign}₹${t.pnl.toFixed(2)}</div>
+                    <span class="trade-status ${statusClass}">${statusText}</span>
+                `;
+                list.appendChild(row);
+            });
+        }
+
+        // Close modal on overlay click
+        document.getElementById('strat-modal').addEventListener('click', function(e) {
+            if (e.target === this) closeStrategyModal();
+        });
 
         setInterval(fetchData, 120000);
         fetchData();

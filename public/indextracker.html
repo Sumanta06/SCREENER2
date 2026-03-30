@@ -220,6 +220,7 @@ main{max-width:1200px;margin:0 auto;padding:24px 20px 48px}
         <option value="300">5 min</option>
       </select>
       <button class="icon-btn" id="theme-btn">🌙</button>
+      <button class="refresh-btn" id="worker-trigger-btn" onclick="triggerWorker()">⚡ Fetch</button>
       <button class="refresh-btn" id="refresh-btn"><span id="r-ico">↻</span> Refresh</button>
     </div>
   </div>
@@ -680,6 +681,26 @@ document.getElementById('refresh-btn').addEventListener('click',fetchAll);
 updateMarketBadge();
 setRefreshTimer();
 fetchAll();
+
+// ── Worker Manual Trigger ──
+async function triggerWorker() {
+  const btn = document.getElementById('worker-trigger-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Fetching...';
+  try {
+    const res = await fetch('https://vix-worker.sumantasahoo.workers.dev/trigger');
+    const json = await res.json();
+    if (json.success) {
+      btn.textContent = '✅ Done!';
+      setTimeout(() => fetchAll(), 1500);
+    } else {
+      btn.textContent = '❌ Error';
+    }
+  } catch(e) {
+    btn.textContent = '❌ Failed';
+  }
+  setTimeout(() => { btn.disabled = false; btn.textContent = '⚡ Fetch'; }, 3000);
+}
 </script>
 </body>
 </html>

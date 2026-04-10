@@ -2984,6 +2984,20 @@ async function compareAndSignal(){
   } catch(e){ setBadge('err','Error'); alert('Compare failed: '+e.message); }
   btn.classList.remove('loading'); btn.innerHTML='🔄 <span>Compare</span>';
 }
+function toggleAdLbHist(sym){
+  const el = document.getElementById('lbhist_'+sym);
+  const wasClosed = el ? el.style.display === 'none' : false;
+  
+  // Close all open AD history details
+  document.querySelectorAll('div[id^="lbhist_"]').forEach(node => {
+    node.style.display = 'none';
+  });
+  
+  // If clicked one was closed, open it now
+  if(el && wasClosed){
+    el.style.display = 'block';
+  }
+}
 
 </script>
 

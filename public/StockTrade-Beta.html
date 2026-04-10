@@ -146,7 +146,7 @@ html{scroll-behavior:smooth;-webkit-tap-highlight-color:transparent;}
 :root,[data-theme="dark"]{
   --bg:#0A0A0F;--bg2:#111118;--bg3:#18181F;--bg4:#21212B;
   --card:#111118;--border:#22222E;--border2:#2E2E3E;
-  --ink:#E8E8FF;--ink2:#8888AA;--ink3:#44445A;
+  --ink:#E8E8FF;--ink2:#B0B0C4;--ink3:#8888AA;
   --shadow:rgba(0,0,0,.8);
   --g:#00D68F;--g-text:#00F5A0;--g-dim:rgba(0,214,143,.07);--g-mid:rgba(0,214,143,.18);
   --r:#FF3860;--r-text:#FF6B87;--r-dim:rgba(255,56,96,.07);--r-mid:rgba(255,56,96,.18);
@@ -161,7 +161,7 @@ html{scroll-behavior:smooth;-webkit-tap-highlight-color:transparent;}
 [data-theme="light"]{
   --bg:#F0F0F8;--bg2:#FFFFFF;--bg3:#E8E8F2;--bg4:#DCDCEC;
   --card:#FFFFFF;--border:#D0D0E0;--border2:#BBBBD0;
-  --ink:#1A1A2E;--ink2:#4A4A6A;--ink3:#9090A8;--shadow:rgba(0,0,30,.1);
+  --ink:#1A1A2E;--ink2:#2A2A4A;--ink3:#5A5A7A;--shadow:rgba(0,0,30,.1);
   --g:#00A36B;--g-text:#007A50;--g-dim:rgba(0,163,107,.07);--g-mid:rgba(0,163,107,.18);
   --r:#D42050;--r-text:#AA1040;--r-dim:rgba(212,32,80,.07);--r-mid:rgba(212,32,80,.18);
   --teal:#007ACC;--teal-text:#005FA8;--teal-dim:rgba(0,122,204,.07);--teal-mid:rgba(0,122,204,.18);
@@ -186,7 +186,7 @@ html{scroll-behavior:smooth;-webkit-tap-highlight-color:transparent;}
 }
 
 /* ─── BASE ─── */
-body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:14px;min-height:100vh;overflow-x:hidden;}
+body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:15px;min-height:100vh;overflow-x:hidden;}
 .mono{font-family:'JetBrains Mono',monospace;}
 .fw7{font-weight:700;}
 .clr-g{color:var(--g-text);}
@@ -245,8 +245,8 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
   font-size:.6rem;font-weight:600;color:var(--ink3);
   white-space:nowrap;
 }
-.spill .skey{color:var(--ink3);font-size:.52rem;text-transform:uppercase;letter-spacing:.08em;}
-.spill .sval{color:var(--ink2);font-family:'JetBrains Mono',monospace;font-size:.62rem;}
+.spill .skey{color:var(--ink2);font-size:.56rem;text-transform:uppercase;letter-spacing:.08em;}
+.spill .sval{color:var(--ink);font-family:'JetBrains Mono',monospace;font-size:.66rem;font-weight:700;}
 .spill.on .sval{color:var(--accent);}
 
 /* Badge */
@@ -265,9 +265,9 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 .btn{
   display:inline-flex;align-items:center;gap:4px;
   height:30px;padding:0 11px;border-radius:5px;
-  font-family:'Inter',sans-serif;font-size:.68rem;font-weight:700;
+  font-family:'Inter',sans-serif;font-size:.7rem;font-weight:700;
   cursor:pointer;border:1px solid var(--border2);
-  background:var(--bg3);color:var(--ink3);
+  background:var(--bg3);color:var(--ink);
   transition:all .12s;white-space:nowrap;letter-spacing:.02em;
 }
 .btn:hover{background:var(--bg4);color:var(--ink);border-color:var(--accent);}
@@ -290,16 +290,16 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
   border-top:1px solid var(--border);
   flex-wrap:wrap;
 }
-.clabel{font-size:.55rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--ink3);white-space:nowrap;}
+.clabel{font-size:.58rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--ink);white-space:nowrap;}
 .cselect{
   height:28px;padding:0 9px;border-radius:5px;
   border:1px solid var(--border2);background:var(--bg2);
-  color:var(--ink2);font-family:'Inter',sans-serif;font-size:.68rem;
+  color:var(--ink);font-family:'Inter',sans-serif;font-size:.72rem;font-weight:600;
   cursor:pointer;outline:none;min-width:140px;
 }
 .cselect:focus{border-color:var(--accent);}
 .tslider{width:80px;accent-color:var(--accent);cursor:pointer;}
-.thresh-val{font-family:'JetBrains Mono',monospace;font-size:.62rem;color:var(--accent);min-width:34px;}
+.thresh-val{font-family:'JetBrains Mono',monospace;font-size:.68rem;font-weight:700;color:var(--ink);min-width:34px;}
 
 /* ══════════════════════════════════
    MAIN
@@ -813,6 +813,10 @@ main{padding:12px 12px 32px;max-width:1400px;margin:0 auto;}
         <svg viewBox="0 0 16 16" fill="none" width="13" height="13"><path d="M2 12 L5 8 L8 10 L11 5 L14 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="14" cy="7" r="1.5" fill="currentColor"/></svg>
         Signal
       </button>
+      <button class="btn" style="background:var(--border2);color:var(--ink);" onclick="viewBaseData()">
+        <svg viewBox="0 0 16 16" fill="none" width="13" height="13"><circle cx="7" cy="7" r="4" stroke="currentColor" stroke-width="1.6"/><path d="M10 10 L14 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        View Data
+      </button>
       <button class="btn primary" id="cmp-btn" onclick="compareAndSignal()">
         <svg viewBox="0 0 16 16" fill="none" width="13" height="13"><path d="M13 3L10 3M13 3L13 6M13 3L9.5 6.5A5 5 0 1 0 11 11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Compare
@@ -982,6 +986,23 @@ main{padding:12px 12px 32px;max-width:1400px;margin:0 auto;}
 
   </div><!-- /dash -->
 </main>
+
+<!-- BASE DATA MODAL -->
+<div class="modal" id="base-modal">
+  <div class="modal-content">
+    <div class="modal-hdr">
+      <div class="modal-left">
+        <div class="modal-title">Raw Baseline Data</div>
+        <div class="modal-sub" id="base-subtitle">Loading...</div>
+      </div>
+      <div>
+        <button class="mtab" onclick="exportBaseCSV()">📥 Export CSV</button>
+        <button class="modal-close" onclick="closeBaseModal()">✕</button>
+      </div>
+    </div>
+    <div class="modal-body" id="base-body"></div>
+  </div>
+</div>
 
 <script>
 'use strict';
@@ -1371,6 +1392,73 @@ async function compareAndSignal(){
     }
   }catch(e){setBadge('err','Error');alert('Compare failed: '+e.message);}
   btn.classList.remove('loading');btn.innerHTML='🔄 Compare';
+}
+
+/* RAW BASELINE VIEW */
+async function viewBaseData() {
+  const baseKey = document.getElementById('base-select').value;
+  if (!baseKey) { alert('Please select a baseline first.'); return; }
+  
+  document.getElementById('base-modal').classList.add('open');
+  const body = document.getElementById('base-body');
+  const sub = document.getElementById('base-subtitle');
+  body.innerHTML = '<div class="modal-loading"><div class="mload-spin"></div> Loading baseline data...</div>';
+  sub.textContent = 'Fetching raw data...';
+  
+  try {
+    const res = await fetch(`${WORKER}?mode=viewbase&key=${encodeURIComponent(baseKey)}`);
+    const j = await res.json();
+    if (!j.ok) throw new Error(j.error || 'Failed to fetch base');
+    
+    window._currentBaseData = j.data;
+    window._currentBaseTime = j.timeStr;
+    
+    sub.textContent = `${j.data.length} symbols · Saved at ${j.timeStr}`;
+    
+    const sorted = j.data.sort((a,b) => b.oiRecent - a.oiRecent);
+    
+    const rows = sorted.map(r => `
+      <tr>
+        <td class="fw7">\${r.symbol}</td>
+        <td class="mono tar" style="color:var(--ink2);">\${fmtN(r.volume)}</td>
+        <td class="mono tar">\${fmtN(r.oiRecent)}</td>
+        <td class="mono tar" style="color:var(--g-text);">\${r.chngOIPct?fmtP(r.chngOIPct):'—'}</td>
+        <td class="mono tar">₹\${r.underlying.toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+      </tr>
+    `).join('');
+    
+    body.innerHTML = `
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Symbol</th>
+              <th class="tar">Volume</th>
+              <th class="tar">OI (Open Interest)</th>
+              <th class="tar">OI Δ%</th>
+              <th class="tar">Price ₹</th>
+            </tr>
+          </thead>
+          <tbody>\${rows}</tbody>
+        </table>
+      </div>
+    `;
+  } catch (e) {
+    body.innerHTML = `<div class="modal-empty">⚠️ Failed to load raw data: \${e.message}</div>`;
+    sub.textContent = 'Error';
+  }
+}
+
+function closeBaseModal() {
+  document.getElementById('base-modal').classList.remove('open');
+}
+
+function exportBaseCSV() {
+  const data = window._currentBaseData;
+  if (!data || !data.length) { alert('No data to export.'); return; }
+  const rows = [['Symbol', 'Price', 'OI', 'OI Change %', 'Volume']];
+  data.forEach(r => rows.push([r.symbol, r.underlying, r.oiRecent, r.chngOIPct, r.volume]));
+  downloadCsv('Baseline_' + (window._currentBaseTime ? window._currentBaseTime.replace(/:/g, '') + '_' : '') + 'RawData.csv', rows);
 }
 </script>
 </body>

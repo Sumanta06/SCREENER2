@@ -250,6 +250,7 @@ function renderAD(results, body, sub){
   const symLastTime= {};
   const symLastMs  = {};
   const symHistory = {};
+  const symPrice   = {};
   
   const lbAccMap = {}, lbDistMap = {};
 
@@ -284,12 +285,14 @@ function renderAD(results, body, sub){
       const sym = s.symbol;
       symCount[sym] = (symCount[sym]||0)+1;
       symType[sym]  = 'acc';
+      const bp = parseFloat(s.priceNow)||parseFloat(s.priceBase)||0;
+      if(bp > 0) symPrice[sym] = bp;
       if(ms >= (symLastMs[sym]||0)){
         symLastMs[sym]   = ms;
         symLastTime[sym] = r.timeStr;
       }
       if(!symHistory[sym]) symHistory[sym] = [];
-      symHistory[sym].push({ timeStr: r.timeStr, ms, type: 'acc', pricePct: s.pricePct||'0', oiPct: s.oiPct||'0' });
+      symHistory[sym].push({ timeStr: r.timeStr, ms, type: 'acc', pricePct: s.pricePct||'0', oiPct: s.oiPct||'0', priceNow: bp });
       lbAccMap[sym] = (lbAccMap[sym]||0)+1;
     });
     
@@ -297,12 +300,14 @@ function renderAD(results, body, sub){
       const sym = s.symbol;
       symCount[sym] = (symCount[sym]||0)+1;
       symType[sym]  = 'dist';
+      const bp = parseFloat(s.priceNow)||parseFloat(s.priceBase)||0;
+      if(bp > 0) symPrice[sym] = bp;
       if(ms >= (symLastMs[sym]||0)){
         symLastMs[sym]   = ms;
         symLastTime[sym] = r.timeStr;
       }
       if(!symHistory[sym]) symHistory[sym] = [];
-      symHistory[sym].push({ timeStr: r.timeStr, ms, type: 'dist', pricePct: s.pricePct||'0', oiPct: s.oiPct||'0' });
+      symHistory[sym].push({ timeStr: r.timeStr, ms, type: 'dist', pricePct: s.pricePct||'0', oiPct: s.oiPct||'0', priceNow: bp });
       lbDistMap[sym] = (lbDistMap[sym]||0)+1;
     });
 
@@ -346,6 +351,9 @@ function renderAD(results, body, sub){
     const freshBg = isFresh ? 'background:var(--fresh-bg); border:1px solid var(--fresh-border); border-radius:8px; margin:2px 0; box-shadow:inset 0 0 10px rgba(255,165,0,0.05);' : '';
     const freshSymStyle = isFresh ? 'color:var(--fresh-col); font-weight:850; font-size:.82rem; text-shadow:0 0 10px rgba(255,165,0,0.15); display:flex; align-items:center; gap:6px;' : '';
     const freshPulse = isFresh ? '<div class="pulse-dot"></div>' : '';
+
+    const ltpVal = symPrice[sym] || 0;
+    const ltpStr = ltpVal > 0 ? `₹${ltpVal.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}` : '';
 
     const hist = symHistory[sym] || [];
     let isStreak = false, sIcon = '', sCol = '';
@@ -397,6 +405,7 @@ function renderAD(results, body, sub){
           <span class="mobile-only">${streakHtml}</span>
         </span>`:''}
         <div style="flex:1;"></div>
+        ${ltpStr ? `<span class="sym-ltp" style="margin-right:8px;">${ltpStr}</span>` : ''}
         <span style="display:inline-flex;align-items:center;gap:3px;font-size:.65rem;font-weight:700;
           padding:2px 8px;border-radius:4px;white-space:nowrap;
           color:${col};background:${bg};border:1px solid ${bdr};">
@@ -423,12 +432,14 @@ function renderAD(results, body, sub){
       const oCls = oPct>=0 ? 'var(--g-text)' : 'var(--r-text)';
       const pSgn = pPct>=0 ? '+' : '';
       const oSgn = oPct>=0 ? '+' : '';
+      const hLtp=h.priceNow||0, hLtpStr=hLtp>0?`₹${hLtp.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}`:'';
       
-      return `<div style="display:flex;justify-content:flex-start;gap:20px;padding:6px 0;border-bottom:1px solid var(--border);font-size:.65rem;">
+      return `<div style="display:flex;justify-content:flex-start;gap:20px;padding:6px 0;border-bottom:1px solid var(--border);font-size:.65rem;align-items:center;">
         <span style="color:var(--ink3);font-family:'JetBrains Mono',monospace;width:60px;">🕐 ${h.timeStr}</span>
         <span style="color:${hCol};font-weight:700;width:110px;">${hLbl}</span>
         <span style="color:${pCls};font-family:'JetBrains Mono',monospace;">Price ${pSgn}${pPct.toFixed(2)}%</span>
         <span style="color:${oCls};font-family:'JetBrains Mono',monospace;">OI ${oSgn}${oPct.toFixed(2)}%</span>
+        ${hLtpStr?`<span class="sym-ltp" style="margin-left:auto;font-size:0.75rem;padding:2px 6px;">${hLtpStr}</span>`:''}
       </div>`;
     }).join('');
     
@@ -455,10 +466,12 @@ function renderAD(results, body, sub){
         const hIsAcc = h.type === 'acc';
         const hCol   = hIsAcc ? 'var(--teal-text)' : 'var(--orange-text)';
         const hLbl   = hIsAcc ? '◆ Acc' : '◆ Dist';
-        return `<div style="display:flex;justify-content:flex-start;gap:15px;padding:6px 0;border-bottom:1px solid var(--border);font-size:.62rem;">
+        const hLtp=h.priceNow||0, hLtpStr=hLtp>0?`₹${hLtp.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}`:'';
+        return `<div style="display:flex;justify-content:flex-start;gap:15px;padding:6px 0;border-bottom:1px solid var(--border);font-size:.62rem;align-items:center;">
           <span style="color:var(--ink);font-family:'JetBrains Mono',monospace;width:55px;">🕐 ${h.timeStr}</span>
           <span style="color:${hCol};font-weight:700;width:60px;">${hLbl}</span>
           <span style="color:var(--ink2);margin-left:auto;">OI ${h.oiPct}%</span>
+          ${hLtpStr?`<span class="sym-ltp" style="font-size:0.75rem;padding:2px 6px;margin-left:8px;">${hLtpStr}</span>`:''}
         </div>`;
       }).join('');
 
@@ -1580,6 +1593,11 @@ input[type=range].tslider::-webkit-slider-thumb{-webkit-appearance:none;
     70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(255, 68, 0, 0); }
     100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 68, 0, 0); }
   }
+  .sym-ltp {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; font-weight: 800;
+    color: #ffffff; background: rgba(255, 255, 255, 0.08); padding: 3px 8px; border-radius: 6px; 
+    border: 1px solid rgba(255, 255, 255, 0.2); backdrop-filter: blur(4px); letter-spacing: 0.5px;
+  }
 </style>
 </head>
 <body>
@@ -2289,6 +2307,7 @@ function renderDayView(results){
   const symLastMs  = {};
   const symHistory = {};
   const symStreakInfo = {};
+  const symPrice   = {};
   
   const lbBullMap = {}, lbBearMap = {};
   const bullTypes = new Set(['long','cover','acc']);
@@ -2296,6 +2315,16 @@ function renderDayView(results){
 
   for(const r of results){
     const ms = r.savedAt ? new Date(r.savedAt).getTime() : 0;
+    
+    const scanPriceMap = {};
+    for(const comp of(r.comparisons||[])){
+      for(const sig of(comp.signals||[])){
+        const parts = sig.split(':');
+        const sPrice = parseFloat(parts[4]);
+        if(sPrice > 0) { symPrice[parts[0]] = sPrice; scanPriceMap[parts[0]] = sPrice; }
+      }
+    }
+
     for(const s of (r.strong||[])){
       const parts    = s.split(':');
       const sym      = parts[0];
@@ -2316,7 +2345,7 @@ function renderDayView(results){
       if(bearTypes.has(type)) lbBearMap[sym] = (lbBearMap[sym]||0)+1;
 
       if(!symHistory[sym]) symHistory[sym] = [];
-      symHistory[sym].push({ timeStr: r.timeStr, ms, type, volPct });
+      symHistory[sym].push({ timeStr: r.timeStr, ms, type, volPct, priceNow: scanPriceMap[sym]||0 });
     }
   }
 
@@ -2471,6 +2500,9 @@ function renderDayView(results){
     const freshSymStyle = isFresh ? 'color:var(--fresh-col); font-weight:850; font-size:.82rem; text-shadow:0 0 10px rgba(255,165,0,0.15); display:flex; align-items:center; gap:6px;' : '';
     const freshPulse = isFresh ? '<div class="pulse-dot"></div>' : '';
 
+    const ltpVal = symPrice[sym] || 0;
+    const ltpStr = ltpVal > 0 ? `₹${ltpVal.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}` : '';
+
     const hist = symHistory[sym] || [];
     let isStreak = false, sIcon = '', sCol = '';
     
@@ -2528,6 +2560,7 @@ function renderDayView(results){
           <span class="mobile-only">${streakHtml}</span>
         </span>`:''}
         <div style="flex:1;"></div>
+        ${ltpStr ? `<span class="sym-ltp" style="margin-right:8px;">${ltpStr}</span>` : ''}
         <span style="display:inline-flex;align-items:center;gap:3px;font-size:.65rem;font-weight:700;
           padding:2px 8px;border-radius:4px;white-space:nowrap;
           color:${tcfg.col};background:${tcfg.bg};border:1px solid ${tcfg.border};">
@@ -2549,12 +2582,15 @@ function renderDayView(results){
       const vpNum = parseFloat(h.volPct) || 0;
       const vSign = vpNum > 0 ? '+' : '';
       const vCol  = vpNum > 0 ? 'var(--g-text)' : 'var(--ink3)';
-      const volHtml = vpNum !== 0 ? `<span style="color:${vCol};font-weight:600;margin-left:auto;">${vSign}${h.volPct}% Vol</span>` : '';
+      const volHtml = vpNum !== 0 ? `<span style="color:${vCol};font-weight:600;">${vSign}${h.volPct}% Vol</span>` : '';
+      const hLtp=h.priceNow||0, hLtpStr=hLtp>0?`₹${hLtp.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}`:'';
       
-      return `<div style="display:flex;justify-content:flex-start;gap:30px;padding:6px 0;border-bottom:1px solid var(--border);font-size:.65rem;">
+      return `<div style="display:flex;justify-content:flex-start;gap:15px;padding:6px 0;border-bottom:1px solid var(--border);font-size:.65rem;align-items:center;">
         <span style="color:var(--ink3);font-family:'JetBrains Mono',monospace;width:60px;">🕐 ${h.timeStr}</span>
-        <span style="color:${htcfg.col};font-weight:700;width:120px;">${htcfg.icon} ${htcfg.label}</span>
+        <span style="color:${htcfg.col};font-weight:700;width:110px;">${htcfg.icon} ${htcfg.label}</span>
+        <div style="flex:1;"></div>
         ${volHtml}
+        ${hLtpStr?`<span class="sym-ltp" style="font-size:0.75rem;padding:2px 6px;margin-left:8px;">${hLtpStr}</span>`:''}
       </div>`;
     }).join('');
     

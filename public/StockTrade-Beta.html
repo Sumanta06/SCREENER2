@@ -1419,11 +1419,11 @@ async function viewBaseData() {
     
     const rows = sorted.map(r => `
       <tr>
-        <td class="fw7">\${r.symbol}</td>
-        <td class="mono tar" style="color:var(--ink2);">\${fmtN(r.volume)}</td>
-        <td class="mono tar">\${fmtN(r.oiRecent)}</td>
-        <td class="mono tar" style="color:var(--g-text);">\${r.chngOIPct?fmtP(r.chngOIPct):'—'}</td>
-        <td class="mono tar">₹\${r.underlying.toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+        <td class="fw7">${r.symbol}</td>
+        <td class="mono tar" style="color:var(--ink2);">${fmtN(r.volume)}</td>
+        <td class="mono tar">${fmtN(r.oiRecent)}</td>
+        <td class="mono tar" style="color:var(--g-text);">${r.chngOIPct?fmtP(r.chngOIPct):'—'}</td>
+        <td class="mono tar">₹${r.underlying.toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
       </tr>
     `).join('');
     
@@ -1439,12 +1439,12 @@ async function viewBaseData() {
               <th class="tar">Price ₹</th>
             </tr>
           </thead>
-          <tbody>\${rows}</tbody>
+          <tbody>${rows}</tbody>
         </table>
       </div>
     `;
   } catch (e) {
-    body.innerHTML = `<div class="modal-empty">⚠️ Failed to load raw data: \${e.message}</div>`;
+    body.innerHTML = `<div class="modal-empty">⚠️ Failed to load raw data: ${e.message}</div>`;
     sub.textContent = 'Error';
   }
 }
@@ -1460,6 +1460,7 @@ function exportBaseCSV() {
   data.forEach(r => rows.push([r.symbol, r.underlying, r.oiRecent, r.chngOIPct, r.volume]));
   downloadCsv('Baseline_' + (window._currentBaseTime ? window._currentBaseTime.replace(/:/g, '') + '_' : '') + 'RawData.csv', rows);
 }
+
 </script>
 </body>
 </html>

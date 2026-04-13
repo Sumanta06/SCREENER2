@@ -7,7 +7,7 @@ const WORKER = 'https://spurts-ul.susanta41012.workers.dev/';
 (function(){
   try{
     const c=document.createElement('canvas');c.width=c.height=64;
-    const x=c.getContext('2d');x.fillStyle='#000';x.beginPath();
+    const x=c.getContext('2d');x.fillStyle='#7B61FF';x.beginPath();
     if(typeof x.roundRect==='function'){x.roundRect(0,0,64,64,12);}
     else{const r=12,w=64,h=64;x.moveTo(r,0);x.lineTo(w-r,0);x.quadraticCurveTo(w,0,w,r);x.lineTo(w,h-r);x.quadraticCurveTo(w,h,w-r,h);x.lineTo(r,h);x.quadraticCurveTo(0,h,0,h-r);x.lineTo(0,r);x.quadraticCurveTo(0,0,r,0);x.closePath();}
     x.fill();x.font='bold 30px Arial';x.textAlign='center';x.textBaseline='middle';

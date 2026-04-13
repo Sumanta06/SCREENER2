@@ -146,7 +146,7 @@ html{scroll-behavior:smooth;-webkit-tap-highlight-color:transparent;}
 :root,[data-theme="dark"]{
   --bg:#0A0A0F;--bg2:#111118;--bg3:#18181F;--bg4:#21212B;
   --card:#111118;--border:#22222E;--border2:#2E2E3E;
-  --ink:#E8E8FF;--ink2:#B0B0C4;--ink3:#8888AA;
+  --ink:#FFFFFF;--ink2:#E0E0E0;--ink3:#A0A0A0;
   --shadow:rgba(0,0,0,.8);
   --g:#00D68F;--g-text:#00F5A0;--g-dim:rgba(0,214,143,.07);--g-mid:rgba(0,214,143,.18);
   --r:#FF3860;--r-text:#FF6B87;--r-dim:rgba(255,56,96,.07);--r-mid:rgba(255,56,96,.18);
@@ -161,7 +161,7 @@ html{scroll-behavior:smooth;-webkit-tap-highlight-color:transparent;}
 [data-theme="light"]{
   --bg:#F0F0F8;--bg2:#FFFFFF;--bg3:#E8E8F2;--bg4:#DCDCEC;
   --card:#FFFFFF;--border:#D0D0E0;--border2:#BBBBD0;
-  --ink:#1A1A2E;--ink2:#2A2A4A;--ink3:#5A5A7A;--shadow:rgba(0,0,30,.1);
+  --ink:#000000;--ink2:#333333;--ink3:#666666;--shadow:rgba(0,0,30,.1);
   --g:#00A36B;--g-text:#007A50;--g-dim:rgba(0,163,107,.07);--g-mid:rgba(0,163,107,.18);
   --r:#D42050;--r-text:#AA1040;--r-dim:rgba(212,32,80,.07);--r-mid:rgba(212,32,80,.18);
   --teal:#007ACC;--teal-text:#005FA8;--teal-dim:rgba(0,122,204,.07);--teal-mid:rgba(0,122,204,.18);
@@ -174,7 +174,7 @@ html{scroll-behavior:smooth;-webkit-tap-highlight-color:transparent;}
 [data-theme="teal"]{
   --bg:#00080E;--bg2:#001018;--bg3:#001820;--bg4:#00202A;
   --card:#001018;--border:#003040;--border2:#004050;
-  --ink:#C0F0FF;--ink2:#3A7A90;--ink3:#1A4050;--shadow:rgba(0,0,0,.85);
+  --ink:#FFFFFF;--ink2:#E0E0E0;--ink3:#A0A0A0;--shadow:rgba(0,0,0,.85);
   --g:#00E5A0;--g-text:#40FFB8;--g-dim:rgba(0,229,160,.07);--g-mid:rgba(0,229,160,.18);
   --r:#FF4060;--r-text:#FF7080;--r-dim:rgba(255,64,96,.07);--r-mid:rgba(255,64,96,.18);
   --teal:#00F0FF;--teal-text:#80F8FF;--teal-dim:rgba(0,240,255,.07);--teal-mid:rgba(0,240,255,.18);
@@ -714,6 +714,10 @@ main{padding:12px 12px 32px;max-width:1400px;margin:0 auto;}
   .ctrl-row2{gap:5px;}
   .ctrl-row2 .cmp2-wrap,.ctrl-row2 .thresh-wrap{display:none;}
   .fmodal-body{padding:10px 10px;}
+  .sym-row { flex-direction: column; align-items: stretch; gap: 8px; padding: 11px; }
+  .sym-left { width: 100%; }
+  .sym-right { width: 100%; flex-wrap: wrap; justify-content: flex-start; }
+  .sym-right > span:last-child { margin-left: auto; }
 }
 </style>
 </head>
@@ -1180,12 +1184,12 @@ function renderDayView(results){
     const scanPriceMap={};
     for(const comp of(r.comparisons||[])){for(const sig of(comp.signals||[])){const parts=sig.split(':');const sPrice=parseFloat(parts[4]);if(sPrice>0){scanPriceMap[parts[0]]=sPrice;symPrice[parts[0]]=sPrice;}}}
     for(const s of(r.strong||[])){
-      const[sym,type,strength,cnt,vp]=s.split(':');if(type==='acc'||type==='dist')continue;
+      const[sym,type,strength,cnt,vp,sInfo]=s.split(':');if(type==='acc'||type==='dist')continue;
       symCount[sym]=(symCount[sym]||0)+1;symStrength[sym]=strength;symType[sym]=type;symLastTime[sym]=r.timeStr;symLastMs[sym]=ms;
       if(bullTypes.has(type))lbBullMap[sym]=(lbBullMap[sym]||0)+1;
       if(bearTypes.has(type))lbBearMap[sym]=(lbBearMap[sym]||0)+1;
       if(!symHistory[sym])symHistory[sym]=[];
-      symHistory[sym].push({timeStr:r.timeStr,ms,type,volPct:vp,strength,priceNow:scanPriceMap[sym]||0});
+      symHistory[sym].push({timeStr:r.timeStr,ms,type,volPct:vp,strength,priceNow:scanPriceMap[sym]||0,streakInfo:sInfo||''});
     }
   }
 
@@ -1232,6 +1236,7 @@ function renderDayView(results){
       else if(sg==='B')gb=`<span style="font-size:.58rem;font-weight:900;background:#ffae00;color:#000;padding:1px 5px;border-radius:3px;margin-left:5px;">⭐ GRADE B</span>`;
       else if(sg==='A')gb=`<span style="font-size:.58rem;font-weight:900;background:#1e88e5;color:#fff;padding:1px 5px;border-radius:3px;margin-left:5px;">⚡ GRADE A</span>`;
       else if(sg==='CAUTION')gb=`<span style="font-size:.58rem;font-weight:900;background:#ffae00;color:#000;padding:1px 5px;border-radius:3px;margin-left:5px;">⚠️ CAUTION</span>`;
+      if(h.streakInfo==='CONT')gb+=`<span style="font-size:.58rem;font-weight:900;background:#9c27b0;color:#fff;padding:1px 5px;border-radius:3px;margin-left:5px;">🚀 CONT.</span>`;
       const hLtp=h.priceNow||0,hLtpStr=hLtp>0?`₹${hLtp.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}`:'';
       return`<div class="hist-row"><span class="hist-time">🕐 ${h.timeStr}</span><span style="color:${htcfg.col};font-weight:700;flex:1;">${htcfg.icon} ${htcfg.label}${vpStr}${gb}</span>${hLtpStr?`<span class="mono sym-ltp">${hLtpStr}</span>`:''}</div>`;
     }).join('');
@@ -1241,18 +1246,22 @@ function renderDayView(results){
     else if(sg==='B')mainGrade=`<span style="font-size:.6rem;font-weight:900;background:#ffae00;color:#000;padding:1px 5px;border-radius:4px;margin-left:5px;">⭐ GRADE B</span>`;
     else if(sg==='A')mainGrade=`<span style="font-size:.6rem;font-weight:900;background:#1e88e5;color:#fff;padding:1px 5px;border-radius:4px;margin-left:5px;">⚡ GRADE A</span>`;
     else if(sg==='CAUTION')mainGrade=`<span style="font-size:.6rem;font-weight:900;background:#ffae00;color:#000;padding:1px 5px;border-radius:4px;margin-left:5px;">⚠️ CAUTION</span>`;
+    const histAsc=symHistory[sym]||[];
+    const lastHist=histAsc[histAsc.length-1]||{};
+    let symContBadge='';
+    if(lastHist.streakInfo==='CONT')symContBadge=`<span style="font-size:.65rem;font-weight:900;background:#9c27b0;color:#fff;padding:1px 6px;border-radius:4px;margin-left:6px;transform:translateY(-1px);display:inline-block;">🚀 CONT.</span>`;
     return`<div class="dv-sym-wrap" data-sym="${sym.toLowerCase()}">
       <div class="sym-row ${isFresh?'fresh-row':''} ${isInactive?'':''}${isInactive?'':''}">
         <div class="sym-left" onclick="toggleLbHist('${sym}_dv')" style="cursor:pointer;flex:1;">
           ${isFresh?'<div class="pulse-dot"></div>':''}
-          <span class="sym-name ${ageMin<=11&&!isInactive?'sym-blink':''}" style="${isFresh?'color:var(--fresh-col);':''}">${sym}</span>
+          <span class="sym-name ${ageMin<=11&&!isInactive?'sym-blink':''}" style="${isFresh?'color:var(--fresh-col);':''}">${sym}</span>${symContBadge}
           ${lastTime?`<span class="sym-time">LAST SIGNAL — ${lastTime}</span>`:''}
           ${isInactive?'<span class="sym-time">(Inactive)</span>':''}
           ${ageMin<=11&&!isInactive?'<span class="grade-badge" style="background:var(--g-dim);color:var(--g-text);border:1px solid var(--g-mid);">NEW</span>':''}
         </div>
         <div class="sym-right">
           ${ltpStr?`<span class="sym-ltp">${ltpStr}</span>`:''}
-          <span class="sig-pill" style="color:${cfg.col};background:${cfg.bg};border-color:${cfg.border};">${cfg.icon} ${cfg.label}${mainGrade}</span>
+          <span class="sig-pill" style="color:${cfg.col};background:${cfg.bg};border-color:${cfg.border};">${cfg.icon} ${cfg.label}</span>${mainGrade}
           <span class="sym-cnt">${cnt}</span>
           <span style="font-size:.65rem;color:var(--ink3);">▼</span>
         </div>

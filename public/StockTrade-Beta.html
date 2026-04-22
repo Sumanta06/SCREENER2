@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
@@ -1193,14 +1194,18 @@ function renderDayView(results){
   for(const r of results){
     const ms=r.savedAt?new Date(r.savedAt).getTime():0;
     const scanPriceMap={};
-    for(const comp of(r.comparisons||[])){for(const sig of(comp.signals||[])){const parts=sig.split(':');const sPrice=parseFloat(parts[4]);if(sPrice>0){scanPriceMap[parts[0]]=sPrice;symPrice[parts[0]]=sPrice;}}}
+    for(const comp of(r.comparisons||[])){for(const sig of(comp.signals||[])){const parts=sig.split(':');const sPrice=parseFloat(parts[4]);if(sPrice>0){scanPriceMap[parts[0]]=sPrice;}}}
     for(const s of(r.strong||[])){
-      const[sym,type,strength,cnt,vp,sInfo]=s.split(':');if(type==='acc'||type==='dist')continue;
+      const[sym,type,strength,cnt,vp,sInfo,sPriceRaw]=s.split(':');if(type==='acc'||type==='dist')continue;
+      // priceNow: index[6] from strong string (new format), fallback to scanPriceMap from signals
+      const sPrice=parseFloat(sPriceRaw)||scanPriceMap[sym]||0;
+      // Only update symPrice if this scan is newer than last saved price scan
+      if(sPrice>0&&ms>=(symLastMs[sym]||0))symPrice[sym]=sPrice;
       symCount[sym]=(symCount[sym]||0)+1;symStrength[sym]=strength;symType[sym]=type;symLastTime[sym]=r.timeStr;symLastMs[sym]=ms;
       if(bullTypes.has(type))lbBullMap[sym]=(lbBullMap[sym]||0)+1;
       if(bearTypes.has(type))lbBearMap[sym]=(lbBearMap[sym]||0)+1;
       if(!symHistory[sym])symHistory[sym]=[];
-      symHistory[sym].push({timeStr:r.timeStr,ms,type,volPct:vp,strength,priceNow:scanPriceMap[sym]||0,streakInfo:sInfo||''});
+      symHistory[sym].push({timeStr:r.timeStr,ms,type,volPct:vp,strength,priceNow:sPrice,streakInfo:sInfo||''});
     }
   }
 

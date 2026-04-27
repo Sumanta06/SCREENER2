@@ -949,7 +949,7 @@ main{padding:12px 12px 32px;max-width:1400px;margin:0 auto;}
 'use strict';
 const TOP_N=10,TOP_HL=3,THEMES=['dark','light','ocean'],K={th:'spurt_ul_th7'};
 
-let PRICE_THRESH=0.20,OI_THRESH=3.0,_lastFresh=null,_lastBaseMap=null,_lastBaseTime=null,_lastScanTime=null,_activeSection=null;
+let PRICE_THRESH=0.20,OI_THRESH=0.75,_lastFresh=null,_lastBaseMap=null,_lastBaseTime=null,_lastScanTime=null,_activeSection=null;
 
 (function(){const t=localStorage.getItem(K.th)||'dark';document.documentElement.setAttribute('data-theme',t);})();
 function cycleTheme(){const cur=document.documentElement.getAttribute('data-theme')||'dark';const next=THEMES[(THEMES.indexOf(cur)+1)%THEMES.length];document.documentElement.setAttribute('data-theme',next);localStorage.setItem(K.th,next);}
@@ -1001,9 +1001,17 @@ function genSignals(cur,baseMap,baseTimeIso,scanTimeIso){
     if(!oiUp&&!oiDn)continue;
     const pp=b.underlying?((c.underlying-b.underlying)/b.underlying*100):0;
     const absPP=Math.abs(pp),pUp=pp>PRICE_THRESH,pDn=pp<-PRICE_THRESH;
-    const volDelta=c.volume-b.volume,volSpeed=volDelta/elapsed,avgSpeed=b.volume>0?(b.volume/(elapsed+1)):1,vSpike=volSpeed>avgSpeed*1.5;
+    
+    const d=new Date(scanMs+5.5*60*60*1000);
+    const minsSince915=Math.max((d.getUTCHours()*60+d.getUTCMinutes())-(9*60+15),1);
+    const volDelta=c.volume-b.volume;
+    const volSpeed=volDelta/elapsed;
+    const avgSpeed=b.volume>0?(b.volume/minsSince915):1;
+    const vSpike=volSpeed>avgSpeed*1.5;
+    
     const score=Math.abs(oiPct)*absPP*(vSpike?1.5:1.0);
-    const row={symbol:c.symbol,oiNow:c.oiRecent,oiBase:b.oiRecent,oiPct:oiPct.toFixed(2),priceNow:c.underlying,priceBase:b.underlying,pricePct:pp.toFixed(2),volSpeed:volSpeed>0?'+'+Math.round(volSpeed):Math.round(volSpeed),vSpike,score};
+    const row={symbol:c.symbol,oiNow:c.oiRecent,oiBase:b.oiRecent,oiPct:oiPct.toFixed(2),priceNow:c.underlying,priceBase:b.underlying,pricePct:pp.toFixed(2),volSpeed:Math.round(volSpeed),vSpike,score};
+    
     if(oiUp){if(absPP<PRICE_THRESH)neutral.push(row);else if(pUp&&vSpike)long.push(row);else if(pDn&&vSpike)short.push(row);else if(pUp)acc.push(row);else if(pDn)dist.push(row);else neutral.push(row);}
     else if(oiDn){if(pUp)cover.push(row);else if(pDn)unwind.push(row);else neutral.push(row);}
   }
@@ -1126,7 +1134,7 @@ function renderDayView(results){
     const scanPriceMap={};
     for(const comp of(r.comparisons||[])){for(const sig of(comp.signals||[])){const parts=sig.split(':');const sPrice=parseFloat(parts[4]);if(sPrice>0){scanPriceMap[parts[0]]=sPrice;}}}
     for(const s of(r.strong||[])){
-      const[sym,type,strength,cnt,vp,sInfo,sPriceRaw]=s.split(':');if(type==='acc'||type==='dist')continue;
+      const[sym,type,strength,cnt,vp,sInfo,sPriceRaw]=s.split(':');
       const sPrice=parseFloat(sPriceRaw)||scanPriceMap[sym]||0;
       if(sPrice>0&&ms>=(symLastMs[sym]||0))symPrice[sym]=sPrice;
       symCount[sym]=(symCount[sym]||0)+1;symStrength[sym]=strength;symType[sym]=type;symLastTime[sym]=r.timeStr;symLastMs[sym]=ms;

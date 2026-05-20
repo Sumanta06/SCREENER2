@@ -7,42 +7,52 @@
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
   :root {
-    --bg: #050a14; --bg2: #0a1220; --bg3: #0f1a2e;
-    --border: rgba(56,139,253,0.18); --border2: rgba(56,139,253,0.35);
-    --blue: #388bfd; --green: #3fb950; --red: #f85149;
-    --yellow: #d29922; --text: #e6edf3; --muted: #7d8590;
-    --glass: rgba(10,18,32,0.7);
+    --bg: #f8fafc;
+    --bg2: #ffffff;
+    --bg3: #f1f5f9;
+    --border: #e2e8f0;
+    --border2: #cbd5e1;
+    --blue: #2563eb;
+    --green: #16a34a;
+    --red: #dc2626;
+    --yellow: #d97706;
+    --text: #0f172a;
+    --muted: #64748b;
+    --glass: rgba(255, 255, 255, 0.85);
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
   }
   * { margin:0; padding:0; box-sizing:border-box; }
   body { background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; min-height:100vh; overflow-x:hidden; }
   body::before { content:''; position:fixed; top:0; left:0; width:100%; height:100%;
-    background: radial-gradient(ellipse 80% 40% at 50% 0%, rgba(56,139,253,0.08) 0%, transparent 70%); pointer-events:none; }
+    background: radial-gradient(ellipse 80% 40% at 50% 0%, rgba(37,99,235,0.06) 0%, transparent 70%); pointer-events:none; }
 
   /* HEADER */
   header { display:flex; align-items:center; justify-content:space-between; padding:14px 24px;
-    background:var(--glass); border-bottom:1px solid var(--border); backdrop-filter:blur(16px);
+    background:var(--glass); border-bottom:1px solid var(--border); box-shadow:var(--shadow-sm); backdrop-filter:blur(16px);
     position:sticky; top:0; z-index:100; }
   .logo { display:flex; align-items:center; gap:10px; font-size:1.1rem; font-weight:700; letter-spacing:.5px; }
   .logo span { color:var(--blue); }
-  .live-badge { background:rgba(63,185,80,0.15); border:1px solid rgba(63,185,80,0.4);
+  .live-badge { background:rgba(22,163,74,0.1); border:1px solid rgba(22,163,74,0.25);
     color:var(--green); padding:3px 10px; border-radius:20px; font-size:.72rem; font-weight:600;
     animation: pulse-green 2s infinite; }
   @keyframes pulse-green { 0%,100%{opacity:1} 50%{opacity:.5} }
   .header-right { display:flex; align-items:center; gap:14px; }
-  #clock { font-family:'JetBrains Mono'; font-size:.85rem; color:var(--muted); }
+  #clock { font-family:'JetBrains Mono'; font-size:.85rem; color:var(--muted); font-weight:500; }
   #market-status { padding:4px 12px; border-radius:20px; font-size:.75rem; font-weight:600; }
-  .status-open  { background:rgba(63,185,80,0.15); border:1px solid rgba(63,185,80,0.4); color:var(--green); }
-  .status-closed{ background:rgba(248,81,73,0.15); border:1px solid rgba(248,81,73,0.4); color:var(--red); }
-  #refresh-btn  { background:rgba(56,139,253,0.12); border:1px solid var(--border); color:var(--blue);
-    padding:5px 14px; border-radius:8px; font-size:.78rem; cursor:pointer; transition:.2s; }
-  #refresh-btn:hover { background:rgba(56,139,253,0.25); }
+  .status-open  { background:rgba(22,163,74,0.1); border:1px solid rgba(22,163,74,0.25); color:var(--green); }
+  .status-closed{ background:rgba(220,38,38,0.1); border:1px solid rgba(220,38,38,0.25); color:var(--red); }
+  #refresh-btn  { background:var(--bg2); border:1px solid var(--border); color:var(--blue);
+    padding:5px 14px; border-radius:8px; font-size:.78rem; font-weight:500; cursor:pointer; transition:.2s; box-shadow:var(--shadow-sm); }
+  #refresh-btn:hover { background:var(--bg3); border-color:var(--border2); }
   #last-updated { font-size:.72rem; color:var(--muted); }
 
   /* METRICS BAR */
   .metrics-bar { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
-    gap:1px; background:var(--border); border-bottom:1px solid var(--border); }
+    gap:1px; background:var(--border); border-bottom:1px solid var(--border); box-shadow:var(--shadow-sm); z-index:90; position:relative; }
   .metric { background:var(--bg2); padding:12px 18px; text-align:center; }
-  .metric-label { font-size:.68rem; color:var(--muted); text-transform:uppercase; letter-spacing:.8px; margin-bottom:4px; }
+  .metric-label { font-size:.68rem; color:var(--muted); text-transform:uppercase; letter-spacing:.8px; margin-bottom:4px; font-weight:600; }
   .metric-value { font-size:1.15rem; font-weight:700; font-family:'JetBrains Mono'; }
   .metric-sub   { font-size:.72rem; color:var(--muted); margin-top:2px; }
   .bullish { color:var(--green); } .bearish { color:var(--red); } .neutral { color:var(--yellow); }
@@ -52,69 +62,75 @@
   @media(max-width:900px){ .main{ grid-template-columns:1fr; height:auto; } }
 
   /* OPTION CHAIN */
-  .chain-panel { border-right:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
-  .panel-header { padding:12px 18px; background:var(--bg2); border-bottom:1px solid var(--border);
+  .chain-panel { border-right:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; background:var(--bg2); }
+  .panel-header { padding:12px 18px; background:var(--bg3); border-bottom:1px solid var(--border);
     display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
-  .panel-title { font-size:.85rem; font-weight:600; display:flex; align-items:center; gap:8px; }
+  .panel-title { font-size:.85rem; font-weight:600; display:flex; align-items:center; gap:8px; color:var(--text); }
   .expiry-toggle { display:flex; gap:6px; }
-  .exp-btn { padding:4px 12px; border-radius:6px; font-size:.73rem; cursor:pointer; border:1px solid var(--border);
-    background:transparent; color:var(--muted); transition:.2s; }
-  .exp-btn.active { background:rgba(56,139,253,0.2); border-color:var(--blue); color:var(--blue); }
+  .exp-btn { padding:4px 12px; border-radius:6px; font-size:.73rem; font-weight:500; cursor:pointer; border:1px solid var(--border);
+    background:var(--bg2); color:var(--muted); transition:.2s; box-shadow:var(--shadow-sm); }
+  .exp-btn.active { background:rgba(37,99,235,0.08); border-color:var(--blue); color:var(--blue); box-shadow:none; }
 
   .chain-table-wrap { overflow-y:auto; flex:1; }
   table { width:100%; border-collapse:collapse; font-size:.78rem; }
-  thead th { position:sticky; top:0; background:var(--bg3); padding:8px 6px; text-align:center;
-    font-size:.68rem; text-transform:uppercase; letter-spacing:.6px; color:var(--muted);
-    border-bottom:1px solid var(--border); }
-  tbody tr { border-bottom:1px solid rgba(56,139,253,0.06); transition:.15s; }
-  tbody tr:hover { background:rgba(56,139,253,0.07); }
-  tbody tr.atm { background:rgba(56,139,253,0.12); }
-  tbody tr.atm td { font-weight:600; }
-  td { padding:6px 6px; text-align:center; font-family:'JetBrains Mono'; font-size:.76rem; }
-  td.call-side { color:#a8d5ff; }
-  td.put-side  { color:#ffb3b0; }
-  td.strike    { color:var(--text); font-weight:600; background:rgba(56,139,253,0.06);
+  thead th { position:sticky; top:0; background:var(--bg3); padding:10px 6px; text-align:center;
+    font-size:.68rem; text-transform:uppercase; font-weight:600; letter-spacing:.6px; color:var(--muted);
+    border-bottom:1px solid var(--border); box-shadow:0 1px 0 var(--border); z-index:10; }
+  tbody tr { border-bottom:1px solid rgba(15,23,42,0.04); transition:.15s; }
+  tbody tr:hover { background:rgba(15,23,42,0.02); }
+  tbody tr.atm { background:rgba(37,99,235,0.04); box-shadow:inset 0 0 0 1px rgba(37,99,235,0.2); }
+  tbody tr.atm td { font-weight:600; color:var(--text); }
+  td { padding:8px 6px; text-align:center; font-family:'JetBrains Mono'; font-size:.76rem; }
+  td.call-side { color:#1e40af; }
+  td.put-side  { color:#991b1b; }
+  td.strike    { color:var(--text); font-weight:600; background:rgba(15,23,42,0.02);
     border-left:1px solid var(--border); border-right:1px solid var(--border); }
-  .oi-bar { height:3px; border-radius:2px; margin-top:2px; }
-  .oi-call { background:linear-gradient(90deg,transparent,rgba(56,139,253,0.6)); }
-  .oi-put  { background:linear-gradient(90deg,rgba(248,81,73,0.6),transparent); }
+  .oi-bar { height:4px; border-radius:2px; margin-top:3px; }
+  .oi-call { background:linear-gradient(90deg,transparent,rgba(37,99,235,0.4)); }
+  .oi-put  { background:linear-gradient(90deg,rgba(220,38,38,0.4),transparent); }
 
   /* SIGNALS PANEL */
-  .signals-panel { display:flex; flex-direction:column; overflow:hidden; }
-  .signals-list  { overflow-y:auto; flex:1; padding:10px; display:flex; flex-direction:column; gap:6px; }
+  .signals-panel { display:flex; flex-direction:column; overflow:hidden; background:var(--bg); }
+  .signals-list  { overflow-y:auto; flex:1; padding:12px; display:flex; flex-direction:column; gap:10px; }
   .signal-card { background:var(--bg2); border:1px solid var(--border); border-radius:10px;
-    padding:10px 12px; position:relative; overflow:hidden; animation: slide-in .4s ease; }
+    padding:12px 14px; position:relative; overflow:hidden; animation: slide-in .4s ease;
+    box-shadow:var(--shadow); transition:transform .2s, box-shadow .2s; }
+  .signal-card:hover { transform:translateY(-2px); box-shadow:var(--shadow-md); }
   @keyframes slide-in { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
-  .signal-card.bullish { border-left:3px solid var(--green); }
-  .signal-card.bearish { border-left:3px solid var(--red); }
-  .signal-card.new { animation: flash-card .6s ease; }
-  @keyframes flash-card { 0%{background:rgba(56,139,253,0.25)} 100%{background:var(--bg2)} }
-  .sig-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:5px; }
-  .sig-time   { font-family:'JetBrains Mono'; font-size:.7rem; color:var(--muted); }
-  .sig-type   { font-size:.72rem; font-weight:700; padding:2px 8px; border-radius:4px; }
-  .bullish .sig-type { background:rgba(63,185,80,0.15); color:var(--green); }
-  .bearish .sig-type { background:rgba(248,81,73,0.15); color:var(--red); }
+  .signal-card.bullish { border-left:4px solid var(--green); }
+  .signal-card.bearish { border-left:4px solid var(--red); }
+  .signal-card.new { animation: flash-card .8s ease; }
+  @keyframes flash-card { 0%{background:rgba(37,99,235,0.1)} 100%{background:var(--bg2)} }
+  .sig-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+  .sig-time   { font-family:'JetBrains Mono'; font-size:.7rem; color:var(--muted); font-weight:500; }
+  .sig-type   { font-size:.72rem; font-weight:700; padding:3px 10px; border-radius:6px; }
+  .bullish .sig-type { background:rgba(22,163,74,0.1); color:var(--green); }
+  .bearish .sig-type { background:rgba(220,38,38,0.1); color:var(--red); }
   .sig-body   { font-size:.78rem; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-  .sig-strike { font-weight:700; font-family:'JetBrains Mono'; font-size:.88rem; }
-  .sig-opt    { font-size:.7rem; padding:1px 6px; border-radius:3px; background:rgba(56,139,253,0.15); color:var(--blue); }
+  .sig-strike { font-weight:700; font-family:'JetBrains Mono'; font-size:.9rem; color:var(--text); }
+  .sig-opt    { font-size:.7rem; padding:2px 6px; border-radius:4px; background:rgba(37,99,235,0.1); color:var(--blue); font-weight:600; }
   .sig-label  { color:var(--muted); font-size:.7rem; }
-  .sig-oi     { font-family:'JetBrains Mono'; font-size:.73rem; }
-  .no-signals { text-align:center; color:var(--muted); padding:40px 20px; font-size:.85rem; }
+  .sig-oi     { font-family:'JetBrains Mono'; font-size:.75rem; font-weight:600; color:var(--text); }
+  .no-signals { text-align:center; color:var(--muted); padding:40px 20px; font-size:.85rem; font-weight:500; }
 
   /* ANALYTICS MINI */
-  .analytics-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; padding:10px; border-top:1px solid var(--border); }
-  .ana-card { background:var(--bg2); border:1px solid var(--border); border-radius:8px; padding:10px; text-align:center; }
-  .ana-label{ font-size:.66rem; color:var(--muted); text-transform:uppercase; letter-spacing:.6px; }
-  .ana-val  { font-size:1.05rem; font-weight:700; font-family:'JetBrains Mono'; margin-top:3px; }
+  .analytics-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:12px; background:var(--bg2); border-top:1px solid var(--border); box-shadow:0 -2px 10px rgba(0,0,0,0.02); }
+  .ana-card { background:var(--bg3); border:1px solid var(--border); border-radius:8px; padding:10px; text-align:center; }
+  .ana-label{ font-size:.66rem; color:var(--muted); text-transform:uppercase; letter-spacing:.6px; font-weight:600; }
+  .ana-val  { font-size:1.05rem; font-weight:700; font-family:'JetBrains Mono'; margin-top:4px; }
 
-  .ltp-up   { color: #3fb950 !important; }
-  .ltp-down { color: #f85149 !important; }
-  @keyframes flash-up   { 0%{background:rgba(63,185,80,0.35)} 100%{background:transparent} }
-  @keyframes flash-down { 0%{background:rgba(248,81,73,0.35)} 100%{background:transparent} }
+  .ltp-up   { color: #16a34a !important; font-weight:600; }
+  .ltp-down { color: #dc2626 !important; font-weight:600; }
+  @keyframes flash-up   { 0%{background:rgba(22,163,74,0.15)} 100%{background:transparent} }
+  @keyframes flash-down { 0%{background:rgba(220,38,38,0.15)} 100%{background:transparent} }
   .flash-up   { animation: flash-up   0.8s ease; }
   .flash-down { animation: flash-down 0.8s ease; }
-  ::-webkit-scrollbar { width:4px; } ::-webkit-scrollbar-track { background:transparent; }
-  ::-webkit-scrollbar-thumb { background:var(--border2); border-radius:2px; }
+  
+  /* Scrollbar */
+  ::-webkit-scrollbar { width:6px; } 
+  ::-webkit-scrollbar-track { background:transparent; }
+  ::-webkit-scrollbar-thumb { background:var(--border2); border-radius:3px; }
+  ::-webkit-scrollbar-thumb:hover { background:var(--muted); }
 
   /* LOADING */
   .loading { display:flex; align-items:center; justify-content:center; height:200px; flex-direction:column; gap:12px; }
@@ -284,9 +300,9 @@ function renderChain(type) {
 
   let html = `<table>
     <thead><tr>
-      <th>Call OI</th><th>Call Vol</th><th>Call LTP</th>
+      <th title="Delta (Hover for Gamma, Theta, Vega)">C Delta</th><th>C IV</th><th>Call OI</th><th>Call Vol</th><th>Call LTP</th>
       <th style="min-width:80px">STRIKE</th>
-      <th>Put LTP</th><th>Put Vol</th><th>Put OI</th>
+      <th>Put LTP</th><th>Put Vol</th><th>Put OI</th><th>P IV</th><th title="Delta (Hover for Gamma, Theta, Vega)">P Delta</th>
     </tr></thead><tbody>`;
 
   for (const r of visible) {
@@ -305,6 +321,8 @@ function renderChain(type) {
     state.prevLtp[pKey] = r.put_ltp;
 
     html += `<tr class="${isAtm?'atm':''}">
+      <td class="call-side" style="color:var(--muted)" title="Gamma: ${r.call_gamma}&#10;Theta: ${r.call_theta}&#10;Vega: ${r.call_vega}">${r.call_delta?.toFixed(2) || '0.00'}</td>
+      <td class="call-side" style="color:var(--muted)">${r.call_iv?.toFixed(1) || '0.0'}%</td>
       <td class="call-side"><div>${numFmt(r.call_oi)}</div><div class="oi-bar oi-call" style="width:${callBar}%"></div></td>
       <td class="call-side">${numFmt(r.call_vol)}</td>
       <td class="${callCls}">${r.call_ltp.toFixed(2)}</td>
@@ -312,6 +330,8 @@ function renderChain(type) {
       <td class="${putCls}">${r.put_ltp.toFixed(2)}</td>
       <td class="put-side">${numFmt(r.put_vol)}</td>
       <td class="put-side"><div>${numFmt(r.put_oi)}</div><div class="oi-bar oi-put" style="width:${putBar}%"></div></td>
+      <td class="put-side" style="color:var(--muted)">${r.put_iv?.toFixed(1) || '0.0'}%</td>
+      <td class="put-side" style="color:var(--muted)" title="Gamma: ${r.put_gamma}&#10;Theta: ${r.put_theta}&#10;Vega: ${r.put_vega}">${r.put_delta?.toFixed(2) || '0.00'}</td>
     </tr>`;
   }
   html += '</tbody></table>';
@@ -325,7 +345,7 @@ function renderSignals(signals) {
     return;
   }
 
-  const recent = [...signals].reverse().slice(0, 30);
+  const recent = [...signals].reverse().slice(0, 6);
   let html = '';
   for (const sig of recent) {
     const isNew = !state.seenSignals.has(sig.timestamp+sig.strike+sig.option_type);
@@ -340,6 +360,7 @@ function renderSignals(signals) {
       <div class="sig-body">
         <span class="sig-strike">${numFmt(sig.strike)}</span>
         <span class="sig-opt">${sig.option_type}</span>
+        <span class="sig-label" style="font-size:0.65rem">(${sig.expiry?.split(' ')[0]} ${sig.expiry?.split(' ')[1]})</span>
         <span class="sig-label">•</span>
         <span>${sig.signal_type}</span>
         <span class="sig-label">OI:</span>

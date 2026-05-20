@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📡 SENSEX Options Radar</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+  :root {
+    --bg: #050a14; --bg2: #0a1220; --bg3: #0f1a2e;
+    --border: rgba(56,139,253,0.18); --border2: rgba(56,139,253,0.35);
+    --blue: #388bfd; --green: #3fb950; --red: #f85149;
+    --yellow: #d29922; --text: #e6edf3; --muted: #7d8590;
+    --glass: rgba(10,18,32,0.7);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; min-height:100vh; overflow-x:hidden; }
+  body::before { content:''; position:fixed; top:0; left:0; width:100%; height:100%;
+    background: radial-gradient(ellipse 80% 40% at 50% 0%, rgba(56,139,253,0.08) 0%, transparent 70%); pointer-events:none; }
+
+  /* HEADER */
+  header { display:flex; align-items:center; justify-content:space-between; padding:14px 24px;
+    background:var(--glass); border-bottom:1px solid var(--border); backdrop-filter:blur(16px);
+    position:sticky; top:0; z-index:100; }
+  .logo { display:flex; align-items:center; gap:10px; font-size:1.1rem; font-weight:700; letter-spacing:.5px; }
+  .logo span { color:var(--blue); }
+  .live-badge { background:rgba(63,185,80,0.15); border:1px solid rgba(63,185,80,0.4);
+    color:var(--green); padding:3px 10px; border-radius:20px; font-size:.72rem; font-weight:600;
+    animation: pulse-green 2s infinite; }
+  @keyframes pulse-green { 0%,100%{opacity:1} 50%{opacity:.5} }
+  .header-right { display:flex; align-items:center; gap:14px; }
+  #clock { font-family:'JetBrains Mono'; font-size:.85rem; color:var(--muted); }
+  #market-status { padding:4px 12px; border-radius:20px; font-size:.75rem; font-weight:600; }
+  .status-open  { background:rgba(63,185,80,0.15); border:1px solid rgba(63,185,80,0.4); color:var(--green); }
+  .status-closed{ background:rgba(248,81,73,0.15); border:1px solid rgba(248,81,73,0.4); color:var(--red); }
+  #refresh-btn  { background:rgba(56,139,253,0.12); border:1px solid var(--border); color:var(--blue);
+    padding:5px 14px; border-radius:8px; font-size:.78rem; cursor:pointer; transition:.2s; }
+  #refresh-btn:hover { background:rgba(56,139,253,0.25); }
+  #last-updated { font-size:.72rem; color:var(--muted); }
+
+  /* METRICS BAR */
+  .metrics-bar { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+    gap:1px; background:var(--border); border-bottom:1px solid var(--border); }
+  .metric { background:var(--bg2); padding:12px 18px; text-align:center; }
+  .metric-label { font-size:.68rem; color:var(--muted); text-transform:uppercase; letter-spacing:.8px; margin-bottom:4px; }
+  .metric-value { font-size:1.15rem; font-weight:700; font-family:'JetBrains Mono'; }
+  .metric-sub   { font-size:.72rem; color:var(--muted); margin-top:2px; }
+  .bullish { color:var(--green); } .bearish { color:var(--red); } .neutral { color:var(--yellow); }
+
+  /* MAIN LAYOUT */
+  .main { display:grid; grid-template-columns:1fr 380px; gap:0; height:calc(100vh - 120px); }
+  @media(max-width:900px){ .main{ grid-template-columns:1fr; height:auto; } }
+
+  /* OPTION CHAIN */
+  .chain-panel { border-right:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
+  .panel-header { padding:12px 18px; background:var(--bg2); border-bottom:1px solid var(--border);
+    display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+  .panel-title { font-size:.85rem; font-weight:600; display:flex; align-items:center; gap:8px; }
+  .expiry-toggle { display:flex; gap:6px; }
+  .exp-btn { padding:4px 12px; border-radius:6px; font-size:.73rem; cursor:pointer; border:1px solid var(--border);
+    background:transparent; color:var(--muted); transition:.2s; }
+  .exp-btn.active { background:rgba(56,139,253,0.2); border-color:var(--blue); color:var(--blue); }
+
+  .chain-table-wrap { overflow-y:auto; flex:1; }
+  table { width:100%; border-collapse:collapse; font-size:.78rem; }
+  thead th { position:sticky; top:0; background:var(--bg3); padding:8px 6px; text-align:center;
+    font-size:.68rem; text-transform:uppercase; letter-spacing:.6px; color:var(--muted);
+    border-bottom:1px solid var(--border); }
+  tbody tr { border-bottom:1px solid rgba(56,139,253,0.06); transition:.15s; }
+  tbody tr:hover { background:rgba(56,139,253,0.07); }
+  tbody tr.atm { background:rgba(56,139,253,0.12); }
+  tbody tr.atm td { font-weight:600; }
+  td { padding:6px 6px; text-align:center; font-family:'JetBrains Mono'; font-size:.76rem; }
+  td.call-side { color:#a8d5ff; }
+  td.put-side  { color:#ffb3b0; }
+  td.strike    { color:var(--text); font-weight:600; background:rgba(56,139,253,0.06);
+    border-left:1px solid var(--border); border-right:1px solid var(--border); }
+  .oi-bar { height:3px; border-radius:2px; margin-top:2px; }
+  .oi-call { background:linear-gradient(90deg,transparent,rgba(56,139,253,0.6)); }
+  .oi-put  { background:linear-gradient(90deg,rgba(248,81,73,0.6),transparent); }
+
+  /* SIGNALS PANEL */
+  .signals-panel { display:flex; flex-direction:column; overflow:hidden; }
+  .signals-list  { overflow-y:auto; flex:1; padding:10px; display:flex; flex-direction:column; gap:6px; }
+  .signal-card { background:var(--bg2); border:1px solid var(--border); border-radius:10px;
+    padding:10px 12px; position:relative; overflow:hidden; animation: slide-in .4s ease; }
+  @keyframes slide-in { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
+  .signal-card.bullish { border-left:3px solid var(--green); }
+  .signal-card.bearish { border-left:3px solid var(--red); }
+  .signal-card.new { animation: flash-card .6s ease; }
+  @keyframes flash-card { 0%{background:rgba(56,139,253,0.25)} 100%{background:var(--bg2)} }
+  .sig-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:5px; }
+  .sig-time   { font-family:'JetBrains Mono'; font-size:.7rem; color:var(--muted); }
+  .sig-type   { font-size:.72rem; font-weight:700; padding:2px 8px; border-radius:4px; }
+  .bullish .sig-type { background:rgba(63,185,80,0.15); color:var(--green); }
+  .bearish .sig-type { background:rgba(248,81,73,0.15); color:var(--red); }
+  .sig-body   { font-size:.78rem; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .sig-strike { font-weight:700; font-family:'JetBrains Mono'; font-size:.88rem; }
+  .sig-opt    { font-size:.7rem; padding:1px 6px; border-radius:3px; background:rgba(56,139,253,0.15); color:var(--blue); }
+  .sig-label  { color:var(--muted); font-size:.7rem; }
+  .sig-oi     { font-family:'JetBrains Mono'; font-size:.73rem; }
+  .no-signals { text-align:center; color:var(--muted); padding:40px 20px; font-size:.85rem; }
+
+  /* ANALYTICS MINI */
+  .analytics-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; padding:10px; border-top:1px solid var(--border); }
+  .ana-card { background:var(--bg2); border:1px solid var(--border); border-radius:8px; padding:10px; text-align:center; }
+  .ana-label{ font-size:.66rem; color:var(--muted); text-transform:uppercase; letter-spacing:.6px; }
+  .ana-val  { font-size:1.05rem; font-weight:700; font-family:'JetBrains Mono'; margin-top:3px; }
+
+  .ltp-up   { color: #3fb950 !important; }
+  .ltp-down { color: #f85149 !important; }
+  @keyframes flash-up   { 0%{background:rgba(63,185,80,0.35)} 100%{background:transparent} }
+  @keyframes flash-down { 0%{background:rgba(248,81,73,0.35)} 100%{background:transparent} }
+  .flash-up   { animation: flash-up   0.8s ease; }
+  .flash-down { animation: flash-down 0.8s ease; }
+  ::-webkit-scrollbar { width:4px; } ::-webkit-scrollbar-track { background:transparent; }
+  ::-webkit-scrollbar-thumb { background:var(--border2); border-radius:2px; }
+
+  /* LOADING */
+  .loading { display:flex; align-items:center; justify-content:center; height:200px; flex-direction:column; gap:12px; }
+  .spinner { width:32px; height:32px; border:3px solid var(--border); border-top-color:var(--blue);
+    border-radius:50%; animation:spin 1s linear infinite; }
+  @keyframes spin { to{transform:rotate(360deg)} }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">📡 <span>SENSEX</span> Options Radar</div>
+  <div class="header-right">
+    <div id="clock">--:--:--</div>
+    <div id="market-status" class="status-closed">MARKET CLOSED</div>
+    <button id="refresh-btn" onclick="fetchData()">↻ Refresh</button>
+  </div>
+</header>
+
+<div class="metrics-bar" id="metrics-bar">
+  <div class="metric"><div class="metric-label">Weekly PCR</div><div class="metric-value neutral" id="m-wpcr">--</div><div class="metric-sub" id="m-wpcr-s">Neutral</div></div>
+  <div class="metric"><div class="metric-label">Monthly PCR</div><div class="metric-value neutral" id="m-mpcr">--</div><div class="metric-sub" id="m-mpcr-s">Neutral</div></div>
+  <div class="metric"><div class="metric-label">Max Pain (W)</div><div class="metric-value" id="m-pain" style="color:var(--yellow)">--</div><div class="metric-sub">Weekly</div></div>
+  <div class="metric"><div class="metric-label">Support S1</div><div class="metric-value bullish" id="m-s1">--</div><div class="metric-sub">Max Put OI</div></div>
+  <div class="metric"><div class="metric-label">Resistance R1</div><div class="metric-value bearish" id="m-r1">--</div><div class="metric-sub">Max Call OI</div></div>
+  <div class="metric"><div class="metric-label">Weekly Expiry</div><div class="metric-value" id="m-wexp" style="color:var(--blue);font-size:.85rem">--</div></div>
+  <div class="metric"><div class="metric-label">Last Updated</div><div class="metric-value" id="m-updated" style="color:var(--muted);font-size:.75rem;font-family:'JetBrains Mono'">--</div></div>
+</div>
+
+<div class="main">
+  <!-- OPTION CHAIN -->
+  <div class="chain-panel">
+    <div class="panel-header">
+      <div class="panel-title">📊 Option Chain</div>
+      <div class="expiry-toggle">
+        <button class="exp-btn active" id="btn-weekly"  onclick="showChain('weekly')">Weekly</button>
+        <button class="exp-btn"        id="btn-monthly" onclick="showChain('monthly')">Monthly</button>
+      </div>
+    </div>
+    <div class="chain-table-wrap" id="chain-table-wrap">
+      <div class="loading"><div class="spinner"></div><span style="color:var(--muted);font-size:.85rem">Loading option chain...</span></div>
+    </div>
+  </div>
+
+  <!-- SIGNALS -->
+  <div class="signals-panel">
+    <div class="panel-header">
+      <div class="panel-title">🔔 Live Signals</div>
+      <span class="live-badge">LIVE</span>
+    </div>
+    <div class="signals-list" id="signals-list">
+      <div class="loading"><div class="spinner"></div><span style="color:var(--muted);font-size:.85rem">Waiting for signals...</span></div>
+    </div>
+    <div class="analytics-grid" id="analytics-grid"></div>
+  </div>
+</div>
+
+<script>
+// ── CONFIG ──────────────────────────────────────────────────────
+const R2_URL = "https://pub-beab7a6397a7478c853251902952970e.r2.dev/signals/sensex_option_signals.json";
+const REFRESH_MS = 60000; // 1 minute
+// ────────────────────────────────────────────────────────────────
+
+let state = { data: null, activeChain: 'weekly', seenSignals: new Set(), prevLtp: {} };
+
+// Clock
+setInterval(() => {
+  const now = new Date();
+  document.getElementById('clock').textContent = now.toLocaleTimeString('en-IN',{hour12:false,timeZone:'Asia/Kolkata'});
+}, 1000);
+
+async function fetchData() {
+  try {
+    const res = await fetch(R2_URL + '?t=' + Date.now());
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    state.data = await res.json();
+    renderAll();
+  } catch(e) {
+    console.error('Fetch error:', e);
+    document.getElementById('m-updated').textContent = 'Fetch error';
+  }
+}
+
+function renderAll() {
+  const d = state.data;
+  if (!d) return;
+
+  // Market status
+  const ms = document.getElementById('market-status');
+  ms.textContent = d.market_status || 'UNKNOWN';
+  ms.className = d.market_status === 'OPEN' ? 'status-open' : 'status-closed';
+
+  // Metrics
+  const wa = d.analytics?.weekly || {};
+  const ma = d.analytics?.monthly || {};
+  const wpcr = wa.pcr_oi || 0;
+  const mpcr = ma.pcr_oi || 0;
+  const pcrClass = (v) => v > 1.25 ? 'bullish' : v < 0.70 ? 'bearish' : 'neutral';
+  const pcrLabel = (v) => v > 1.25 ? '🟢 Bullish' : v < 0.70 ? '🔴 Bearish' : '⚡ Neutral';
+
+  setMetric('m-wpcr', wpcr.toFixed(2), pcrClass(wpcr));
+  document.getElementById('m-wpcr-s').textContent = pcrLabel(wpcr);
+  setMetric('m-mpcr', mpcr.toFixed(2), pcrClass(mpcr));
+  document.getElementById('m-mpcr-s').textContent = pcrLabel(mpcr);
+  setMetric('m-pain', numFmt(wa.max_pain), 'neutral');
+  setMetric('m-s1',   numFmt(wa.support_s1), 'bullish');
+  setMetric('m-r1',   numFmt(wa.resistance_r1), 'bearish');
+  document.getElementById('m-wexp').textContent = d.weekly_expiry || '--';
+  document.getElementById('m-updated').textContent = (d.last_updated||'').slice(11,19);
+
+  // Analytics cards
+  renderAnalytics(wa, ma);
+
+  // Chain
+  renderChain(state.activeChain);
+
+  // Signals
+  renderSignals(d.signals || []);
+}
+
+function setMetric(id, val, cls) {
+  const el = document.getElementById(id);
+  el.textContent = val;
+  el.className = 'metric-value ' + cls;
+}
+
+function numFmt(v) { return v ? Number(v).toLocaleString('en-IN') : '--'; }
+
+function renderAnalytics(wa, ma) {
+  const g = document.getElementById('analytics-grid');
+  const row = (label,val,cls) => `<div class="ana-card"><div class="ana-label">${label}</div><div class="ana-val ${cls}">${val}</div></div>`;
+  g.innerHTML =
+    row('W Max Pain', numFmt(wa.max_pain), 'neutral') +
+    row('M Max Pain', numFmt(ma.max_pain), 'neutral') +
+    row('W Vol PCR',  (wa.pcr_vol||0).toFixed(2), (wa.pcr_vol||0)>1?'bullish':'bearish') +
+    row('M Vol PCR',  (ma.pcr_vol||0).toFixed(2), (ma.pcr_vol||0)>1?'bullish':'bearish');
+}
+
+function showChain(type) {
+  state.activeChain = type;
+  document.getElementById('btn-weekly').className  = 'exp-btn' + (type==='weekly'?' active':'');
+  document.getElementById('btn-monthly').className = 'exp-btn' + (type==='monthly'?' active':'');
+  renderChain(type);
+}
+
+function renderChain(type) {
+  const wrap = document.getElementById('chain-table-wrap');
+  const chains = state.data?.option_chains || {};
+  const rows = chains[type] || [];
+
+  if (!rows.length) {
+    wrap.innerHTML = '<div class="loading"><span style="color:var(--muted);font-size:.85rem">No data for this expiry</span></div>';
+    return;
+  }
+
+  // Find ATM (middle strike index)
+  const strikes = rows.map(r=>r.strike);
+  const mid = strikes[Math.floor(strikes.length/2)];
+  const maxCallOI = Math.max(...rows.map(r=>r.call_oi));
+  const maxPutOI  = Math.max(...rows.map(r=>r.put_oi));
+
+  // Render centered around ATM ±15 strikes
+  const atmIdx = rows.findIndex(r=>r.strike===mid) || Math.floor(rows.length/2);
+  const start = Math.max(0, atmIdx-18);
+  const end   = Math.min(rows.length, atmIdx+19);
+  const visible = rows.slice(start, end);
+
+  let html = `<table>
+    <thead><tr>
+      <th>Call OI</th><th>Call Vol</th><th>Call LTP</th>
+      <th style="min-width:80px">STRIKE</th>
+      <th>Put LTP</th><th>Put Vol</th><th>Put OI</th>
+    </tr></thead><tbody>`;
+
+  for (const r of visible) {
+    const isAtm = r.strike === mid;
+    const callBar = Math.round((r.call_oi/maxCallOI)*60);
+    const putBar  = Math.round((r.put_oi/maxPutOI)*60);
+
+    // LTP color comparison
+    const cKey = type + '_c_' + r.strike;
+    const pKey = type + '_p_' + r.strike;
+    const prevCallLtp = state.prevLtp[cKey];
+    const prevPutLtp  = state.prevLtp[pKey];
+    const callCls = prevCallLtp == null ? 'call-side' : r.call_ltp > prevCallLtp ? 'call-side ltp-up flash-up' : r.call_ltp < prevCallLtp ? 'call-side ltp-down flash-down' : 'call-side';
+    const putCls  = prevPutLtp  == null ? 'put-side'  : r.put_ltp  > prevPutLtp  ? 'put-side ltp-up flash-up'   : r.put_ltp  < prevPutLtp  ? 'put-side ltp-down flash-down'  : 'put-side';
+    state.prevLtp[cKey] = r.call_ltp;
+    state.prevLtp[pKey] = r.put_ltp;
+
+    html += `<tr class="${isAtm?'atm':''}">
+      <td class="call-side"><div>${numFmt(r.call_oi)}</div><div class="oi-bar oi-call" style="width:${callBar}%"></div></td>
+      <td class="call-side">${numFmt(r.call_vol)}</td>
+      <td class="${callCls}">${r.call_ltp.toFixed(2)}</td>
+      <td class="strike">${numFmt(r.strike)}${isAtm?' ◆':''}</td>
+      <td class="${putCls}">${r.put_ltp.toFixed(2)}</td>
+      <td class="put-side">${numFmt(r.put_vol)}</td>
+      <td class="put-side"><div>${numFmt(r.put_oi)}</div><div class="oi-bar oi-put" style="width:${putBar}%"></div></td>
+    </tr>`;
+  }
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+}
+
+function renderSignals(signals) {
+  const list = document.getElementById('signals-list');
+  if (!signals.length) {
+    list.innerHTML = '<div class="no-signals">⏳ Waiting for OI buildup signals...<br><span style="font-size:.75rem">Signals appear every 3 minutes during market hours</span></div>';
+    return;
+  }
+
+  const recent = [...signals].reverse().slice(0, 30);
+  let html = '';
+  for (const sig of recent) {
+    const isNew = !state.seenSignals.has(sig.timestamp+sig.strike+sig.option_type);
+    const cls   = sig.sentiment === 'BULLISH' ? 'bullish' : 'bearish';
+    const emoji = sig.sentiment === 'BULLISH' ? '🟢' : '🔴';
+    const oiChg = sig.oi_change > 0 ? `+${numFmt(sig.oi_change)}` : numFmt(sig.oi_change);
+    html += `<div class="signal-card ${cls}${isNew?' new':''}">
+      <div class="sig-top">
+        <span class="sig-time">${sig.timestamp}</span>
+        <span class="sig-type">${emoji} ${sig.sentiment}</span>
+      </div>
+      <div class="sig-body">
+        <span class="sig-strike">${numFmt(sig.strike)}</span>
+        <span class="sig-opt">${sig.option_type}</span>
+        <span class="sig-label">•</span>
+        <span>${sig.signal_type}</span>
+        <span class="sig-label">OI:</span>
+        <span class="sig-oi">${oiChg}</span>
+        <span class="sig-label">LTP: ${sig.ltp}</span>
+      </div>
+    </div>`;
+    state.seenSignals.add(sig.timestamp+sig.strike+sig.option_type);
+  }
+  list.innerHTML = html;
+}
+
+// Auto-refresh
+fetchData();
+setInterval(fetchData, REFRESH_MS);
+</script>
+</body>
+</html>

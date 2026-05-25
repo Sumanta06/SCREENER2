@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCX Live Option Chain Radar</title>
+    <!-- SVG Inline 'M' Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2222%22 fill=%22%230891b2%22/><text y=%2270%22 x=%2220%22 font-size=%2265%22 font-weight=%22800%22 fill=%22%23ffffff%22 font-family=%22'Outfit', sans-serif%22>M</text></svg>">
+    <!-- Premium Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-light: #f1f5f9;
+            --bg-card: rgba(255, 255, 255, 0.85);
+            --border-color: rgba(148, 163, 184, 0.2);
+            --cyan: #0891b2;      /* Rich cyan for high contrast light mode */
+            --green: #059669;     /* Rich green */
+            --red: #dc2626;       /* Rich red */
+            --gold: #d97706;      /* Rich amber */
+            --purple: #7c3aed;    /* Rich purple */
+            --text-main: #0f172a; /* Slate 900 */
+            --text-muted: #475569;/* Slate 600 */
+            --bg-header: #ffffff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-light);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(8, 145, 178, 0.08) 0px, transparent 50%),
+                radial-gradient(at 50% 0%, rgba(5, 150, 105, 0.06) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(220, 38, 38, 0.05) 0px, transparent 50%);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 1rem;
+            overflow-x: hidden;
+        }
+
+        /* Container Layout */
+        .dashboard-container {
+            max-width: 1500px;
+            margin: 0 auto;
+        }
+
+        /* Premium Header (Compact) */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+            background: var(--bg-header);
+            padding: 0.6rem 1.2rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            backdrop-filter: blur(8px);
+            box-shadow: 0 4px 20px rgba(148, 163, 184, 0.1);
+        }
+
+        .logo-section h1 {
+            font-size: 1.3rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #0891b2 0%, #059669 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+
+        .logo-section p {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 1px;
+            letter-spacing: 0.3px;
+        }
+
+        .controls-section {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        /* Custom Dynamic Dropdown (Compact) */
+        select {
+            background: #ffffff;
+            color: var(--text-main);
+            border: 1.5px solid var(--border-color);
+            padding: 0.4rem 1rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border-radius: 6px;
+            outline: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        select:hover {
+            border-color: var(--cyan);
+            box-shadow: 0 0 10px rgba(8, 145, 178, 0.15);
+        }
+
+        .status-badge {
+            background: rgba(5, 150, 105, 0.08);
+            color: var(--green);
+            padding: 0.35rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border: 1px solid rgba(5, 150, 105, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-badge .dot {
+            width: 6px;
+            height: 6px;
+            background-color: var(--green);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.9); opacity: 0.6; }
+            50% { transform: scale(1.3); opacity: 1; }
+            100% { transform: scale(0.9); opacity: 0.6; }
+        }
+
+        /* Live Radar Section (Compact) */
+        .radar-grid {
+            display: grid;
+            grid-template-columns: 1fr 2.5fr;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .radar-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            padding: 0.8rem 1.2rem;
+            backdrop-filter: blur(8px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(148, 163, 184, 0.08);
+        }
+
+        /* Signal Gauge UI */
+        .signal-meter-section {
+            text-align: center;
+            position: relative;
+        }
+
+        .signal-title {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.2rem;
+        }
+
+        .signal-badge-val {
+            font-size: 1.8rem;
+            font-weight: 900;
+            letter-spacing: -0.5px;
+            margin: 0.1rem 0;
+            transition: all 0.3s ease;
+        }
+
+        /* Stats Cards Row (Compact) */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.75rem;
+        }
+
+        .stat-box {
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid var(--border-color);
+            padding: 0.7rem 1rem;
+            border-radius: 10px;
+            text-align: center;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 10px rgba(148, 163, 184, 0.04);
+        }
+
+        .stat-box:hover {
+            border-color: var(--cyan);
+            transform: translateY(-1px);
+        }
+
+        .stat-val {
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: var(--cyan);
+            margin-top: 2px;
+        }
+
+        .stat-lbl {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        /* Option Chain Table Section (Compact) */
+        .chain-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            padding: 0.8rem 1.2rem;
+            backdrop-filter: blur(8px);
+            margin-top: 0.75rem;
+            box-shadow: 0 8px 30px rgba(148, 163, 184, 0.1);
+        }
+
+        .chain-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.6rem;
+            padding-bottom: 0.4rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .chain-header h2 {
+            font-size: 1.05rem;
+            font-weight: 700;
+        }
+
+        .chain-table-container {
+            max-height: 520px;
+            overflow-y: auto;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: center;
+        }
+
+        thead th {
+            position: sticky;
+            top: 0;
+            background: #f8fafc;
+            color: var(--text-main);
+            padding: 0.45rem 0.25rem;
+            font-weight: 700;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            border-bottom: 1.5px solid var(--border-color);
+            z-index: 10;
+        }
+
+        tbody td {
+            padding: 0.35rem 0.25rem;
+            font-size: 0.8rem;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+            font-family: 'Outfit', sans-serif;
+            color: #1e293b;
+        }
+
+        tbody tr:hover {
+            background: rgba(8, 145, 178, 0.02);
+        }
+
+        /* Specific Table Styling */
+        .strike-cell {
+            background: #f8fafc;
+            font-weight: 700;
+            color: var(--cyan);
+            border-left: 1px solid var(--border-color);
+            border-right: 1px solid var(--border-color);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+        }
+
+        .call-side {
+            background: rgba(5, 150, 105, 0.005);
+        }
+
+        .put-side {
+            background: rgba(220, 38, 38, 0.005);
+        }
+
+        .ltp-cell {
+            font-weight: 600;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .chg-positive {
+            color: var(--green);
+            font-weight: 600;
+        }
+
+        .chg-negative {
+            color: var(--red);
+            font-weight: 600;
+        }
+
+        /* ATM (At The Money) highlighting (Compact & Light) */
+        .atm-row {
+            background: rgba(8, 145, 178, 0.07) !important;
+            border-top: 1.5px solid var(--cyan);
+            border-bottom: 1.5px solid var(--cyan);
+        }
+
+        .atm-row td {
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(148, 163, 184, 0.4);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(8, 145, 178, 0.5);
+        }
+
+        /* Toggle Button styling (Compact) */
+        .toggle-btn {
+            background: #ffffff;
+            color: var(--cyan);
+            border: 1.5px solid var(--cyan);
+            padding: 0.3rem 0.8rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .toggle-btn:hover {
+            background: var(--cyan);
+            color: #ffffff;
+            box-shadow: 0 0 10px rgba(8, 145, 178, 0.2);
+        }
+
+        /* Mobile View Optimizations */
+        @media (max-width: 768px) {
+            body {
+                padding: 0.4rem;
+            }
+            
+            header {
+                flex-direction: column;
+                padding: 0.6rem;
+                text-align: center;
+                gap: 0.6rem;
+            }
+            
+            .logo-section h1 {
+                font-size: 1.15rem;
+            }
+            
+            .logo-section p {
+                font-size: 0.68rem;
+            }
+            
+            .controls-section {
+                flex-direction: row;
+                justify-content: center;
+                width: 100%;
+                gap: 0.6rem;
+            }
+            
+            select {
+                padding: 0.35rem 0.6rem;
+                font-size: 0.8rem;
+            }
+            
+            .status-badge {
+                padding: 0.35rem 0.6rem;
+                font-size: 0.7rem;
+            }
+
+            .radar-grid {
+                grid-template-columns: 1fr;
+                gap: 0.5rem;
+            }
+            
+            .radar-card {
+                padding: 0.6rem 1rem;
+            }
+            
+            .signal-badge-val {
+                font-size: 1.5rem;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.5rem;
+            }
+            
+            .stat-box {
+                padding: 0.5rem;
+            }
+            
+            .stat-val {
+                font-size: 1.15rem;
+            }
+            
+            .stat-lbl {
+                font-size: 0.65rem;
+            }
+
+            .chain-card {
+                padding: 0.5rem;
+                margin-top: 0.5rem;
+            }
+            
+            .chain-header {
+                flex-direction: column;
+                gap: 0.5rem;
+                text-align: center;
+                align-items: center;
+            }
+            
+            .chain-header h2 {
+                font-size: 0.85rem;
+                line-height: 1.4;
+            }
+            
+            .toggle-btn {
+                width: 100%;
+                padding: 0.35rem;
+                font-size: 0.7rem;
+            }
+            
+            table {
+                min-width: 1100px; /* Forces table to not squish, enabling smooth horizontal swipe */
+            }
+            
+            .chain-table-container {
+                max-height: 480px;
+                overflow-x: auto; /* Enable horizontal swipe scroll */
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            tbody td, thead th {
+                padding: 0.3rem 0.2rem;
+                font-size: 0.75rem;
+            }
+            
+            .strike-cell {
+                font-size: 0.75rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard-container">
+        <!-- Header -->
+        <header>
+            <div class="logo-section">
+                <h1>MCX LIVE OPTION CHAIN RADAR</h1>
+                <p id="radarTime">SYSTEM INITIALIZING...</p>
+            </div>
+            <div class="controls-section">
+                <select id="assetSelector" onchange="changeAsset()">
+                    <option value="CRUDEOIL">CRUDEOIL</option>
+                    <option value="CRUDEOILM">CRUDEOIL MINI</option>
+                    <option value="NATURALGAS">NATURALGAS</option>
+                    <option value="NATURALGASM">NATURALGAS MINI</option>
+                </select>
+                <div class="status-badge">
+                    <div class="dot"></div>
+                    <span>LIVE AUTO-REFRESH</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Live Gauge and Overview Info -->
+        <div class="radar-grid">
+            <!-- Signal Gauge Card -->
+            <div class="radar-card">
+                <div class="signal-meter-section">
+                    <div class="signal-title">RADAR SIGNAL DIRECTION</div>
+                    <div class="signal-badge-val" id="signalValue">NEUTRAL</div>
+                </div>
+                <div id="tradeRecBox" style="margin-top: 0.6rem; padding-top: 0.5rem; border-top: 1px solid var(--border-color); text-align: center;">
+                    <div style="font-size: 0.7rem; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; font-weight: 600;">15-30 Min Momentum Scalp</div>
+                    <div id="tradeRecVal" style="font-size: 0.88rem; font-weight: 800; margin-top: 3px; font-family: 'Outfit', sans-serif;">WAITING...</div>
+                </div>
+            </div>
+            
+            <!-- Key Metric Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <div class="stat-lbl">Underlying Price (LTP)</div>
+                    <div class="stat-val" id="ltpValue">0.00</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-lbl">PCR (Open Interest)</div>
+                    <div class="stat-val" id="pcrValue">1.00</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-lbl">Total Call OI</div>
+                    <div class="stat-val" id="totalCallOi">0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-lbl">Total Put OI</div>
+                    <div class="stat-val" id="totalPutOi">0</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Option Chain Table Grid -->
+        <div class="chain-card">
+            <div class="chain-header">
+                <h2>Live Option Chain Data (Options Expiry: <span id="expiryValue" style="color: var(--cyan);">--</span> | Futures Expiry: <span id="futuresExpiryValue" style="color: var(--green);">--</span>)</h2>
+                <button id="toggleChainBtn" class="toggle-btn" onclick="toggleChainView()">Show All Strikes</button>
+            </div>
+            <div class="chain-table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th colspan="7" style="background-color: rgba(16, 185, 129, 0.15); border-bottom: 2px solid var(--green);">CALLS</th>
+                            <th>STRIKE</th>
+                            <th colspan="7" style="background-color: rgba(239, 68, 68, 0.15); border-bottom: 2px solid var(--red);">PUTS</th>
+                        </tr>
+                        <tr>
+                            <th>Delta</th>
+                            <th>Theta</th>
+                            <th>IV (%)</th>
+                            <th>OI</th>
+                            <th>Vol</th>
+                            <th>LTP</th>
+                            <th>Net Chg</th>
+                            <th>Strike Price</th>
+                            <th>LTP</th>
+                            <th>Net Chg</th>
+                            <th>Vol</th>
+                            <th>OI</th>
+                            <th>IV (%)</th>
+                            <th>Theta</th>
+                            <th>Delta</th>
+                        </tr>
+                    </thead>
+                    <tbody id="chainBody">
+                        <tr>
+                            <td colspan="15" style="padding: 3rem; color: var(--text-muted);">Fetching live assets... Please ensure run_mcx_scheduler.bat is running.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script Injection Setup for Live CORS-Free Updates -->
+    <script id="liveDataScript" src="https://pub-9034182bd01540f09474c45055049256.r2.dev/data.js"></script>
+
+    <script>
+        let currentAsset = "CRUDEOIL";
+        let showAllStrikes = false;
+
+        function toggleChainView() {
+            showAllStrikes = !showAllStrikes;
+            const btn = document.getElementById('toggleChainBtn');
+            btn.innerText = showAllStrikes ? "Show Near ATM (7+1+7)" : "Show All Strikes";
+            updateDashboard();
+        }
+
+        function updateDashboard() {
+            // Check if global data exists
+            if (typeof mcx_data === 'undefined') {
+                console.log("No data available yet.");
+                return;
+            }
+
+            const instData = mcx_data.instruments[currentAsset];
+            if (!instData) {
+                console.log("No data for current asset: " + currentAsset);
+                return;
+            }
+
+            // Update stats
+            document.getElementById('radarTime').innerText = "LAST DATA FETCH: " + mcx_data.timestamp + " (UPDATES EVERY MINUTE)";
+            document.getElementById('ltpValue').innerText = Number(instData.ltp).toFixed(2);
+            document.getElementById('pcrValue').innerText = instData.pcr.toFixed(2);
+            document.getElementById('totalCallOi').innerText = instData.total_call_oi.toLocaleString();
+            document.getElementById('totalPutOi').innerText = instData.total_put_oi.toLocaleString();
+            document.getElementById('expiryValue').innerText = instData.expiry;
+            document.getElementById('futuresExpiryValue').innerText = instData.futures_expiry || "--";
+
+            // Update gauge signal
+            const signalBox = document.getElementById('signalValue');
+            signalBox.innerText = instData.signal;
+            signalBox.style.color = instData.signal_color;
+            signalBox.style.textShadow = `0 0 20px ${instData.signal_color}`;
+
+            // Build Option Chain Table
+            const body = document.getElementById('chainBody');
+            body.innerHTML = "";
+
+            const chain = instData.option_chain;
+            
+            // Find At-The-Money (ATM) strike price (closest to LTP)
+            let closestStrike = null;
+            let minDiff = Infinity;
+            
+            chain.forEach(row => {
+                let diff = Math.abs(row.Strike - instData.ltp);
+                if (diff < minDiff) {
+                    minDiff = diff;
+                    closestStrike = row.Strike;
+                }
+            });
+
+            // Generate Scalp Trade Recommendation (Slightly ITM for premium momentum & delta)
+            const recValBox = document.getElementById('tradeRecVal');
+            let recText = "";
+            let recColor = "";
+            let atmIndex = chain.findIndex(row => row.Strike === closestStrike);
+            
+            if (atmIndex !== -1) {
+                if (instData.signal === "STRONG BUY" || instData.signal === "WEAK BUY") {
+                    // Recommend Slightly ITM Call (1 strike below ATM)
+                    let targetIndex = Math.max(0, atmIndex - 1);
+                    let targetStrike = chain[targetIndex].Strike;
+                    let targetLtp = chain[targetIndex].CE_LTP;
+                    recText = `👉 BUY CALL ${targetStrike} @ ₹${targetLtp.toFixed(2)}`;
+                    recColor = "var(--green)";
+                } else if (instData.signal === "STRONG SELL" || instData.signal === "WEAK SELL") {
+                    // Recommend Slightly ITM Put (1 strike above ATM)
+                    let targetIndex = Math.min(chain.length - 1, atmIndex + 1);
+                    let targetStrike = chain[targetIndex].Strike;
+                    let targetLtp = chain[targetIndex].PE_LTP;
+                    recText = `👉 BUY PUT ${targetStrike} @ ₹${targetLtp.toFixed(2)}`;
+                    recColor = "var(--red)";
+                } else {
+                    recText = "🚫 WAIT (No Option Buying)";
+                    recColor = "var(--text-muted)";
+                }
+            } else {
+                recText = "🚫 NO DATA";
+                recColor = "var(--text-muted)";
+            }
+            
+            recValBox.innerText = recText;
+            recValBox.style.color = recColor;
+
+            // Filter to show exactly 7 ITM, ATM, and 7 OTM strikes (total 15 strikes centered around ATM)
+            let displayChain = chain;
+            if (!showAllStrikes) {
+                let atmIndex = chain.findIndex(row => row.Strike === closestStrike);
+                if (atmIndex !== -1) {
+                    let startIndex = atmIndex - 7;
+                    let endIndex = atmIndex + 8; // slice is exclusive of end index
+                    
+                    // Sliding window correction for boundary strikes
+                    if (startIndex < 0) {
+                        endIndex = Math.min(chain.length, endIndex + Math.abs(startIndex));
+                        startIndex = 0;
+                    }
+                    if (endIndex > chain.length) {
+                        startIndex = Math.max(0, startIndex - (endIndex - chain.length));
+                        endIndex = chain.length;
+                    }
+                    
+                    displayChain = chain.slice(startIndex, endIndex);
+                }
+            }
+
+            displayChain.forEach(row => {
+                const tr = document.createElement('tr');
+                if (row.Strike === closestStrike) {
+                    tr.className = "atm-row";
+                }
+
+                // Format changes
+                const ceChgClass = row.CE_Chg >= 0 ? "chg-positive" : "chg-negative";
+                const peChgClass = row.PE_Chg >= 0 ? "chg-positive" : "chg-negative";
+                
+                const ceChgSign = row.CE_Chg >= 0 ? "+" : "";
+                const peChgSign = row.PE_Chg >= 0 ? "+" : "";
+
+                // Format Greeks values dynamically
+                const ceDelta = row.CE_Delta !== undefined ? row.CE_Delta.toFixed(2) : "0.00";
+                const ceTheta = row.CE_Theta !== undefined ? row.CE_Theta.toFixed(2) : "0.00";
+                const ceIv = row.CE_IV !== undefined ? row.CE_IV.toFixed(1) : "0.0";
+
+                const peDelta = row.PE_Delta !== undefined ? row.PE_Delta.toFixed(2) : "0.00";
+                const peTheta = row.PE_Theta !== undefined ? row.PE_Theta.toFixed(2) : "0.00";
+                const peIv = row.PE_IV !== undefined ? row.PE_IV.toFixed(1) : "0.0";
+
+                tr.innerHTML = `
+                    <td class="call-side" style="color: var(--cyan); font-family: 'JetBrains Mono', monospace; font-weight: 600;">${ceDelta}</td>
+                    <td class="call-side" style="color: var(--gold); font-family: 'JetBrains Mono', monospace; font-weight: 600;">${ceTheta}</td>
+                    <td class="call-side" style="color: #c084fc; font-family: 'JetBrains Mono', monospace; font-weight: 600;">${ceIv}%</td>
+                    <td class="call-side">${row.CE_OI.toLocaleString()}</td>
+                    <td class="call-side">${row.CE_Vol.toLocaleString()}</td>
+                    <td class="call-side ltp-cell">${row.CE_LTP.toFixed(2)}</td>
+                    <td class="call-side ${ceChgClass}">${ceChgSign}${row.CE_Chg.toFixed(2)}</td>
+                    
+                    <td class="strike-cell">${row.Strike}</td>
+                    
+                    <td class="put-side ltp-cell">${row.PE_LTP.toFixed(2)}</td>
+                    <td class="put-side ${peChgClass}">${peChgSign}${row.PE_Chg.toFixed(2)}</td>
+                    <td class="put-side">${row.PE_Vol.toLocaleString()}</td>
+                    <td class="put-side">${row.PE_OI.toLocaleString()}</td>
+                    <td class="put-side" style="color: #c084fc; font-family: 'JetBrains Mono', monospace; font-weight: 600;">${peIv}%</td>
+                    <td class="put-side" style="color: var(--gold); font-family: 'JetBrains Mono', monospace; font-weight: 600;">${peTheta}</td>
+                    <td class="put-side" style="color: var(--cyan); font-family: 'JetBrains Mono', monospace; font-weight: 600;">${peDelta}</td>
+                `;
+                body.appendChild(tr);
+            });
+        }
+
+        function changeAsset() {
+            currentAsset = document.getElementById('assetSelector').value;
+            updateDashboard();
+        }
+
+        // Live script reloader
+        function reloadData() {
+            const oldScript = document.getElementById('liveDataScript');
+            if (oldScript) {
+                oldScript.parentNode.removeChild(oldScript);
+            }
+            
+            const newScript = document.createElement('script');
+            newScript.id = 'liveDataScript';
+            
+            // Auto-detect: Use local data.js if running locally, otherwise fetch from online Cloudflare R2!
+            let srcPath = 'https://pub-9034182bd01540f09474c45055049256.r2.dev/data.js';
+            if (window.location.protocol === 'file:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                srcPath = 'data/data.js';
+            }
+            
+            newScript.src = srcPath + '?t=' + new Date().getTime();
+            newScript.onload = function() {
+                updateDashboard();
+            };
+            document.body.appendChild(newScript);
+        }
+
+        // Initial setup and timers
+        window.onload = function() {
+            reloadData(); // Initial immediate fetch
+            // Check for updates every 3 seconds for lightning-fast UI refreshes
+            setInterval(reloadData, 3000);
+        };
+    </script>
+</body>
+</html>

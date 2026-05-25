@@ -724,6 +724,12 @@
 
             // Filter to show exactly 7 ITM, ATM, and 7 OTM strikes (total 15 strikes centered around ATM)
             let displayChain = chain;
+            
+            const container = document.querySelector('.chain-table-container');
+            if (container) {
+                container.style.maxHeight = showAllStrikes ? 'none' : '520px';
+            }
+            
             if (!showAllStrikes) {
                 let atmIndex = chain.findIndex(row => row.Strike === closestStrike);
                 if (atmIndex !== -1) {

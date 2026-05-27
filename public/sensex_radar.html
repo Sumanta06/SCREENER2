@@ -348,8 +348,10 @@ function renderChain() {
   const chains = state.data?.option_chains || {};
   const rows = chains['weekly'] || [];
 
-  if (!rows.length) {
-    wrap.innerHTML = '<div class="loading"><span style="color:var(--muted);font-size:.85rem">No data for this expiry</span></div>';
+  if (!rows || rows.length < 10) {
+    // If we receive bad/empty data, do not wipe the screen. 
+    // Just keep the last successfully rendered table.
+    console.warn("Invalid data received, keeping previous table.");
     return;
   }
 

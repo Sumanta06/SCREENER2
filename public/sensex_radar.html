@@ -209,7 +209,6 @@
 
 <div class="metrics-bar" id="metrics-bar">
   <div class="metric"><div class="metric-label">Weekly PCR</div><div class="metric-value neutral" id="m-wpcr">--</div><div class="metric-sub" id="m-wpcr-s">Neutral</div></div>
-  <div class="metric"><div class="metric-label">Monthly PCR</div><div class="metric-value neutral" id="m-mpcr">--</div><div class="metric-sub" id="m-mpcr-s">Neutral</div></div>
   <div class="metric"><div class="metric-label">Max Pain (W)</div><div class="metric-value" id="m-pain" style="color:var(--yellow)">--</div><div class="metric-sub">Weekly</div></div>
   <div class="metric"><div class="metric-label">Support S1</div><div class="metric-value bullish" id="m-s1">--</div><div class="metric-sub">Max Put OI</div></div>
   <div class="metric"><div class="metric-label">Resistance R1</div><div class="metric-value bearish" id="m-r1">--</div><div class="metric-sub">Max Call OI</div></div>
@@ -234,9 +233,8 @@
   <div class="chain-panel">
     <div class="panel-header">
       <div class="panel-title">📊 Option Chain</div>
-      <div class="expiry-toggle">
-        <button class="exp-btn active" id="btn-weekly"  onclick="showChain('weekly')">Weekly</button>
-        <button class="exp-btn"        id="btn-monthly" onclick="showChain('monthly')">Monthly</button>
+      <div class="expiry-toggle" style="display:none;">
+        <button class="exp-btn active" id="btn-weekly">Weekly</button>
       </div>
     </div>
     <div class="chain-table-wrap" id="chain-table-wrap">
@@ -290,8 +288,6 @@ function renderAll() {
 
   setMetric('m-wpcr', wpcr.toFixed(2), pcrClass(wpcr));
   document.getElementById('m-wpcr-s').textContent = pcrLabel(wpcr);
-  setMetric('m-mpcr', mpcr.toFixed(2), pcrClass(mpcr));
-  document.getElementById('m-mpcr-s').textContent = pcrLabel(mpcr);
   setMetric('m-pain', numFmt(wa.max_pain), 'neutral');
   setMetric('m-s1',   numFmt(wa.support_s1), 'bullish');
   setMetric('m-r1',   numFmt(wa.resistance_r1), 'bearish');
@@ -299,10 +295,10 @@ function renderAll() {
   document.getElementById('m-updated').textContent = (d.last_updated||'').slice(11,19);
 
   // Analytics cards
-  renderAnalytics(wa, ma);
+  renderAnalytics(wa);
 
   // Chain
-  renderChain(state.activeChain);
+  renderChain();
 
   // Signals
   renderSignals(d.signals || [], d.gamma_blast);
@@ -316,27 +312,18 @@ function setMetric(id, val, cls) {
 
 function numFmt(v) { return v ? Number(v).toLocaleString('en-IN') : '--'; }
 
-function renderAnalytics(wa, ma) {
+function renderAnalytics(wa) {
   const g = document.getElementById('analytics-grid');
   const row = (label,val,cls) => `<div class="ana-card"><div class="ana-label">${label}</div><div class="ana-val ${cls}">${val}</div></div>`;
   g.innerHTML =
     row('W Max Pain', numFmt(wa.max_pain), 'neutral') +
-    row('M Max Pain', numFmt(ma.max_pain), 'neutral') +
-    row('W Vol PCR',  (wa.pcr_vol||0).toFixed(2), (wa.pcr_vol||0)>1?'bullish':'bearish') +
-    row('M Vol PCR',  (ma.pcr_vol||0).toFixed(2), (ma.pcr_vol||0)>1?'bullish':'bearish');
+    row('W Vol PCR',  (wa.pcr_vol||0).toFixed(2), (wa.pcr_vol||0)>1?'bullish':'bearish');
 }
 
-function showChain(type) {
-  state.activeChain = type;
-  document.getElementById('btn-weekly').className  = 'exp-btn' + (type==='weekly'?' active':'');
-  document.getElementById('btn-monthly').className = 'exp-btn' + (type==='monthly'?' active':'');
-  renderChain(type);
-}
-
-function renderChain(type) {
+function renderChain() {
   const wrap = document.getElementById('chain-table-wrap');
   const chains = state.data?.option_chains || {};
-  const rows = chains[type] || [];
+  const rows = chains['weekly'] || [];
 
   if (!rows.length) {
     wrap.innerHTML = '<div class="loading"><span style="color:var(--muted);font-size:.85rem">No data for this expiry</span></div>';
@@ -368,8 +355,8 @@ function renderChain(type) {
     const putBar  = Math.round((r.put_oi/maxPutOI)*60);
 
     // LTP color comparison
-    const cKey = type + '_c_' + r.strike;
-    const pKey = type + '_p_' + r.strike;
+    const cKey = 'weekly_c_' + r.strike;
+    const pKey = 'weekly_p_' + r.strike;
     const prevCallLtp = state.prevLtp[cKey];
     const prevPutLtp  = state.prevLtp[pKey];
     const callCls = prevCallLtp == null ? 'call-side' : r.call_ltp > prevCallLtp ? 'call-side ltp-up flash-up' : r.call_ltp < prevCallLtp ? 'call-side ltp-down flash-down' : 'call-side';

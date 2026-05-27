@@ -58,8 +58,8 @@
   .bullish { color:var(--green); } .bearish { color:var(--red); } .neutral { color:var(--yellow); }
 
   /* MAIN LAYOUT */
-  .main { display:grid; grid-template-columns:1fr 380px; gap:0; height:calc(100vh - 120px); }
-  @media(max-width:900px){ .main{ grid-template-columns:1fr; height:auto; } }
+  .main { display:flex; flex-direction:column; height:calc(100vh - 120px); }
+  @media(max-width:900px){ .main{ height:auto; } .signals-panel{ flex-direction:column; } .analytics-grid{ width:100%; border-left:none; border-top:1px solid var(--border); } }
 
   /* OPTION CHAIN */
   .chain-panel { border-right:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; background:var(--bg2); }
@@ -89,32 +89,38 @@
   .oi-call { background:linear-gradient(90deg,transparent,rgba(37,99,235,0.4)); }
   .oi-put  { background:linear-gradient(90deg,rgba(220,38,38,0.4),transparent); }
 
-  /* SIGNALS PANEL */
-  .signals-panel { display:flex; flex-direction:column; overflow:hidden; background:var(--bg); }
-  .signals-list  { overflow-y:auto; flex:1; padding:12px; display:flex; flex-direction:column; gap:10px; }
-  .signal-card { background:var(--bg2); border:1px solid var(--border); border-radius:10px;
-    padding:12px 14px; position:relative; overflow:hidden; animation: slide-in .4s ease;
-    box-shadow:var(--shadow); transition:transform .2s, box-shadow .2s; }
+  /* SIGNALS PANEL (AT TOP) */
+  .signals-panel { display:flex; flex-direction:row; background:var(--bg); border-bottom:1px solid var(--border); flex-shrink:0; }
+  .signals-header { padding:16px 24px; border-right:1px solid var(--border); display:flex; flex-direction:column; justify-content:center; background:var(--bg3); width:180px; flex-shrink:0; }
+  .signals-title { font-size:1rem; font-weight:700; display:flex; align-items:center; gap:8px; color:var(--text); margin-bottom:8px; }
+  .signals-list  { flex:1; padding:16px; display:flex; justify-content:center; align-items:center; overflow-x:auto; }
+  
+  .signal-card { background:var(--bg2); border:1px solid var(--border); border-radius:12px;
+    padding:12px 24px; position:relative; overflow:hidden; animation: slide-in .5s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow:var(--shadow-sm); transition:transform .3s, box-shadow .3s; width:100%; max-width:650px; display:flex; justify-content:space-between; align-items:center; }
   .signal-card:hover { transform:translateY(-2px); box-shadow:var(--shadow-md); }
-  @keyframes slide-in { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
-  .signal-card.bullish { border-left:4px solid var(--green); }
-  .signal-card.bearish { border-left:4px solid var(--red); }
-  .signal-card.new { animation: flash-card .8s ease; }
-  @keyframes flash-card { 0%{background:rgba(37,99,235,0.1)} 100%{background:var(--bg2)} }
-  .sig-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
-  .sig-time   { font-family:'JetBrains Mono'; font-size:.7rem; color:var(--muted); font-weight:500; }
-  .sig-type   { font-size:.72rem; font-weight:700; padding:3px 10px; border-radius:6px; }
+  @keyframes slide-in { from{opacity:0;transform:translateY(10px) scale(0.98)} to{opacity:1;transform:translateY(0) scale(1)} }
+  .signal-card.bullish { border-left:6px solid var(--green); border-top:1px solid var(--border); }
+  .signal-card.bearish { border-left:6px solid var(--red); border-top:1px solid var(--border); }
+  
+  .sig-left { display:flex; flex-direction:column; gap:6px; }
+  .sig-time   { font-family:'JetBrains Mono'; font-size:0.85rem; color:var(--muted); font-weight:600; }
+  .sig-type   { font-size:0.85rem; font-weight:800; padding:4px 12px; border-radius:6px; letter-spacing:0.5px; text-transform:uppercase; width:fit-content; }
   .bullish .sig-type { background:rgba(22,163,74,0.1); color:var(--green); }
   .bearish .sig-type { background:rgba(220,38,38,0.1); color:var(--red); }
-  .sig-body   { font-size:.78rem; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-  .sig-strike { font-weight:700; font-family:'JetBrains Mono'; font-size:.9rem; color:var(--text); }
-  .sig-opt    { font-size:.7rem; padding:2px 6px; border-radius:4px; background:rgba(37,99,235,0.1); color:var(--blue); font-weight:600; }
-  .sig-label  { color:var(--muted); font-size:.7rem; }
-  .sig-oi     { font-family:'JetBrains Mono'; font-size:.75rem; font-weight:600; color:var(--text); }
-  .no-signals { text-align:center; color:var(--muted); padding:40px 20px; font-size:.85rem; font-weight:500; }
+  
+  .sig-mid { display:flex; flex-direction:column; align-items:center; justify-content:center; border-left:1px solid var(--border); border-right:1px solid var(--border); padding:0 24px; }
+  .sig-strike { font-weight:800; font-family:'JetBrains Mono'; font-size:2rem; color:var(--text); letter-spacing:-1px; }
+  .sig-opt    { font-size:0.9rem; padding:2px 8px; border-radius:4px; background:rgba(37,99,235,0.1); color:var(--blue); font-weight:700; margin-left:8px; }
+  
+  .sig-right { display:flex; gap:16px; }
+  .sig-stat   { background:var(--bg3); padding:8px 16px; border-radius:8px; border:1px solid var(--border); text-align:center; min-width:90px; }
+  .sig-label  { color:var(--muted); font-size:0.7rem; font-weight:600; text-transform:uppercase; letter-spacing:1px; margin-bottom:4px; display:block; }
+  .sig-val    { font-family:'JetBrains Mono'; font-size:1.1rem; font-weight:700; color:var(--text); }
+  .no-signals { text-align:center; color:var(--muted); padding:20px; font-size:0.9rem; font-weight:500; }
 
   /* ANALYTICS MINI */
-  .analytics-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:12px; background:var(--bg2); border-top:1px solid var(--border); box-shadow:0 -2px 10px rgba(0,0,0,0.02); }
+  .analytics-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:16px; background:var(--bg2); border-left:1px solid var(--border); width:320px; flex-shrink:0; }
   .ana-card { background:var(--bg3); border:1px solid var(--border); border-radius:8px; padding:10px; text-align:center; }
   .ana-label{ font-size:.66rem; color:var(--muted); text-transform:uppercase; letter-spacing:.6px; font-weight:600; }
   .ana-val  { font-size:1.05rem; font-weight:700; font-family:'JetBrains Mono'; margin-top:4px; }
@@ -161,7 +167,19 @@
 </div>
 
 <div class="main">
-  <!-- OPTION CHAIN -->
+  <!-- SIGNALS (AT TOP) -->
+  <div class="signals-panel">
+    <div class="signals-header">
+      <div class="signals-title">🔔 Live Signals</div>
+      <span class="live-badge" style="width:fit-content;">LIVE</span>
+    </div>
+    <div class="signals-list" id="signals-list">
+      <div class="loading" style="height:auto; padding:20px;"><div class="spinner" style="width:24px;height:24px;"></div><span style="color:var(--muted);font-size:.85rem;margin-top:8px;">Waiting for signals...</span></div>
+    </div>
+    <div class="analytics-grid" id="analytics-grid"></div>
+  </div>
+
+  <!-- OPTION CHAIN (BELOW) -->
   <div class="chain-panel">
     <div class="panel-header">
       <div class="panel-title">📊 Option Chain</div>
@@ -173,18 +191,6 @@
     <div class="chain-table-wrap" id="chain-table-wrap">
       <div class="loading"><div class="spinner"></div><span style="color:var(--muted);font-size:.85rem">Loading option chain...</span></div>
     </div>
-  </div>
-
-  <!-- SIGNALS -->
-  <div class="signals-panel">
-    <div class="panel-header">
-      <div class="panel-title">🔔 Live Signals</div>
-      <span class="live-badge">LIVE</span>
-    </div>
-    <div class="signals-list" id="signals-list">
-      <div class="loading"><div class="spinner"></div><span style="color:var(--muted);font-size:.85rem">Waiting for signals...</span></div>
-    </div>
-    <div class="analytics-grid" id="analytics-grid"></div>
   </div>
 </div>
 
@@ -340,36 +346,47 @@ function renderChain(type) {
 
 function renderSignals(signals) {
   const list = document.getElementById('signals-list');
-  if (!signals.length) {
-    list.innerHTML = '<div class="no-signals">⏳ Waiting for OI buildup signals...<br><span style="font-size:.75rem">Signals appear every 3 minutes during market hours</span></div>';
+  if (!signals || !signals.length) {
+    list.innerHTML = '<div class="no-signals">⏳ Waiting for high-accuracy setup...<br><span style="font-size:0.8rem; margin-top:8px; display:inline-block">Scanning ATM ±3 strikes</span></div>';
     return;
   }
 
-  const recent = [...signals].reverse().slice(0, 6);
-  let html = '';
-  for (const sig of recent) {
-    const isNew = !state.seenSignals.has(sig.timestamp+sig.strike+sig.option_type);
-    const cls   = sig.sentiment === 'BULLISH' ? 'bullish' : 'bearish';
-    const emoji = sig.sentiment === 'BULLISH' ? '🟢' : '🔴';
-    const oiChg = sig.oi_change > 0 ? `+${numFmt(sig.oi_change)}` : numFmt(sig.oi_change);
-    html += `<div class="signal-card ${cls}${isNew?' new':''}">
-      <div class="sig-top">
-        <span class="sig-time">${sig.timestamp}</span>
-        <span class="sig-type">${emoji} ${sig.sentiment}</span>
-      </div>
-      <div class="sig-body">
+  const sig = signals[0];
+  const isNew = !state.seenSignals.has(sig.timestamp+sig.strike+sig.option_type);
+  const cls   = sig.sentiment === 'BULLISH' ? 'bullish' : 'bearish';
+  const emoji = sig.sentiment === 'BULLISH' ? '🟢' : '🔴';
+  const oiChg = sig.oi_change > 0 ? `+${numFmt(sig.oi_change)}` : numFmt(sig.oi_change);
+  
+  const isStrong = sig.signal_type.includes('STRONG');
+  const strengthColor = isStrong ? (sig.sentiment === 'BULLISH' ? 'var(--green)' : 'var(--red)') : 'var(--muted)';
+  const strengthBg = isStrong ? (sig.sentiment === 'BULLISH' ? 'rgba(22,163,74,0.1)' : 'rgba(220,38,38,0.1)') : 'var(--bg3)';
+  const strengthStyle = `padding:4px 8px; border-radius:6px; background:${strengthBg}; color:${strengthColor}; font-weight:800; font-size:0.8rem; display:inline-block; margin-bottom:4px; border:1px solid ${isStrong ? strengthColor : 'var(--border)'};`;
+  
+  const html = `<div class="signal-card ${cls}${isNew?' new':''}">
+    <div class="sig-left">
+      <span class="sig-type">${emoji} ${sig.sentiment}</span>
+      <span class="sig-time">${sig.timestamp} <span style="font-size:0.75rem; color:var(--muted); margin-left:4px;">${sig.expiry}</span></span>
+    </div>
+    <div class="sig-mid">
+      <div style="${strengthStyle}">${sig.signal_type}</div>
+      <div style="display:flex; align-items:center;">
         <span class="sig-strike">${numFmt(sig.strike)}</span>
         <span class="sig-opt">${sig.option_type}</span>
-        <span class="sig-label" style="font-size:0.65rem">(${sig.expiry?.split(' ')[0]} ${sig.expiry?.split(' ')[1]})</span>
-        <span class="sig-label">•</span>
-        <span>${sig.signal_type}</span>
-        <span class="sig-label">OI:</span>
-        <span class="sig-oi">${oiChg}</span>
-        <span class="sig-label">LTP: ${sig.ltp}</span>
       </div>
-    </div>`;
-    state.seenSignals.add(sig.timestamp+sig.strike+sig.option_type);
-  }
+    </div>
+    <div class="sig-right">
+      <div class="sig-stat">
+        <span class="sig-label">OI Change</span>
+        <span class="sig-val">${oiChg}</span>
+      </div>
+      <div class="sig-stat">
+        <span class="sig-label">LTP</span>
+        <span class="sig-val">${sig.ltp}</span>
+      </div>
+    </div>
+  </div>`;
+  
+  state.seenSignals.add(sig.timestamp+sig.strike+sig.option_type);
   list.innerHTML = html;
 }
 

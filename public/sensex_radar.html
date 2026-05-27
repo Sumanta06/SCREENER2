@@ -353,16 +353,27 @@ function renderChain() {
     return;
   }
 
-  // Find ATM (middle strike index)
+  // Find ATM (closest to spot using Put-Call Parity)
   const strikes = rows.map(r=>r.strike);
-  const mid = strikes[Math.floor(strikes.length/2)];
+  let mid = strikes[Math.floor(strikes.length/2)];
+  let minDiff = Infinity;
+  for (const r of rows) {
+    if (r.call_ltp > 1 && r.put_ltp > 1) { // Filter out illiquid deep OTMs
+      const diff = Math.abs(r.call_ltp - r.put_ltp);
+      if (diff < minDiff) {
+        minDiff = diff;
+        mid = r.strike;
+      }
+    }
+  }
+  
   const maxCallOI = Math.max(...rows.map(r=>r.call_oi));
   const maxPutOI  = Math.max(...rows.map(r=>r.put_oi));
 
-  // Render centered around ATM ±15 strikes
+  // Render centered around true ATM ±20 strikes
   const atmIdx = rows.findIndex(r=>r.strike===mid) || Math.floor(rows.length/2);
-  const start = Math.max(0, atmIdx-18);
-  const end   = Math.min(rows.length, atmIdx+19);
+  const start = Math.max(0, atmIdx-20);
+  const end   = Math.min(rows.length, atmIdx+21);
   const visible = rows.slice(start, end);
 
   let html = `<table>

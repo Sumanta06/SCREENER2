@@ -141,12 +141,7 @@
   .sig-val    { font-family:'JetBrains Mono'; font-size:1.1rem; font-weight:700; color:var(--text); }
   .no-signals { text-align:center; color:var(--muted); padding:20px; font-size:0.9rem; font-weight:500; }
 
-  /* ANALYTICS MINI */
-  .analytics-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:16px; background:var(--bg2); border-left:1px solid var(--border); width:320px; flex-shrink:0; }
-  .ana-card { background:var(--bg3); border:1px solid var(--border); border-radius:8px; padding:10px; text-align:center; }
-  .ana-label{ font-size:.66rem; color:var(--muted); text-transform:uppercase; letter-spacing:.6px; font-weight:600; }
-  .ana-val  { font-size:1.05rem; font-weight:700; font-family:'JetBrains Mono'; margin-top:4px; }
-
+  /* ANALYTICS MINI REMOVED */
   .ltp-up   { color: #16a34a !important; font-weight:600; }
   .ltp-down { color: #dc2626 !important; font-weight:600; }
   @keyframes flash-up   { 0%{background:rgba(22,163,74,0.15)} 100%{background:transparent} }
@@ -187,7 +182,6 @@
     .sig-right { justify-content:space-between; }
     
     /* Analytics & Metrics */
-    .analytics-grid { width:100%; border-left:none; border-top:1px solid var(--border); grid-template-columns:1fr 1fr; padding: 12px; } 
     .metrics-bar { grid-template-columns: repeat(2, 1fr); }
     
     /* Table Scroll */
@@ -226,7 +220,6 @@
     <div class="signals-list" id="signals-list">
       <div class="loading" style="height:auto; padding:20px;"><div class="spinner" style="width:24px;height:24px;"></div><span style="color:var(--muted);font-size:.85rem;margin-top:8px;">Waiting for signals...</span></div>
     </div>
-    <div class="analytics-grid" id="analytics-grid"></div>
   </div>
 
   <!-- OPTION CHAIN (BELOW) -->
@@ -294,9 +287,6 @@ function renderAll() {
   document.getElementById('m-wexp').textContent = d.weekly_expiry || '--';
   document.getElementById('m-updated').textContent = (d.last_updated||'').slice(11,19);
 
-  // Analytics cards
-  renderAnalytics(wa);
-
   // Chain
   renderChain();
 
@@ -311,14 +301,6 @@ function setMetric(id, val, cls) {
 }
 
 function numFmt(v) { return v ? Number(v).toLocaleString('en-IN') : '--'; }
-
-function renderAnalytics(wa) {
-  const g = document.getElementById('analytics-grid');
-  const row = (label,val,cls) => `<div class="ana-card"><div class="ana-label">${label}</div><div class="ana-val ${cls}">${val}</div></div>`;
-  g.innerHTML =
-    row('W Max Pain', numFmt(wa.max_pain), 'neutral') +
-    row('W Vol PCR',  (wa.pcr_vol||0).toFixed(2), (wa.pcr_vol||0)>1?'bullish':'bearish');
-}
 
 function renderChain() {
   const wrap = document.getElementById('chain-table-wrap');

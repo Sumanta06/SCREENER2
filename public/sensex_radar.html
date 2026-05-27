@@ -161,6 +161,26 @@
     border-radius:50%; animation:spin 1s linear infinite; }
   @keyframes spin { to{transform:rotate(360deg)} }
 
+  /* MODAL */
+  .modal { display:none; position:fixed; z-index:100; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.5); backdrop-filter:blur(3px); }
+  .modal-content { background:var(--bg); margin:5% auto; padding:0; border:1px solid var(--border); width:90%; max-width:600px; border-radius:12px; box-shadow:var(--shadow-lg); overflow:hidden; display:flex; flex-direction:column; max-height:80vh; }
+  .modal-header { padding:16px 20px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; background:var(--bg2); }
+  .modal-header h3 { margin:0; font-size:1.1rem; }
+  .close-btn { color:var(--muted); font-size:1.5rem; font-weight:bold; cursor:pointer; }
+  .close-btn:hover { color:var(--text); }
+  .modal-body { padding:20px; overflow-y:auto; display:flex; flex-direction:column; gap:12px; }
+  .hist-item { background:var(--bg2); border:1px solid var(--border); border-left:4px solid var(--border2); border-radius:8px; padding:12px; display:flex; justify-content:space-between; align-items:center; }
+  .hist-item.bullish { border-left-color:var(--green); }
+  .hist-item.bearish { border-left-color:var(--red); }
+  .hist-time { font-family:'JetBrains Mono'; font-size:0.85rem; color:var(--muted); }
+  .hist-strike { font-family:'JetBrains Mono'; font-weight:bold; font-size:1.1rem; }
+  .hist-type { font-size:0.75rem; font-weight:bold; padding:2px 6px; border-radius:4px; }
+  .bullish .hist-type { background:rgba(22,163,74,0.1); color:var(--green); }
+  .bearish .hist-type { background:rgba(220,38,38,0.1); color:var(--red); }
+  .hist-val { text-align:right; }
+  .hist-ltp { font-family:'JetBrains Mono'; font-weight:bold; font-size:1.1rem;}
+  .hist-oi { font-size:0.75rem; color:var(--muted); font-weight:600; margin-top:4px;}
+
   /* MOBILE RESPONSIVE OVERRIDES */
   @media(max-width:900px){ 
     header { flex-direction:column; gap:12px; align-items:flex-start; padding:12px 16px; }
@@ -215,7 +235,10 @@
   <div class="signals-panel">
     <div class="signals-header">
       <div class="signals-title">🔔 Live Signals</div>
-      <span class="live-badge" style="width:fit-content;">LIVE</span>
+      <div style="display:flex; gap:10px; align-items:center">
+        <button onclick="openHistory()" style="background:var(--bg3); border:1px solid var(--border); color:var(--text); padding:4px 12px; border-radius:6px; cursor:pointer; font-size:0.8rem">📜 History</button>
+        <span class="live-badge" style="width:fit-content;">LIVE</span>
+      </div>
     </div>
     <div class="signals-list" id="signals-list">
       <div class="loading" style="height:auto; padding:20px;"><div class="spinner" style="width:24px;height:24px;"></div><span style="color:var(--muted);font-size:.85rem;margin-top:8px;">Waiting for signals...</span></div>
@@ -232,6 +255,19 @@
     </div>
     <div class="chain-table-wrap" id="chain-table-wrap">
       <div class="loading"><div class="spinner"></div><span style="color:var(--muted);font-size:.85rem">Loading option chain...</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- HISTORY MODAL -->
+<div id="history-modal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>📜 Today's Signal History</h3>
+      <span class="close-btn" onclick="closeHistory()">&times;</span>
+    </div>
+    <div class="modal-body" id="history-list">
+      <div class="loading" style="height:auto"><span style="color:var(--muted)">Loading history...</span></div>
     </div>
   </div>
 </div>
@@ -292,6 +328,11 @@ function renderAll() {
 
   // Signals
   renderSignals(d.signals || [], d.gamma_blast);
+
+  // If history modal is open, re-render it
+  if (document.getElementById('history-modal').style.display === 'block') {
+    renderHistory();
+  }
 }
 
 function setMetric(id, val, cls) {
@@ -444,12 +485,54 @@ function renderSignals(signals, gammaBlast) {
   // Combine both
   list.style.display = 'flex';
   list.style.gap = '16px';
-  list.style.flexDirection = window.innerWidth <= 900 ? 'column' : 'row';
-  
-  list.innerHTML = momentumHtml + gammaHtml;
+  list.style.flexDirection = 'row';
+  list.innerHTML = `<div style="display:flex; width:100%; gap:20px; flex-direction:row;">
+    ${momentumHtml}
+    ${gammaHtml}
+  </div>`;
 }
 
-// Auto-refresh
+function openHistory() {
+  document.getElementById('history-modal').style.display = 'block';
+  renderHistory();
+}
+function closeHistory() {
+  document.getElementById('history-modal').style.display = 'none';
+}
+window.onclick = function(e) {
+  if (e.target == document.getElementById('history-modal')) closeHistory();
+}
+
+function renderHistory() {
+  const list = document.getElementById('history-list');
+  const h = state.data?.signal_history || [];
+  if (!h.length) {
+    list.innerHTML = '<div class="no-signals" style="padding:40px">No signals generated yet today.</div>';
+    return;
+  }
+  let html = '';
+  for (const s of h) {
+    const isBull = s.sentiment === 'BULLISH';
+    const isGamma = s.signal_type && s.signal_type.includes('GAMMA');
+    const badgeCls = isBull ? 'bullish' : 'bearish';
+    
+    html += `<div class="hist-item ${badgeCls}">
+      <div style="display:flex; flex-direction:column; gap:4px">
+        <div class="hist-time">⏱ ${s.timestamp}</div>
+        <div style="display:flex; align-items:center; gap:8px">
+          <span class="hist-strike">${s.strike} <span style="font-size:0.8rem;color:var(--muted)">${s.option_type}</span></span>
+          <span class="hist-type">${s.signal_type}</span>
+        </div>
+      </div>
+      <div class="hist-val">
+        <div class="hist-ltp">₹${Number(s.ltp).toFixed(2)}</div>
+        <div class="hist-oi">${isGamma && s.ltp_pct ? 'Spike: +'+s.ltp_pct+'%' : 'OI Chg: '+((s.oi_change>0?'+':'')+Number(s.oi_change).toLocaleString('en-IN'))}</div>
+      </div>
+    </div>`;
+  }
+  list.innerHTML = html;
+}
+
 fetchData();
 setInterval(fetchData, REFRESH_MS);
 </script>

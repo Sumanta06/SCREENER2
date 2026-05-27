@@ -249,8 +249,8 @@
   <div class="chain-panel">
     <div class="panel-header">
       <div class="panel-title">📊 Option Chain</div>
-      <div class="expiry-toggle" style="display:none;">
-        <button class="exp-btn active" id="btn-weekly">Weekly</button>
+      <div class="expiry-toggle">
+        <button class="exp-btn" id="btn-show-all" onclick="toggleStrikes()">Show All Strikes</button>
       </div>
     </div>
     <div class="chain-table-wrap" id="chain-table-wrap">
@@ -278,7 +278,7 @@ const R2_URL = "https://pub-beab7a6397a7478c853251902952970e.r2.dev/signals/sens
 const REFRESH_MS = 60000; // 1 minute
 // ────────────────────────────────────────────────────────────────
 
-let state = { data: null, activeChain: 'weekly', seenSignals: new Set(), prevLtp: {} };
+let state = { data: null, activeChain: 'weekly', seenSignals: new Set(), prevLtp: {}, showAll: false };
 
 // Clock
 setInterval(() => {
@@ -370,10 +370,14 @@ function renderChain() {
   const maxCallOI = Math.max(...rows.map(r=>r.call_oi));
   const maxPutOI  = Math.max(...rows.map(r=>r.put_oi));
 
-  // Render centered around true ATM ±20 strikes
+  // Render centered around true ATM ±7 strikes by default
   const atmIdx = rows.findIndex(r=>r.strike===mid) || Math.floor(rows.length/2);
-  const start = Math.max(0, atmIdx-20);
-  const end   = Math.min(rows.length, atmIdx+21);
+  let start = 0;
+  let end = rows.length;
+  if (!state.showAll) {
+    start = Math.max(0, atmIdx-7);
+    end   = Math.min(rows.length, atmIdx+8);
+  }
   const visible = rows.slice(start, end);
 
   let html = `<table>
@@ -501,6 +505,13 @@ function renderSignals(signals, gammaBlast) {
     ${momentumHtml}
     ${gammaHtml}
   </div>`;
+}
+
+function toggleStrikes() {
+  state.showAll = !state.showAll;
+  document.getElementById('btn-show-all').textContent = state.showAll ? "Show Limited Strikes" : "Show All Strikes";
+  document.getElementById('btn-show-all').classList.toggle('active', state.showAll);
+  renderChain();
 }
 
 function openHistory() {

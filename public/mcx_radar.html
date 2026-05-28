@@ -107,30 +107,66 @@
         }
 
         .status-badge {
-            background: rgba(5, 150, 105, 0.08);
-            color: var(--green);
             padding: 0.35rem 0.75rem;
             border-radius: 12px;
             font-size: 0.75rem;
-            font-weight: 600;
-            border: 1px solid rgba(5, 150, 105, 0.2);
+            font-weight: 700;
             display: flex;
             align-items: center;
             gap: 6px;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .status-badge .dot {
-            width: 6px;
-            height: 6px;
-            background-color: var(--green);
+            width: 8px;
+            height: 8px;
             border-radius: 50%;
-            animation: pulse 2s infinite;
+            transition: all 0.3s ease;
         }
 
-        @keyframes pulse {
-            0% { transform: scale(0.9); opacity: 0.6; }
-            50% { transform: scale(1.3); opacity: 1; }
-            100% { transform: scale(0.9); opacity: 0.6; }
+        /* --- Online Green Blinking Mode --- */
+        @keyframes blink-green {
+            0% { opacity: 0.4; box-shadow: 0 0 0px rgba(5, 150, 105, 0); }
+            50% { opacity: 1; box-shadow: 0 0 8px rgba(5, 150, 105, 0.6); }
+            100% { opacity: 0.4; box-shadow: 0 0 0px rgba(5, 150, 105, 0); }
+        }
+
+        .status-badge.online {
+            background: rgba(5, 150, 105, 0.1) !important;
+            color: #059669 !important;
+            border: 1.5px solid rgba(5, 150, 105, 0.3) !important;
+        }
+
+        .status-badge.online .dot {
+            background-color: #059669 !important;
+            animation: blink-green 1.5s infinite !important;
+        }
+
+        /* --- Offline Red Blinking Mode --- */
+        @keyframes blink-red-dot {
+            0% { opacity: 0.4; box-shadow: 0 0 0px rgba(220, 38, 38, 0); }
+            50% { opacity: 1; box-shadow: 0 0 8px rgba(220, 38, 38, 0.6); }
+            100% { opacity: 0.4; box-shadow: 0 0 0px rgba(220, 38, 38, 0); }
+        }
+
+        .status-badge.offline {
+            background: rgba(220, 38, 38, 0.1) !important;
+            color: #dc2626 !important;
+            border: 1.5px solid rgba(220, 38, 38, 0.3) !important;
+            animation: blink-red-badge 1.5s infinite !important;
+        }
+
+        @keyframes blink-red-badge {
+            0% { border-color: rgba(220, 38, 38, 0.2); }
+            50% { border-color: rgba(220, 38, 38, 0.6); background: rgba(220, 38, 38, 0.15); }
+            100% { border-color: rgba(220, 38, 38, 0.2); }
+        }
+
+        .status-badge.offline .dot {
+            background-color: #dc2626 !important;
+            animation: blink-red-dot 1.5s infinite !important;
         }
 
         /* Live Radar Section (Compact) */
@@ -550,17 +586,6 @@
             100% { opacity: 0.3; }
         }
 
-        .status-badge.offline {
-            background: rgba(220, 38, 38, 0.12) !important;
-            color: #dc2626 !important;
-            border-color: rgba(220, 38, 38, 0.3) !important;
-            animation: blink-red 1.5s infinite !important;
-        }
-
-        .status-badge.offline .dot {
-            background-color: #dc2626 !important;
-            animation: none !important;
-        }
     </style>
 </head>
 <body>
@@ -581,9 +606,9 @@
                     <option value="NATURALGAS">NATURALGAS</option>
                     <option value="NATURALGASM">NATURALGAS MINI</option>
                 </select>
-                <div class="status-badge" id="statusBadge">
+                <div class="status-badge online" id="statusBadge">
                     <div class="dot"></div>
-                    <span id="statusText">LIVE AUTO-REFRESH</span>
+                    <span id="statusText">ONLINE</span>
                 </div>
             </div>
         </header>
@@ -953,11 +978,13 @@
                 if (isOnline) {
                     progressBar.className = "progress-bar-running";
                     statusBadge.classList.remove('offline');
-                    statusText.innerText = "LIVE AUTO-REFRESH";
+                    statusBadge.classList.add('online');
+                    statusText.innerText = "ONLINE";
                 } else {
                     progressBar.className = "progress-bar-offline";
+                    statusBadge.classList.remove('online');
                     statusBadge.classList.add('offline');
-                    statusText.innerText = "OFFLINE (STALE DATA)";
+                    statusText.innerText = "OFFLINE";
                 }
             }
         }

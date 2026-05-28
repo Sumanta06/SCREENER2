@@ -506,9 +506,66 @@
                 font-size: 0.75rem;
             }
         }
+
+        /* --- Premium Top Viewport Running Bar --- */
+        #liveProgressBar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 6px;
+            z-index: 9999;
+            background: linear-gradient(90deg, 
+                #059669 0%, 
+                #10b981 25%, 
+                #34d399 50%, 
+                #10b981 75%, 
+                #059669 100%
+            );
+            background-size: 200% 100%;
+            box-shadow: 0 1px 10px rgba(16, 185, 129, 0.8), 0 0 15px rgba(52, 211, 153, 0.5);
+            transition: opacity 0.5s ease, background 0.5s ease;
+        }
+
+        @keyframes runProgress {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        .progress-bar-running {
+            animation: runProgress 1.2s linear infinite;
+            opacity: 1;
+        }
+
+        .progress-bar-offline {
+            background: linear-gradient(90deg, #dc2626 0%, #ef4444 50%, #dc2626 100%) !important;
+            box-shadow: 0 1px 10px rgba(220, 38, 38, 0.8), 0 0 15px rgba(239, 68, 68, 0.5) !important;
+            animation: blink-red 1.5s infinite !important;
+        }
+
+        /* --- Blinking Red Offline CSS --- */
+        @keyframes blink-red {
+            0% { opacity: 0.3; }
+            50% { opacity: 1; }
+            100% { opacity: 0.3; }
+        }
+
+        .status-badge.offline {
+            background: rgba(220, 38, 38, 0.12) !important;
+            color: #dc2626 !important;
+            border-color: rgba(220, 38, 38, 0.3) !important;
+            animation: blink-red 1.5s infinite !important;
+        }
+
+        .status-badge.offline .dot {
+            background-color: #dc2626 !important;
+            animation: none !important;
+        }
     </style>
 </head>
 <body>
+    <!-- Top Running Progress Bar -->
+    <div id="liveProgressBar" class="progress-bar-running"></div>
 
     <div class="dashboard-container">
         <!-- Header -->
@@ -524,9 +581,9 @@
                     <option value="NATURALGAS">NATURALGAS</option>
                     <option value="NATURALGASM">NATURALGAS MINI</option>
                 </select>
-                <div class="status-badge">
+                <div class="status-badge" id="statusBadge">
                     <div class="dot"></div>
-                    <span>LIVE AUTO-REFRESH</span>
+                    <span id="statusText">LIVE AUTO-REFRESH</span>
                 </div>
             </div>
         </header>
@@ -838,6 +895,9 @@
             updateDashboard();
         }
 
+        let lastSuccessfulNewDataTime = new Date();
+        let lastKnownTimestamp = "";
+
         // Live script reloader
         function reloadData() {
             const oldScript = document.getElementById('liveDataScript');
@@ -856,9 +916,50 @@
             
             newScript.src = srcPath + '?t=' + new Date().getTime();
             newScript.onload = function() {
+                if (typeof mcx_data !== 'undefined' && mcx_data.timestamp) {
+                    if (mcx_data.timestamp !== lastKnownTimestamp) {
+                        lastKnownTimestamp = mcx_data.timestamp;
+                        lastSuccessfulNewDataTime = new Date(); // Update session watchdog timer
+                    }
+                }
                 updateDashboard();
             };
             document.body.appendChild(newScript);
+        }
+
+        // Periodic freshness check (runs every 2 seconds)
+        function checkDataFreshness() {
+            let isOnline = false;
+            
+            if (typeof mcx_data !== 'undefined' && mcx_data.timestamp) {
+                // Parse "YYYY-MM-DD HH:MM:SS" safely for all browsers
+                const parsedTime = new Date(mcx_data.timestamp.replace(/-/g, '/'));
+                const now = new Date();
+                
+                const diffMs = now - parsedTime;
+                const sessionDiffMs = now - lastSuccessfulNewDataTime;
+                
+                // 5 minutes threshold = 300,000 milliseconds
+                if (diffMs < 5 * 60 * 1000 && sessionDiffMs < 5 * 60 * 1000) {
+                    isOnline = true;
+                }
+            }
+            
+            const progressBar = document.getElementById('liveProgressBar');
+            const statusBadge = document.getElementById('statusBadge');
+            const statusText = document.getElementById('statusText');
+            
+            if (progressBar && statusBadge && statusText) {
+                if (isOnline) {
+                    progressBar.className = "progress-bar-running";
+                    statusBadge.classList.remove('offline');
+                    statusText.innerText = "LIVE AUTO-REFRESH";
+                } else {
+                    progressBar.className = "progress-bar-offline";
+                    statusBadge.classList.add('offline');
+                    statusText.innerText = "OFFLINE (STALE DATA)";
+                }
+            }
         }
 
         // Initial setup and timers
@@ -866,6 +967,8 @@
             reloadData(); // Initial immediate fetch
             // Check for updates every 3 seconds for lightning-fast UI refreshes
             setInterval(reloadData, 3000);
+            // Check freshness every 2 seconds
+            setInterval(checkDataFreshness, 2000);
         };
     </script>
 </body>

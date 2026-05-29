@@ -642,6 +642,22 @@
                     <div class="stat-lbl">Total Put OI</div>
                     <div class="stat-val" id="totalPutOi">0</div>
                 </div>
+                <div class="stat-box">
+                    <div class="stat-lbl">Max Pain Strike</div>
+                    <div class="stat-val" id="maxPainValue" style="color: var(--gold);">--</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-lbl">Support (Max PE OI)</div>
+                    <div class="stat-val" id="supportValue" style="color: var(--green);">--</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-lbl">Resistance (Max CE OI)</div>
+                    <div class="stat-val" id="resistanceValue" style="color: var(--red);">--</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-lbl">ATM Straddle</div>
+                    <div class="stat-val" id="straddleValue" style="color: var(--purple);">--</div>
+                </div>
             </div>
         </div>
 
@@ -655,15 +671,16 @@
                 <table>
                     <thead>
                         <tr>
-                            <th colspan="7" style="background-color: rgba(16, 185, 129, 0.15); border-bottom: 2px solid var(--green);">CALLS</th>
+                            <th colspan="8" style="background-color: rgba(16, 185, 129, 0.15); border-bottom: 2px solid var(--green);">CALLS</th>
                             <th>STRIKE</th>
-                            <th colspan="7" style="background-color: rgba(239, 68, 68, 0.15); border-bottom: 2px solid var(--red);">PUTS</th>
+                            <th colspan="8" style="background-color: rgba(239, 68, 68, 0.15); border-bottom: 2px solid var(--red);">PUTS</th>
                         </tr>
                         <tr>
                             <th>Delta</th>
                             <th>Theta</th>
                             <th>IV (%)</th>
                             <th>OI</th>
+                            <th>OI Chg</th>
                             <th>Vol</th>
                             <th>Net Chg</th>
                             <th>LTP</th>
@@ -672,6 +689,7 @@
                             <th>Net Chg</th>
                             <th>Vol</th>
                             <th>OI</th>
+                            <th>OI Chg</th>
                             <th>IV (%)</th>
                             <th>Theta</th>
                             <th>Delta</th>
@@ -679,7 +697,7 @@
                     </thead>
                     <tbody id="chainBody">
                         <tr>
-                            <td colspan="15" style="padding: 3rem; color: var(--text-muted);">Fetching live assets... Please ensure run_mcx_scheduler.bat is running.</td>
+                            <td colspan="17" style="padding: 3rem; color: var(--text-muted);">Fetching live assets... Please ensure run_mcx_scheduler.bat is running.</td>
                         </tr>
                     </tbody>
                 </table>
@@ -796,7 +814,39 @@
             body.innerHTML = "";
 
             const chain = instData.option_chain;
-            
+
+            // Calculate Max Pain Strike
+            let maxPainStrike = '--';
+            if (chain.length > 0) {
+                let minPain = Infinity;
+                chain.forEach(ref => {
+                    let totalPain = 0;
+                    chain.forEach(row => {
+                        // Call writers' pain: max(0, strike - ref_strike) * CE_OI
+                        totalPain += Math.max(0, row.Strike - ref.Strike) * (row.CE_OI || 0);
+                        // Put writers' pain: max(0, ref_strike - strike) * PE_OI
+                        totalPain += Math.max(0, ref.Strike - row.Strike) * (row.PE_OI || 0);
+                    });
+                    if (totalPain < minPain) {
+                        minPain = totalPain;
+                        maxPainStrike = ref.Strike;
+                    }
+                });
+            }
+            document.getElementById('maxPainValue').innerText = maxPainStrike.toLocaleString();
+
+            // Calculate Support (Highest PE OI) and Resistance (Highest CE OI)
+            let supportStrike = '--', resistanceStrike = '--';
+            let maxPeOi = 0, maxCeOi = 0;
+            chain.forEach(row => {
+                if ((row.PE_OI || 0) > maxPeOi) { maxPeOi = row.PE_OI; supportStrike = row.Strike; }
+                if ((row.CE_OI || 0) > maxCeOi) { maxCeOi = row.CE_OI; resistanceStrike = row.Strike; }
+            });
+            document.getElementById('supportValue').innerText = supportStrike.toLocaleString();
+            document.getElementById('resistanceValue').innerText = resistanceStrike.toLocaleString();
+
+            // Calculate ATM Straddle Premium
+
             // Find At-The-Money (ATM) strike price (closest to LTP)
             let closestStrike = null;
             let minDiff = Infinity;
@@ -808,6 +858,13 @@
                     closestStrike = row.Strike;
                 }
             });
+
+            // ATM Straddle Premium
+            const atmRow = chain.find(row => row.Strike === closestStrike);
+            if (atmRow) {
+                const straddlePremium = (atmRow.CE_LTP || 0) + (atmRow.PE_LTP || 0);
+                document.getElementById('straddleValue').innerText = '₹' + straddlePremium.toFixed(2);
+            }
 
             // Generate Scalp Trade Recommendation (Slightly ITM for premium momentum & delta)
             const recValBox = document.getElementById('tradeRecVal');
@@ -883,6 +940,11 @@
                 const ceChgSign = row.CE_Chg >= 0 ? "+" : "";
                 const peChgSign = row.PE_Chg >= 0 ? "+" : "";
 
+                const ceOiChgClass = (row.CE_OI_Chg || 0) >= 0 ? "chg-positive" : "chg-negative";
+                const peOiChgClass = (row.PE_OI_Chg || 0) >= 0 ? "chg-positive" : "chg-negative";
+                const ceOiChgSign = (row.CE_OI_Chg || 0) >= 0 ? "+" : "";
+                const peOiChgSign = (row.PE_OI_Chg || 0) >= 0 ? "+" : "";
+
                 // Format Greeks values dynamically
                 const ceDelta = row.CE_Delta !== undefined ? row.CE_Delta.toFixed(2) : "0.00";
                 const ceTheta = row.CE_Theta !== undefined ? row.CE_Theta.toFixed(2) : "0.00";
@@ -935,6 +997,7 @@
                     <td class="call-side" style="color: var(--gold); font-family: 'JetBrains Mono', monospace; font-weight: 600;">${ceTheta}</td>
                     <td class="call-side" style="color: #c084fc; font-family: 'JetBrains Mono', monospace; font-weight: 600;">${ceIv}%</td>
                     <td class="call-side">${row.CE_OI.toLocaleString()}</td>
+                    <td class="call-side ${ceOiChgClass}">${ceOiChgSign}${(row.CE_OI_Chg || 0).toLocaleString()}</td>
                     <td class="call-side">${row.CE_Vol.toLocaleString()}</td>
                     <td class="call-side ${ceChgClass}">${ceChgSign}${row.CE_Chg.toFixed(2)}</td>
                     <td class="call-side ltp-cell ${ceFlashClass}">${row.CE_LTP.toFixed(2)}</td>
@@ -945,12 +1008,21 @@
                     <td class="put-side ${peChgClass}">${peChgSign}${row.PE_Chg.toFixed(2)}</td>
                     <td class="put-side">${row.PE_Vol.toLocaleString()}</td>
                     <td class="put-side">${row.PE_OI.toLocaleString()}</td>
+                    <td class="put-side ${peOiChgClass}">${peOiChgSign}${(row.PE_OI_Chg || 0).toLocaleString()}</td>
                     <td class="put-side" style="color: #c084fc; font-family: 'JetBrains Mono', monospace; font-weight: 600;">${peIv}%</td>
                     <td class="put-side" style="color: var(--gold); font-family: 'JetBrains Mono', monospace; font-weight: 600;">${peTheta}</td>
                     <td class="put-side" style="color: var(--cyan); font-family: 'JetBrains Mono', monospace; font-weight: 600;">${peDelta}</td>
                 `;
                 body.appendChild(tr);
             });
+
+            // Auto-scroll to ATM row
+            setTimeout(() => {
+                const atmRow = document.querySelector('.atm-row');
+                if (atmRow) {
+                    atmRow.scrollIntoView({ block: 'center', behavior: 'smooth' });
+                }
+            }, 100);
         }
 
         function changeAsset() {

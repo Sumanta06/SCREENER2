@@ -601,10 +601,7 @@
             </div>
             <div class="controls-section">
                 <select id="assetSelector" onchange="changeAsset()">
-                    <option value="CRUDEOIL">CRUDEOIL</option>
-                    <option value="CRUDEOILM">CRUDEOIL MINI</option>
-                    <option value="NATURALGAS">NATURALGAS</option>
-                    <option value="NATURALGASM">NATURALGAS MINI</option>
+                    <!-- Dynamically populated from data.js -->
                 </select>
                 <div class="status-badge online" id="statusBadge">
                     <div class="dot"></div>
@@ -698,6 +695,44 @@
         let showAllStrikes = false;
         let oldOptionsPriceMap = {};
 
+        // Display-friendly names for instruments (add new ones here if needed)
+        const DISPLAY_NAMES = {
+            "CRUDEOIL": "CRUDEOIL",
+            "CRUDEOILM": "CRUDEOIL MINI",
+            "NATURALGAS": "NATURALGAS",
+            "NATURALGASM": "NATURALGAS MINI",
+            "GOLD": "GOLD",
+            "GOLDM": "GOLD MINI",
+            "SILVER": "SILVER",
+            "SILVERM": "SILVER MINI"
+        };
+
+        // Dynamically build dropdown from data.js instruments
+        function populateDropdown() {
+            if (typeof mcx_data === 'undefined' || !mcx_data.instruments) return;
+            const selector = document.getElementById('assetSelector');
+            const existingValues = Array.from(selector.options).map(o => o.value);
+            const newKeys = Object.keys(mcx_data.instruments);
+
+            // Only rebuild if instruments have changed
+            if (existingValues.length === newKeys.length && existingValues.every(v => newKeys.includes(v))) return;
+
+            selector.innerHTML = '';
+            newKeys.forEach(key => {
+                const opt = document.createElement('option');
+                opt.value = key;
+                opt.textContent = DISPLAY_NAMES[key] || key;
+                if (key === currentAsset) opt.selected = true;
+                selector.appendChild(opt);
+            });
+
+            // If currentAsset is not in new data, switch to the first available
+            if (!newKeys.includes(currentAsset) && newKeys.length > 0) {
+                currentAsset = newKeys[0];
+                selector.value = currentAsset;
+            }
+        }
+
         function toggleChainView() {
             showAllStrikes = !showAllStrikes;
             const btn = document.getElementById('toggleChainBtn');
@@ -711,6 +746,9 @@
                 console.log("No data available yet.");
                 return;
             }
+
+            // Auto-populate dropdown from whatever instruments exist in data.js
+            populateDropdown();
 
             const instData = mcx_data.instruments[currentAsset];
             if (!instData) {

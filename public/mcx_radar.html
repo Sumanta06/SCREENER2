@@ -1016,17 +1016,24 @@
                 body.appendChild(tr);
             });
 
-            // Auto-scroll to ATM row
-            setTimeout(() => {
-                const atmRow = document.querySelector('.atm-row');
-                if (atmRow) {
-                    atmRow.scrollIntoView({ block: 'center', behavior: 'smooth' });
-                }
-            }, 100);
+            // Auto-scroll to ATM row (Disabled on mobile so it doesn't pull down while reading signals)
+            if (!window.hasScrolledToAtm) {
+                setTimeout(() => {
+                    const atmRow = document.querySelector('.atm-row');
+                    if (atmRow && window.innerWidth > 768) {
+                        atmRow.scrollIntoView({ block: 'center', behavior: 'smooth' });
+                        window.hasScrolledToAtm = true;
+                    } else if (atmRow && window.innerWidth <= 768) {
+                        // On mobile, just mark as scrolled but don't pull the screen down
+                        window.hasScrolledToAtm = true;
+                    }
+                }, 100);
+            }
         }
 
         function changeAsset() {
             currentAsset = document.getElementById('assetSelector').value;
+            window.hasScrolledToAtm = false; // Reset scroll flag when switching assets
             updateDashboard();
         }
 

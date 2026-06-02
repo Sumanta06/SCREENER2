@@ -161,7 +161,7 @@
   .oic-metric-val { font-family:'JetBrains Mono'; font-size:.95rem; font-weight:700; }
 
   /* OI Compare Table */
-  .oic-wrap { overflow-y:auto; height:calc(100vh - 310px); background:var(--bg2); }
+  .oic-wrap { overflow:auto; height:calc(100vh - 310px); background:var(--bg2); }
   .oic-tbl { width:100%; border-collapse:collapse; font-size:.78rem; }
   .oic-tbl thead th { position:sticky; top:0; background:#1e293b; color:#94a3b8;
     padding:9px 10px; font-size:.65rem; text-transform:uppercase; font-weight:700;
@@ -214,9 +214,15 @@
     .sig-mid { border:none; border-top:1px dashed var(--border); border-bottom:1px dashed var(--border); padding:12px 0; }
     .metrics-bar { grid-template-columns:repeat(2,1fr); }
     .chain-table-wrap { overflow-x:auto; } table { min-width:780px; }
-    .oic-wrap { height:auto; max-height:60vh; } .oic-tbl { min-width:600px; }
+    .oic-wrap { height:auto; max-height:60vh; overflow-x:auto; } .oic-tbl { min-width:700px; }
     .oic-toolbar { gap:8px; }
     .tab-btn { padding:10px 14px; font-size:.78rem; }
+  }
+  @media(max-width:600px) {
+    .oic-analytics { grid-template-columns:repeat(2,1fr); }
+    .oic-toolbar { flex-direction:column; align-items:flex-start; }
+    .oic-toolbar > div, .oic-toolbar > button { width:100%; justify-content:space-between; }
+    .oic-btn { text-align:center; }
   }
 </style>
 </head>

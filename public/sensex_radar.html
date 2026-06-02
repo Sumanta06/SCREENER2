@@ -529,9 +529,9 @@ function renderChain() {
   if (!state.showAll){ s=Math.max(0,atmIdx-7); e=Math.min(rows.length,atmIdx+8); }
   const vis = rows.slice(s,e);
   let html = `<table><thead><tr>
-    <th title="Gamma/Theta/Vega on hover">C Delta</th><th>C IV</th><th>Call OI</th><th>Call Vol</th><th>Call LTP</th>
+    <th title="Gamma/Theta/Vega on hover">C Delta</th><th>C IV</th><th>Call OI</th><th>OI CHG</th><th>Call Vol</th><th>Call LTP</th>
     <th style="min-width:80px">STRIKE</th>
-    <th>Put LTP</th><th>Put Vol</th><th>Put OI</th><th>P IV</th><th>P Delta</th>
+    <th>Put LTP</th><th>Put Vol</th><th>OI CHG</th><th>Put OI</th><th>P IV</th><th>P Delta</th>
   </tr></thead><tbody>`;
   for (const r of vis) {
     const isAtm = r.strike===mid;
@@ -546,11 +546,13 @@ function renderChain() {
       <td class="call-side" style="color:var(--muted)" title="γ:${r.call_gamma} θ:${r.call_theta} v:${r.call_vega}">${(r.call_delta||0).toFixed(2)}</td>
       <td class="call-side" style="color:var(--muted)">${(r.call_iv||0).toFixed(1)}%</td>
       <td class="call-side"><div>${numFmt(r.call_oi)}</div><div class="oi-bar oi-call" style="width:${cb}%"></div></td>
+      <td class="call-side" style="font-weight:700; color:${(r.call_oi_chg||0)>=0?'var(--green)':'var(--red)'}">${(r.call_oi_chg||0)>0?'+':''}${numFmt(r.call_oi_chg||0)}</td>
       <td class="call-side">${numFmt(r.call_vol)}</td>
       <td class="${cC}">${r.call_ltp.toFixed(2)}</td>
       <td class="strike">${numFmt(r.strike)}${isAtm?' ◆':''}</td>
       <td class="${pC}">${r.put_ltp.toFixed(2)}</td>
       <td class="put-side">${numFmt(r.put_vol)}</td>
+      <td class="put-side" style="font-weight:700; color:${(r.put_oi_chg||0)>=0?'var(--green)':'var(--red)'}">${(r.put_oi_chg||0)>0?'+':''}${numFmt(r.put_oi_chg||0)}</td>
       <td class="put-side"><div>${numFmt(r.put_oi)}</div><div class="oi-bar oi-put" style="width:${pb}%"></div></td>
       <td class="put-side" style="color:var(--muted)">${(r.put_iv||0).toFixed(1)}%</td>
       <td class="put-side" style="color:var(--muted)" title="γ:${r.put_gamma} θ:${r.put_theta} v:${r.put_vega}">${(r.put_delta||0).toFixed(2)}</td>

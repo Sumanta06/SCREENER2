@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PCR vs Spot Chart</title>
+    <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+        :root {
+            --bg-dark: #0f172a;
+            --panel-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #3b82f6;
+            --border: #334155;
+            --bullish: #10b981;
+            --bearish: #ef4444;
+            --pcr-color: #fbbf24;
+            --spot-color: #3b82f6;
+        }
+
+        * { box-sizing: border-box; }
+
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background-color: #0a0f1e;
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            max-width: 1400px;
+            margin: 0 auto;
+            box-shadow: 0 0 40px rgba(0,0,0,0.5);
+        }
+
+        /* ── HEADER ── */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 20px;
+            background-color: var(--panel-bg);
+            border-bottom: 1px solid var(--border);
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .title-group h1 {
+            margin: 0;
+            font-size: 1.2rem;
+            font-weight: 700;
+            letter-spacing: 0.4px;
+        }
+        .title-group p {
+            margin: 3px 0 0;
+            font-size: 0.78rem;
+            color: var(--text-muted);
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        select {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            padding: 7px 12px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            outline: none;
+            cursor: pointer;
+            font-weight: 600;
+            max-width: 160px;
+        }
+
+        select:hover { border-color: var(--accent); }
+
+        .status {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            background-color: var(--bullish);
+            border-radius: 50%;
+            box-shadow: 0 0 6px var(--bullish);
+            flex-shrink: 0;
+        }
+
+        /* ── CHART ── */
+        #chart-container {
+            flex: 1;
+            position: relative;
+            width: 100%;
+            min-height: 0;
+        }
+
+        /* ── LEGEND ── */
+        .legend {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            z-index: 10;
+            background: rgba(15, 23, 42, 0.88);
+            backdrop-filter: blur(6px);
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            font-size: 0.82rem;
+            pointer-events: none;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            margin-bottom: 5px;
+        }
+        .legend-item:last-child { margin-bottom: 0; }
+
+        .legend-color {
+            width: 10px;
+            height: 3px;
+            border-radius: 2px;
+            flex-shrink: 0;
+        }
+
+        .spot-val { font-weight: 700; color: var(--spot-color); }
+        .pcr-val  { font-weight: 700; color: var(--pcr-color); }
+
+        /* ── MOBILE ── */
+        @media (max-width: 600px) {
+            .header {
+                padding: 10px 14px;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+
+            .title-group h1 { font-size: 1rem; }
+            .title-group p  { font-size: 0.72rem; }
+
+            .controls {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            select {
+                flex: 1;
+                max-width: 100%;
+                font-size: 0.85rem;
+                padding: 6px 10px;
+            }
+
+            .status { font-size: 0.72rem; }
+
+            #chart-container { min-height: calc(100vh - 130px); }
+
+            .legend {
+                top: 8px;
+                left: 8px;
+                padding: 8px 10px;
+                font-size: 0.75rem;
+            }
+        }
+
+        @media (max-width: 380px) {
+            .title-group h1 { font-size: 0.9rem; }
+            .legend { font-size: 0.7rem; }
+            .analysis-panel { font-size: 0.78rem; padding: 10px 14px; flex-wrap: wrap; }
+            .analysis-panel .a-item { min-width: 100%; }
+        }
+
+        /* ── ANALYSIS PANEL ── */
+        .analysis-panel {
+            background: var(--panel-bg);
+            border-top: 1px solid var(--border);
+            padding: 12px 20px;
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: stretch;
+        }
+
+        .a-item {
+            background: #0f172a;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 14px;
+            flex: 1;
+            min-width: 180px;
+        }
+
+        .a-item.bullish  { border-color: #10b981; background: rgba(16,185,129,0.07); }
+        .a-item.bearish  { border-color: #ef4444; background: rgba(239,68,68,0.07); }
+        .a-item.warning  { border-color: #f59e0b; background: rgba(245,158,11,0.07); }
+        .a-item.neutral  { border-color: #475569; background: rgba(71,85,105,0.07); }
+
+        .a-label {
+            font-size: 0.68rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-bottom: 4px;
+        }
+
+        .a-value {
+            font-size: 1rem;
+            font-weight: 700;
+        }
+
+        .a-value.green  { color: #10b981; }
+        .a-value.red    { color: #ef4444; }
+        .a-value.yellow { color: #fbbf24; }
+        .a-value.muted  { color: #94a3b8; }
+
+        .a-sub {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            margin-top: 3px;
+            line-height: 1.4;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="title-group">
+            <h1>PCR vs Spot Analysis</h1>
+            <p>Spot Divergence &amp; Institutional Trap Tracker &nbsp;|&nbsp; <span id="chartDate" style="color:#fbbf24;font-weight:700;">--</span></p>
+        </div>
+        <div class="controls">
+            <select id="symbolSelect">
+                <!-- Dynamically populated from signals.json -->
+            </select>
+            <div class="status">
+                <div class="status-dot"></div>
+                <span id="lastUpdated">Live updating...</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="chart-container">
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background: var(--spot-color);"></div>
+                <span>Spot Price: <span id="leg-spot" class="spot-val">--</span></span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: var(--pcr-color);"></div>
+                <span>Put-Call Ratio (PCR): <span id="leg-pcr" class="pcr-val">--</span></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- AUTO ANALYSIS PANEL -->
+    <div class="analysis-panel" id="analysisPanel">
+        <div class="a-item neutral" id="a-signal">
+            <div class="a-label">Signal</div>
+            <div class="a-value muted" id="a-signal-val">Loading...</div>
+            <div class="a-sub" id="a-signal-sub"></div>
+        </div>
+        <div class="a-item neutral" id="a-pcr">
+            <div class="a-label">PCR (Latest)</div>
+            <div class="a-value muted" id="a-pcr-val">--</div>
+            <div class="a-sub" id="a-pcr-sub"></div>
+        </div>
+        <div class="a-item neutral" id="a-spot">
+            <div class="a-label">Spot Trend (Today)</div>
+            <div class="a-value muted" id="a-spot-val">--</div>
+            <div class="a-sub" id="a-spot-sub"></div>
+        </div>
+        <div class="a-item neutral" id="a-advice">
+            <div class="a-label">Trading Advice</div>
+            <div class="a-value muted" id="a-advice-val" style="font-size:0.85rem;">--</div>
+        </div>
+    </div>
+
+    <script>
+        const R2_URL = "https://pub-7381e1c00b8f43138d4f7ef3b96d862d.r2.dev/signals.json";
+        
+        let chart;
+        let spotSeries;
+        let pcrSeries;
+        let globalData = {};
+        
+        function initChart() {
+            const container = document.getElementById('chart-container');
+            
+            chart = LightweightCharts.createChart(container, {
+                width: container.clientWidth,
+                height: container.clientHeight,
+                handleScroll: false,
+                handleScale: false,
+                layout: {
+                    background: { type: 'solid', color: '#0f172a' },
+                    textColor: '#94a3b8',
+                },
+                grid: {
+                    vertLines: { color: '#1e293b' },
+                    horzLines: { color: '#1e293b' },
+                },
+                rightPriceScale: {
+                    borderColor: '#334155',
+                    visible: true,
+                },
+                leftPriceScale: {
+                    borderColor: '#334155',
+                    visible: true,
+                },
+                timeScale: {
+                    borderColor: '#334155',
+                    timeVisible: true,
+                    secondsVisible: false,
+                },
+                crosshair: {
+                    mode: LightweightCharts.CrosshairMode.Normal,
+                }
+            });
+
+            // Series 1: Spot Price (Right Scale)
+            spotSeries = chart.addLineSeries({
+                color: '#3b82f6',
+                lineWidth: 2,
+                priceScaleId: 'right',
+                title: 'Spot Price',
+            });
+
+            // Series 2: PCR (Left Scale)
+            pcrSeries = chart.addLineSeries({
+                color: '#fbbf24',
+                lineWidth: 2,
+                priceScaleId: 'left',
+                title: 'PCR',
+            });
+
+            // Handle Resize
+            window.addEventListener('resize', () => {
+                chart.applyOptions({
+                    width: container.clientWidth,
+                    height: container.clientHeight,
+                });
+            });
+
+            // Crosshair update logic for Legend
+            chart.subscribeCrosshairMove(param => {
+                if (param.time) {
+                    const spotPrice = param.seriesData.get(spotSeries);
+                    const pcrVal = param.seriesData.get(pcrSeries);
+                    
+                    if (spotPrice !== undefined) {
+                        document.getElementById('leg-spot').innerText = spotPrice.value.toFixed(2);
+                    }
+                    if (pcrVal !== undefined) {
+                        document.getElementById('leg-pcr').innerText = pcrVal.value.toFixed(2);
+                    }
+                }
+            });
+        }
+
+        // Helper to convert "HH:MM" (IST) to UNIX timestamp
+        function convertTimeToTimestamp(timeStr) {
+            const now = new Date();
+            const [hours, mins] = timeStr.split(':');
+            
+            // Set local time
+            now.setHours(parseInt(hours), parseInt(mins), 0, 0);
+            
+            // Lightweight charts expects Unix Timestamp (in seconds)
+            // It automatically formats based on local timezone
+            return Math.floor(now.getTime() / 1000);
+        }
+
+        function updateChart(symbol) {
+            if (!globalData[symbol]) return;
+            
+            const data = globalData[symbol];
+            
+            const spotData = [];
+            const pcrData = [];
+            
+            for(let i=0; i<data.labels.length; i++) {
+                const ts = convertTimeToTimestamp(data.labels[i]);
+                
+                spotData.push({ time: ts, value: data.prices[i] });
+                
+                // Fallback to 1.0 if pcrs array is missing or undefined
+                let p = data.pcrs && data.pcrs[i] !== undefined ? data.pcrs[i] : 1.0;
+                pcrData.push({ time: ts, value: p });
+            }
+            
+            // Sort by time just in case
+            spotData.sort((a,b) => a.time - b.time);
+            pcrData.sort((a,b) => a.time - b.time);
+            
+            // Remove duplicates
+            const uniqueSpot = spotData.filter((v,i,a)=>a.findIndex(t=>(t.time===v.time))===i);
+            const uniquePcr = pcrData.filter((v,i,a)=>a.findIndex(t=>(t.time===v.time))===i);
+
+            spotSeries.setData(uniqueSpot);
+            pcrSeries.setData(uniquePcr);
+            
+            chart.timeScale().fitContent();
+            
+            // Update Legend with Latest
+            if(uniqueSpot.length > 0) {
+                document.getElementById('leg-spot').innerText = uniqueSpot[uniqueSpot.length-1].value.toFixed(2);
+                document.getElementById('leg-pcr').innerText = uniquePcr[uniquePcr.length-1].value.toFixed(2);
+            }
+
+            // Generate Analysis
+            generateAnalysis(uniqueSpot, uniquePcr);
+        }
+
+        function generateAnalysis(spotArr, pcrArr) {
+            if (!spotArr.length || !pcrArr.length) return;
+
+            const n = spotArr.length;
+            // Use first 20% as 'morning' baseline, last value as current
+            const baseIdx  = Math.max(0, Math.floor(n * 0.2));
+            const spotNow  = spotArr[n-1].value;
+            const spotBase = spotArr[baseIdx].value;
+            const pcrNow   = pcrArr[n-1].value;
+            const pcrBase  = pcrArr[baseIdx].value;
+
+            const spotUp  = spotNow > spotBase;
+            const pcrUp   = pcrNow  > pcrBase;
+            const spotChg = ((spotNow - spotBase) / spotBase * 100).toFixed(2);
+
+            // ── PCR Card ──
+            let pcrClass, pcrLabel, pcrSub;
+            if      (pcrNow >= 1.2)  { pcrClass='bullish'; pcrLabel='🟢 Bullish Zone'; pcrSub='High PE OI — Bulls are strong'; }
+            else if (pcrNow >= 0.8)  { pcrClass='neutral';  pcrLabel='🟡 Neutral Zone'; pcrSub='Balanced market — sideways likely'; }
+            else if (pcrNow >= 0.7)  { pcrClass='warning';  pcrLabel='🟠 Caution Zone'; pcrSub='Bears dominant, bounce still possible'; }
+            else                     { pcrClass='bearish';  pcrLabel='🔴 Bearish Zone'; pcrSub='High CE OI — Selling pressure active'; }
+
+            setCard('a-pcr', pcrClass,
+                `<span class="${pcrClass==='bullish'?'green':pcrClass==='bearish'?'red':'yellow'}">${pcrNow.toFixed(2)}</span>`,
+                `${pcrLabel} — ${pcrSub}`);
+
+            // ── Spot Card ──
+            const spotClass  = spotUp ? 'bullish' : 'bearish';
+            const spotArrow  = spotUp ? '▲' : '▼';
+            const spotColor  = spotUp ? 'green' : 'red';
+            setCard('a-spot', spotClass,
+                `<span class="${spotColor}">${spotArrow} ${Math.abs(spotChg)}%</span>`,
+                `${spotUp ? 'Up' : 'Down'} from open | ${spotBase.toFixed(1)} → ${spotNow.toFixed(1)}`);
+
+            // ── Signal & Advice ──
+            let sigClass, sigVal, sigSub, advice;
+
+            if (spotUp && pcrUp) {
+                sigClass = 'bullish';
+                sigVal   = '✅ Bullish Confirmation';
+                sigSub   = 'Spot & PCR both rising — Real rally in progress';
+                advice   = 'Follow the trend. Look for BUY opportunities. Keep stop-loss tight.';
+            } else if (!spotUp && !pcrUp) {
+                sigClass = 'bearish';
+                sigVal   = '🔴 Bearish Confirmation';
+                sigSub   = 'Spot & PCR both falling — Real selling pressure';
+                advice   = 'Stay on the short side. Sell rallies. Avoid longs.';
+            } else if (spotUp && !pcrUp) {
+                sigClass = 'warning';
+                sigVal   = '⚠️ Bearish Divergence';
+                sigSub   = 'Spot rising but PCR falling — Possible Fake Rally / Trap!';
+                advice   = 'Avoid buying this rally. Correction likely. Stay sideline or look for SELL.';
+            } else {
+                sigClass = 'warning';
+                sigVal   = '⚠️ Bullish Divergence';
+                sigSub   = 'Spot falling but PCR rising — Possible Fake Breakdown / Trap!';
+                advice   = 'Do not panic sell. Support building. Look for BUY on dips.';
+            }
+
+            setCard('a-signal', sigClass, `<span class="${sigClass==='bullish'?'green':sigClass==='bearish'?'red':'yellow'}">${sigVal}</span>`, sigSub);
+            setCard('a-advice', sigClass, `<span style="font-size:0.82rem;color:var(--text-main);font-weight:600;">${advice}</span>`, '');
+        }
+
+        function setCard(id, cls, valHtml, sub) {
+            const el = document.getElementById(id);
+            el.className = `a-item ${cls}`;
+            document.getElementById(`${id}-val`).innerHTML = valHtml;
+            const subEl = document.getElementById(`${id}-sub`);
+            if (subEl) subEl.innerText = sub;
+        }
+
+        async function fetchData() {
+            try {
+                // Add timestamp to prevent caching
+                const res = await fetch(`${R2_URL}?t=${new Date().getTime()}`);
+                const json = await res.json();
+                
+                globalData = json.data;
+                document.getElementById('lastUpdated').innerText = `Updated: ${json.updated_at}`;
+                
+                // Show date in header
+                if (json.date) {
+                    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                    const [yr, mo, dy] = json.date.split('-');
+                    document.getElementById('chartDate').innerText = `${dy} ${months[parseInt(mo)-1]} ${yr}`;
+                }
+                
+                // Populate Dropdown if missing symbols
+                const select = document.getElementById('symbolSelect');
+                const existingSymbols = Array.from(select.options).map(o => o.value);
+                
+                // Sort: NIFTY first, BANKNIFTY second, rest alphabetically
+                const priority = ['NIFTY', 'BANKNIFTY'];
+                const allSyms = Object.keys(globalData).sort((a, b) => {
+                    const ai = priority.indexOf(a);
+                    const bi = priority.indexOf(b);
+                    if (ai !== -1 && bi !== -1) return ai - bi;
+                    if (ai !== -1) return -1;
+                    if (bi !== -1) return 1;
+                    return a.localeCompare(b);
+                });
+
+                // Clear and repopulate dropdown cleanly
+                select.innerHTML = '';
+                allSyms.forEach(sym => {
+                    const opt = document.createElement('option');
+                    opt.value = sym;
+                    opt.innerText = sym;
+                    select.appendChild(opt);
+                });
+                
+                if (!select.value && select.options.length > 0) {
+                    select.value = select.options[0].value;
+                }
+                
+                updateChart(select.value);
+                
+            } catch (e) {
+                console.error("Error fetching signals.json:", e);
+                document.getElementById('lastUpdated').innerText = "Update Failed (Retrying...)";
+                document.getElementById('lastUpdated').style.color = "var(--bearish)";
+            }
+        }
+
+        document.getElementById('symbolSelect').addEventListener('change', (e) => {
+            updateChart(e.target.value);
+        });
+
+        // Init
+        initChart();
+        fetchData();
+        
+        // Auto refresh every 60 seconds
+        setInterval(fetchData, 60000);
+
+    </script>
+</body>
+</html>

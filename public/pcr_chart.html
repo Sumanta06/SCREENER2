@@ -35,10 +35,11 @@
             color: var(--text-main);
             display: flex;
             flex-direction: column;
-            min-height: 100vh;
+            height: 100vh;
             max-width: 1400px;
             margin: 0 auto;
             box-shadow: 0 0 40px rgba(0,0,0,0.5);
+            overflow: hidden;
         }
 
         /* ── HEADER ── */
@@ -110,6 +111,7 @@
             position: relative;
             width: 100%;
             min-height: 0;
+            overflow: hidden;
         }
 
         /* ── LEGEND ── */
@@ -197,6 +199,7 @@
             gap: 12px;
             flex-wrap: wrap;
             align-items: stretch;
+            flex-shrink: 0;
         }
 
         .a-item {

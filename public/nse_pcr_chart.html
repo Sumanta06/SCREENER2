@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PCR vs Spot Chart</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%238b5cf6'/><text x='50%25' y='55%25' font-family='Arial' font-weight='bold' font-size='70' fill='%23ffffff' text-anchor='middle' dominant-baseline='central'>P</text></svg>">
     <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
@@ -280,6 +281,8 @@
     </div>
 
     <div id="chart-container">
+        <!-- Inner wrapper to guarantee space at the bottom to prevent time label clipping -->
+        <div id="chart-inner" style="position: absolute; top: 0; left: 0; right: 0; bottom: 24px;"></div>
         <div class="legend">
             <div class="legend-item">
                 <div class="legend-color" style="background: var(--spot-color);"></div>
@@ -324,7 +327,7 @@
         let globalData = {};
         
         function initChart() {
-            const container = document.getElementById('chart-container');
+            const container = document.getElementById('chart-inner');
             
             chart = LightweightCharts.createChart(container, {
                 width: container.clientWidth,
@@ -391,8 +394,9 @@
         function convertTimeToTimestamp(timeStr) {
             const now = new Date();
             const [hours, mins] = timeStr.split(':');
-            now.setHours(parseInt(hours), parseInt(mins), 0, 0);
-            return Math.floor(now.getTime() / 1000);
+            // Lightweight Charts displays in UTC by default. 
+            // We pass the local time as if it were UTC so it displays exactly the local numbers.
+            return Math.floor(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), parseInt(hours), parseInt(mins), 0) / 1000);
         }
 
         function updateChart(symbol) {

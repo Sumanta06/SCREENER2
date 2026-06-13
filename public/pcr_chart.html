@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
+<head><base href="https://screener2-584.pages.dev/pcr_chart"><script>try{localStorage.setItem('fnohub_token','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NTgyNzZmNS0wMDJmLTQ1ZDQtYWI0ZC1hYzgzYWNiODNhMTAiLCJlbWFpbCI6InN1bWFudGFzYWhvb0BnbWFpbC5jb20iLCJyb2xlIjoiYWRtaW4iLCJuYW1lIjoiU3VtYW50YSIsImV4cCI6MTc4MzYwNjY4NzIwMH0.8n67jx1Naj3_uA3TOUiJyulCMXzd5c88jgeRznBksfU');}catch(e){}</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PCR vs Spot Chart</title>
@@ -52,6 +52,19 @@
             border-bottom: 1px solid var(--border);
             flex-wrap: wrap;
             gap: 10px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-img {
+            height: 38px;
+            width: auto;
+            object-fit: contain;
+            flex-shrink: 0;
         }
 
         .title-group h1 {
@@ -156,6 +169,8 @@
                 gap: 8px;
             }
 
+            .logo-img { height: 30px; }
+
             .title-group h1 { font-size: 1rem; }
             .title-group p  { font-size: 0.72rem; }
 
@@ -246,9 +261,12 @@
 <body>
 
     <div class="header">
-        <div class="title-group">
-            <h1>PCR vs Spot Analysis</h1>
-            <p>Spot Divergence &amp; Institutional Trap Tracker &nbsp;|&nbsp; <span id="chartDate" style="color:#fbbf24;font-weight:700;">--</span></p>
+        <div class="header-left">
+            <img class="logo-img" src="data:image/jpeg;base64,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" alt="FnOHub Logo" />
+            <div class="title-group">
+                <h1>PCR vs Spot Analysis</h1>
+                <p>Spot Divergence &amp; Institutional Trap Tracker &nbsp;|&nbsp; <span id="chartDate" style="color:#fbbf24;font-weight:700;">--</span></p>
+            </div>
         </div>
         <div class="controls">
             <select id="symbolSelect">
@@ -339,7 +357,6 @@
                 }
             });
 
-            // Series 1: Spot Price (Right Scale)
             spotSeries = chart.addLineSeries({
                 color: '#3b82f6',
                 lineWidth: 2,
@@ -347,7 +364,6 @@
                 title: 'Spot Price',
             });
 
-            // Series 2: PCR (Left Scale)
             pcrSeries = chart.addLineSeries({
                 color: '#fbbf24',
                 lineWidth: 2,
@@ -355,7 +371,6 @@
                 title: 'PCR',
             });
 
-            // Handle Resize
             window.addEventListener('resize', () => {
                 chart.applyOptions({
                     width: container.clientWidth,
@@ -363,92 +378,60 @@
                 });
             });
 
-            // Crosshair update logic for Legend
             chart.subscribeCrosshairMove(param => {
                 if (param.time) {
                     const spotPrice = param.seriesData.get(spotSeries);
                     const pcrVal = param.seriesData.get(pcrSeries);
-                    
-                    if (spotPrice !== undefined) {
-                        document.getElementById('leg-spot').innerText = spotPrice.value.toFixed(2);
-                    }
-                    if (pcrVal !== undefined) {
-                        document.getElementById('leg-pcr').innerText = pcrVal.value.toFixed(2);
-                    }
+                    if (spotPrice !== undefined) document.getElementById('leg-spot').innerText = spotPrice.value.toFixed(2);
+                    if (pcrVal !== undefined) document.getElementById('leg-pcr').innerText = pcrVal.value.toFixed(2);
                 }
             });
         }
 
-        // Helper to convert "HH:MM" (IST) to UNIX timestamp
         function convertTimeToTimestamp(timeStr) {
             const now = new Date();
             const [hours, mins] = timeStr.split(':');
-            
-            // Set local time
             now.setHours(parseInt(hours), parseInt(mins), 0, 0);
-            
-            // Lightweight charts expects Unix Timestamp (in seconds)
-            // It automatically formats based on local timezone
             return Math.floor(now.getTime() / 1000);
         }
 
         function updateChart(symbol) {
             if (!globalData[symbol]) return;
-            
             const data = globalData[symbol];
-            
             const spotData = [];
             const pcrData = [];
-            
             for(let i=0; i<data.labels.length; i++) {
                 const ts = convertTimeToTimestamp(data.labels[i]);
-                
                 spotData.push({ time: ts, value: data.prices[i] });
-                
-                // Fallback to 1.0 if pcrs array is missing or undefined
                 let p = data.pcrs && data.pcrs[i] !== undefined ? data.pcrs[i] : 1.0;
                 pcrData.push({ time: ts, value: p });
             }
-            
-            // Sort by time just in case
             spotData.sort((a,b) => a.time - b.time);
             pcrData.sort((a,b) => a.time - b.time);
-            
-            // Remove duplicates
             const uniqueSpot = spotData.filter((v,i,a)=>a.findIndex(t=>(t.time===v.time))===i);
             const uniquePcr = pcrData.filter((v,i,a)=>a.findIndex(t=>(t.time===v.time))===i);
-
             spotSeries.setData(uniqueSpot);
             pcrSeries.setData(uniquePcr);
-            
             chart.timeScale().fitContent();
-            
-            // Update Legend with Latest
             if(uniqueSpot.length > 0) {
                 document.getElementById('leg-spot').innerText = uniqueSpot[uniqueSpot.length-1].value.toFixed(2);
                 document.getElementById('leg-pcr').innerText = uniquePcr[uniquePcr.length-1].value.toFixed(2);
             }
-
-            // Generate Analysis
             generateAnalysis(uniqueSpot, uniquePcr);
         }
 
         function generateAnalysis(spotArr, pcrArr) {
             if (!spotArr.length || !pcrArr.length) return;
-
             const n = spotArr.length;
-            // Use first 20% as 'morning' baseline, last value as current
             const baseIdx  = Math.max(0, Math.floor(n * 0.2));
             const spotNow  = spotArr[n-1].value;
             const spotBase = spotArr[baseIdx].value;
             const pcrNow   = pcrArr[n-1].value;
             const pcrBase  = pcrArr[baseIdx].value;
-
             const spotUp  = spotNow > spotBase;
             const pcrUp   = pcrNow  > pcrBase;
             const spotChg = ((spotNow - spotBase) / spotBase * 100).toFixed(2);
 
-            // ── PCR Card ──
             let pcrClass, pcrLabel, pcrSub;
             if      (pcrNow >= 1.2)  { pcrClass='bullish'; pcrLabel='🟢 Bullish Zone'; pcrSub='High PE OI — Bulls are strong'; }
             else if (pcrNow >= 0.8)  { pcrClass='neutral';  pcrLabel='🟡 Neutral Zone'; pcrSub='Balanced market — sideways likely'; }
@@ -459,7 +442,6 @@
                 `<span class="${pcrClass==='bullish'?'green':pcrClass==='bearish'?'red':'yellow'}">${pcrNow.toFixed(2)}</span>`,
                 `${pcrLabel} — ${pcrSub}`);
 
-            // ── Spot Card ──
             const spotClass  = spotUp ? 'bullish' : 'bearish';
             const spotArrow  = spotUp ? '▲' : '▼';
             const spotColor  = spotUp ? 'green' : 'red';
@@ -467,29 +449,23 @@
                 `<span class="${spotColor}">${spotArrow} ${Math.abs(spotChg)}%</span>`,
                 `${spotUp ? 'Up' : 'Down'} from open | ${spotBase.toFixed(1)} → ${spotNow.toFixed(1)}`);
 
-            // ── Signal & Advice ──
             let sigClass, sigVal, sigSub, advice;
-
             if (spotUp && pcrUp) {
-                sigClass = 'bullish';
-                sigVal   = '✅ Bullish Confirmation';
-                sigSub   = 'Spot & PCR both rising — Real rally in progress';
-                advice   = 'Follow the trend. Look for BUY opportunities. Keep stop-loss tight.';
+                sigClass = 'bullish'; sigVal = '✅ Bullish Confirmation';
+                sigSub = 'Spot & PCR both rising — Real rally in progress';
+                advice = 'Follow the trend. Look for BUY opportunities. Keep stop-loss tight.';
             } else if (!spotUp && !pcrUp) {
-                sigClass = 'bearish';
-                sigVal   = '🔴 Bearish Confirmation';
-                sigSub   = 'Spot & PCR both falling — Real selling pressure';
-                advice   = 'Stay on the short side. Sell rallies. Avoid longs.';
+                sigClass = 'bearish'; sigVal = '🔴 Bearish Confirmation';
+                sigSub = 'Spot & PCR both falling — Real selling pressure';
+                advice = 'Stay on the short side. Sell rallies. Avoid longs.';
             } else if (spotUp && !pcrUp) {
-                sigClass = 'warning';
-                sigVal   = '⚠️ Bearish Divergence';
-                sigSub   = 'Spot rising but PCR falling — Possible Fake Rally / Trap!';
-                advice   = 'Avoid buying this rally. Correction likely. Stay sideline or look for SELL.';
+                sigClass = 'warning'; sigVal = '⚠️ Bearish Divergence';
+                sigSub = 'Spot rising but PCR falling — Possible Fake Rally / Trap!';
+                advice = 'Avoid buying this rally. Correction likely. Stay sideline or look for SELL.';
             } else {
-                sigClass = 'warning';
-                sigVal   = '⚠️ Bullish Divergence';
-                sigSub   = 'Spot falling but PCR rising — Possible Fake Breakdown / Trap!';
-                advice   = 'Do not panic sell. Support building. Look for BUY on dips.';
+                sigClass = 'warning'; sigVal = '⚠️ Bullish Divergence';
+                sigSub = 'Spot falling but PCR rising — Possible Fake Breakdown / Trap!';
+                advice = 'Do not panic sell. Support building. Look for BUY on dips.';
             }
 
             setCard('a-signal', sigClass, `<span class="${sigClass==='bullish'?'green':sigClass==='bearish'?'red':'yellow'}">${sigVal}</span>`, sigSub);
@@ -506,50 +482,31 @@
 
         async function fetchData() {
             try {
-                // Add timestamp to prevent caching
                 const res = await fetch(`${R2_URL}?t=${new Date().getTime()}`);
                 const json = await res.json();
-                
                 globalData = json.data;
                 document.getElementById('lastUpdated').innerText = `Updated: ${json.updated_at}`;
-                
-                // Show date in header
                 if (json.date) {
                     const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
                     const [yr, mo, dy] = json.date.split('-');
                     document.getElementById('chartDate').innerText = `${dy} ${months[parseInt(mo)-1]} ${yr}`;
                 }
-                
-                // Populate Dropdown if missing symbols
                 const select = document.getElementById('symbolSelect');
-                const existingSymbols = Array.from(select.options).map(o => o.value);
-                
-                // Sort: NIFTY first, BANKNIFTY second, rest alphabetically
                 const priority = ['NIFTY', 'BANKNIFTY'];
                 const allSyms = Object.keys(globalData).sort((a, b) => {
-                    const ai = priority.indexOf(a);
-                    const bi = priority.indexOf(b);
+                    const ai = priority.indexOf(a); const bi = priority.indexOf(b);
                     if (ai !== -1 && bi !== -1) return ai - bi;
-                    if (ai !== -1) return -1;
-                    if (bi !== -1) return 1;
+                    if (ai !== -1) return -1; if (bi !== -1) return 1;
                     return a.localeCompare(b);
                 });
-
-                // Clear and repopulate dropdown cleanly
                 select.innerHTML = '';
                 allSyms.forEach(sym => {
                     const opt = document.createElement('option');
-                    opt.value = sym;
-                    opt.innerText = sym;
+                    opt.value = sym; opt.innerText = sym;
                     select.appendChild(opt);
                 });
-                
-                if (!select.value && select.options.length > 0) {
-                    select.value = select.options[0].value;
-                }
-                
+                if (!select.value && select.options.length > 0) select.value = select.options[0].value;
                 updateChart(select.value);
-                
             } catch (e) {
                 console.error("Error fetching signals.json:", e);
                 document.getElementById('lastUpdated').innerText = "Update Failed (Retrying...)";
@@ -557,17 +514,11 @@
             }
         }
 
-        document.getElementById('symbolSelect').addEventListener('change', (e) => {
-            updateChart(e.target.value);
-        });
+        document.getElementById('symbolSelect').addEventListener('change', (e) => { updateChart(e.target.value); });
 
-        // Init
         initChart();
         fetchData();
-        
-        // Auto refresh every 60 seconds
         setInterval(fetchData, 60000);
-
     </script>
 </body>
 </html>

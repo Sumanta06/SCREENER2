@@ -168,13 +168,17 @@
                 <div class="legend-color" style="background:var(--pcr-color)"></div>
                 <span>SENSEX PCR:</span> <span class="pcr-val" id="leg-pcr">--</span>
             </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #a855f7; border-style: dashed; border-width: 1px; border-color: #a855f7; height: 0; border-top: 2px dashed #a855f7;"></div>
+                <span style="color:#a855f7;font-weight:600;">10 SMA: <span id="leg-sma">--</span></span>
+            </div>
         </div>
     </div>
 
     <script>
         const R2 = 'https://pub-beab7a6397a7478c853251902952970e.r2.dev';
         
-        let chart, spotSeries, pcrSeries;
+        let chart, spotSeries, pcrSeries, smaSeries;
         let loadBusy = false;
 
         function initChart() {
@@ -199,6 +203,11 @@
                 crosshairMarkerBorderColor: '#fff', crosshairMarkerRadius: 4
             });
 
+            smaSeries = chart.addLineSeries({
+                color: '#a855f7', lineWidth: 1, priceScaleId: 'right', lineStyle: LightweightCharts.LineStyle.Dashed,
+                crosshairMarkerBorderColor: '#fff', crosshairMarkerRadius: 4
+            });
+
             // Adjust window resize
             window.addEventListener('resize', () => {
                 chart.resize(document.getElementById('chart-container').clientWidth, document.getElementById('chart-container').clientHeight);
@@ -209,8 +218,10 @@
                 if (param.time) {
                     const sp = param.seriesData.get(spotSeries);
                     const pc = param.seriesData.get(pcrSeries);
+                    const sm = param.seriesData.get(smaSeries);
                     if (sp !== undefined) document.getElementById('leg-spot').innerText = sp.value.toFixed(2);
                     if (pc !== undefined) document.getElementById('leg-pcr').innerText = pc.value.toFixed(2);
+                    if (sm !== undefined) document.getElementById('leg-sma').innerText = sm.value.toFixed(2);
                 }
             });
         }
@@ -254,6 +265,80 @@
             card.className = `a-item ${theme}`;
             if(valueHtml) document.getElementById(`a-${id}-val`).innerHTML = valueHtml;
             if(subText) document.getElementById(`a-${id}-sub`).innerHTML = subText;
+        }
+
+        const PCR_LOOK = 10;   // PCR trend lookback periods
+        const MIN_CANDLE = 20; // Skip first 20 candles
+        const MIN_GAP = 0.05;  // Spot must be ≥ 0.05% from SMA
+        const MIN_PCR_CHG = 0.01; // Minimum PCR change to confirm trend
+        const SMA_PERIOD = 10;
+
+        function buildMarkers(dataPoints) {
+            const markers = [];
+            const sma = [];
+            let sum = 0;
+            for(let i=0; i<dataPoints.length; i++) {
+                sum += dataPoints[i].spot;
+                if(i >= SMA_PERIOD) sum -= dataPoints[i - SMA_PERIOD].spot;
+                sma.push(i >= SMA_PERIOD - 1 ? sum / SMA_PERIOD : dataPoints[i].spot);
+            }
+
+            let signalState = 0; 
+            let trapState = 0;
+
+            for (let i = 1; i < dataPoints.length; i++) {
+                if (i < MIN_CANDLE) continue;
+
+                const spotNow  = dataPoints[i].spot;
+                const smaNow   = sma[i];
+                const gapPct   = (spotNow - smaNow) / smaNow * 100;
+
+                if (spotNow <= smaNow) {
+                    if (trapState === 1) trapState = 0;
+                }
+                if (spotNow >= smaNow) {
+                    if (trapState === -1) trapState = 0;
+                }
+
+                const pcrLook = Math.max(0, i - PCR_LOOK);
+                const pcrChg  = dataPoints[i].pcr - dataPoints[pcrLook].pcr;
+
+                if (gapPct >= MIN_GAP) {
+                    if (pcrChg >= MIN_PCR_CHG && signalState !== 1) {
+                        markers.push({ time: dataPoints[i].time, position: 'belowBar',
+                            color: '#10b981', shape: 'arrowUp', text: '🟢 Buy', size: 1.8 });
+                        signalState = 1; 
+                        trapState = 0;   
+                    } else if (pcrChg <= -MIN_PCR_CHG && signalState !== 1 && trapState !== 1) {
+                        markers.push({ time: dataPoints[i].time, position: 'belowBar',
+                            color: '#f59e0b', shape: 'circle', text: '', size: 0.8 });
+                        trapState = 1; 
+                    }
+                } else if (gapPct <= -MIN_GAP) {
+                    if (pcrChg <= -MIN_PCR_CHG && signalState !== -1) {
+                        markers.push({ time: dataPoints[i].time, position: 'aboveBar',
+                            color: '#ef4444', shape: 'arrowDown', text: '🔴 Sell', size: 1.8 });
+                        signalState = -1; 
+                        trapState = 0;
+                    } else if (pcrChg >= MIN_PCR_CHG && signalState !== -1 && trapState !== -1) {
+                        markers.push({ time: dataPoints[i].time, position: 'aboveBar',
+                            color: '#3b82f6', shape: 'circle', text: '', size: 0.8 });
+                        trapState = -1;
+                    }
+                }
+            }
+            return markers;
+        }
+
+        function buildSma(dataPoints) {
+            const sma = [];
+            let sum = 0;
+            for(let i=0; i<dataPoints.length; i++) {
+                sum += dataPoints[i].spot;
+                if(i >= SMA_PERIOD) sum -= dataPoints[i - SMA_PERIOD].spot;
+                sma.push({ time: dataPoints[i].time, value: i >= SMA_PERIOD - 1 ? sum / SMA_PERIOD : dataPoints[i].spot });
+            }
+            return sma;
         }
 
         async function fetchJson(url) {
@@ -345,6 +430,9 @@
             // Plot on chart
             spotSeries.setData(dataPoints.map(d => ({ time: d.time, value: d.spot })));
             pcrSeries.setData(dataPoints.map(d => ({ time: d.time, value: d.pcr })));
+            
+            smaSeries.setData(buildSma(dataPoints));
+            spotSeries.setMarkers(buildMarkers(dataPoints));
 
             if(dataPoints.length > 0) {
                 const last = dataPoints[dataPoints.length - 1];

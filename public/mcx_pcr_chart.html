@@ -179,7 +179,7 @@
 
             .status { font-size: 0.72rem; }
 
-            #chart-container { min-height: 0; }
+            #chart-container { min-height: calc(100vh - 130px); }
 
             .legend {
                 top: 8px;
@@ -192,7 +192,8 @@
         @media (max-width: 380px) {
             .title-group h1 { font-size: 0.9rem; }
             .legend { font-size: 0.7rem; }
-            .analysis-panel { font-size: 0.78rem; padding: 10px 14px; }
+            .analysis-panel { font-size: 0.78rem; padding: 10px 14px; flex-wrap: wrap; }
+            .analysis-panel .a-item { min-width: 100%; }
         }
 
         /* ── ANALYSIS PANEL ── */
@@ -308,7 +309,7 @@
 
     <div id="chart-container">
         <!-- Inner wrapper to guarantee 8px space at the bottom to prevent time label clipping -->
-        <div id="chart-inner" style="position: absolute; top: 0; left: 0; right: 0; bottom: 24px;"></div>
+        <div id="chart-inner" style="position: absolute; top: 0; left: 0; right: 0; bottom: 6px;"></div>
 
         <div class="legend">
             <div class="legend-item">
@@ -318,6 +319,14 @@
             <div class="legend-item">
                 <div class="legend-color" style="background: var(--pcr-color);"></div>
                 <span>Put-Call Ratio (PCR): <span id="leg-pcr" class="pcr-val">--</span></span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #a855f7; border-style: dashed; border-width: 1px; border-color: #a855f7; height: 0; border-top: 2px dashed #a855f7;"></div>
+                <span style="color:#a855f7;font-weight:600;">20 SMA: <span id="leg-sma20">--</span></span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #ec4899; border-style: dashed; border-width: 1px; border-color: #ec4899; height: 0; border-top: 2px dashed #ec4899;"></div>
+                <span style="color:#ec4899;font-weight:600;">50 SMA: <span id="leg-sma50">--</span></span>
             </div>
         </div>
         
@@ -356,7 +365,7 @@
         
         let chart;
         let spotSeries;
-        let pcrSeries;
+        let pcrSeries, sma20Series, sma50Series;
         let allData = {};
         let loadBusy = false;
 
@@ -387,6 +396,16 @@
                 lastValueVisible: true, priceLineVisible: true
             });
 
+            sma20Series = chart.addLineSeries({
+                color: '#a855f7', lineWidth: 1, priceScaleId: 'right', lineStyle: LightweightCharts.LineStyle.Dashed,
+                crosshairMarkerBorderColor: '#fff', crosshairMarkerRadius: 4
+            });
+
+            sma50Series = chart.addLineSeries({
+                color: '#ec4899', lineWidth: 1, priceScaleId: 'right', lineStyle: LightweightCharts.LineStyle.Dashed,
+                crosshairMarkerBorderColor: '#fff', crosshairMarkerRadius: 4
+            });
+
             window.addEventListener('resize', () => {
                 chart.applyOptions({ width: container.clientWidth, height: container.clientHeight });
             });
@@ -395,8 +414,12 @@
                 if (param.time) {
                     const sp = param.seriesData.get(spotSeries);
                     const pc = param.seriesData.get(pcrSeries);
+                    const sm20 = param.seriesData.get(sma20Series);
+                    const sm50 = param.seriesData.get(sma50Series);
                     if (sp !== undefined) document.getElementById('leg-spot').innerText = sp.value.toFixed(2);
                     if (pc !== undefined) document.getElementById('leg-pcr').innerText = pc.value.toFixed(2);
+                    if (sm20 !== undefined) document.getElementById('leg-sma20').innerText = sm20.value.toFixed(2);
+                    if (sm50 !== undefined) document.getElementById('leg-sma50').innerText = sm50.value.toFixed(2);
                 }
             });
         }
@@ -574,14 +597,77 @@
             spotSeries.setData(spotArr);
             pcrSeries.setData(pcrArr);
 
+            const sma20Arr = [];
+            const sma50Arr = [];
+            let sum20 = 0, sum50 = 0;
+            for(let i=0; i<spotArr.length; i++) {
+                sum20 += spotArr[i].value;
+                sum50 += spotArr[i].value;
+                if(i >= 20) sum20 -= spotArr[i - 20].value;
+                if(i >= 50) sum50 -= spotArr[i - 50].value;
+                sma20Arr.push({ time: spotArr[i].time, value: i >= 19 ? sum20 / 20 : spotArr[i].value });
+                sma50Arr.push({ time: spotArr[i].time, value: i >= 49 ? sum50 / 50 : spotArr[i].value });
+            }
+            sma20Series.setData(sma20Arr);
+            sma50Series.setData(sma50Arr);
+
             const lastSpot = spotArr[spotArr.length - 1].value;
             const lastPcr  = pcrArr[pcrArr.length - 1].value;
 
             document.getElementById('leg-spot').innerText = lastSpot.toFixed(2);
             document.getElementById('leg-pcr').innerText = lastPcr.toFixed(2);
             
+            spotSeries.setMarkers(buildMarkers(spotArr, pcrArr, sma20Arr, sma50Arr, sym));
             analyze(spotArr, pcrArr);
             chart.timeScale().fitContent();
+        }
+
+        function buildMarkers(spotArr, pcrArr, sma20Arr, sma50Arr, sym) {
+            const markers = [];
+            let signalState = 0;
+
+            // Crude Oil: 20m Breakout
+            // Natural Gas: 15m Breakout
+            const isCrude = sym.includes('CRUDEOIL');
+            const LOOKBACK = isCrude ? 20 : 15;
+
+            for (let i = 50; i < spotArr.length; i++) {
+                let rangeHigh = -Infinity;
+                let rangeLow = Infinity;
+                
+                for (let j = i - LOOKBACK; j < i; j++) {
+                    if (spotArr[j].value > rangeHigh) rangeHigh = spotArr[j].value;
+                    if (spotArr[j].value < rangeLow) rangeLow = spotArr[j].value;
+                }
+
+                const spotNow = spotArr[i].value;
+                const pcrNow = pcrArr[i].value;
+                
+                // 5-minute rolling PCR (Checking direction, not extreme gaps)
+                const pcrPrev5 = pcrArr[i - 5] ? pcrArr[i - 5].value : pcrArr[i - 1].value;
+                
+                const sma20Now = sma20Arr[i].value;
+                const sma50Now = sma50Arr[i].value;
+
+                const d = new Date(spotArr[i].time * 1000);
+                const hh = d.getUTCHours();
+                const mm = d.getUTCMinutes();
+                const isAfter1030 = (hh > 10) || (hh === 10 && mm >= 30);
+
+                if (isAfter1030) {
+                    // Buy: Trend is Up (SMA20 > SMA50), Price breaks High, and PCR is NOT falling against us (pcrNow >= pcrPrev5)
+                    if (sma20Now > sma50Now && spotNow > rangeHigh && pcrNow >= pcrPrev5 && signalState !== 1) {
+                        markers.push({ time: spotArr[i].time, position: 'belowBar', color: '#10b981', shape: 'arrowUp', text: '🟢 Buy ('+LOOKBACK+'m BO)', size: 1.8 });
+                        signalState = 1;
+                    } 
+                    // Sell: Trend is Down (SMA20 < SMA50), Price breaks Low, and PCR is NOT rising against us (pcrNow <= pcrPrev5)
+                    else if (sma20Now < sma50Now && spotNow < rangeLow && pcrNow <= pcrPrev5 && signalState !== -1) {
+                        markers.push({ time: spotArr[i].time, position: 'aboveBar', color: '#ef4444', shape: 'arrowDown', text: '🔴 Sell ('+LOOKBACK+'m BO)', size: 1.8 });
+                        signalState = -1;
+                    }
+                }
+            }
+            return markers;
         }
 
         // ── ANALYSIS ──

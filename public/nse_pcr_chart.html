@@ -257,53 +257,6 @@
             line-height: 1.4;
         }
 
-        .scanner-panel {
-            position: absolute;
-            top: 70px;
-            right: 20px;
-            width: 260px;
-            max-height: calc(100% - 100px);
-            background: rgba(15, 23, 42, 0.88);
-            backdrop-filter: blur(6px);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            z-index: 100;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-        }
-        .scanner-header {
-            padding: 10px;
-            background: rgba(255,255,255,0.05);
-            border-bottom: 1px solid var(--border);
-            font-weight: 700;
-            font-size: 0.85rem;
-            color: #fbbf24;
-            display: flex;
-            justify-content: space-between;
-        }
-        .scanner-list {
-            padding: 10px;
-            overflow-y: auto;
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        .scanner-item {
-            font-size: 0.75rem;
-            padding: 6px 8px;
-            border-radius: 4px;
-            background: rgba(255,255,255,0.03);
-            border-left: 3px solid;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        .scanner-item:hover { background: rgba(255,255,255,0.1); }
-        .scanner-item.buy { border-left-color: #10b981; }
-        .scanner-item.sell { border-left-color: #ef4444; }
-
     </style>
 </head>
 <body>
@@ -328,19 +281,6 @@
     </div>
 
     <div id="chart-container">
-        <!-- Live Alert Scanner Panel -->
-        <div class="scanner-panel" id="scanner-panel">
-            <div class="scanner-header" onclick="toggleScanner()" style="cursor:pointer;" title="Click to Collapse/Expand">
-                <span>📡 LIVE SCANNER</span>
-                <span>
-                    <span id="scan-count" style="margin-right:8px;background:#fbbf24;color:#000;padding:2px 6px;border-radius:10px;font-size:0.7rem;">0</span>
-                    <span id="scanner-toggle">−</span>
-                </span>
-            </div>
-            <div class="scanner-list" id="scanner-list">
-                <div style="color:var(--text-muted);font-size:0.7rem;text-align:center;padding:10px;">Waiting for new signals...</div>
-            </div>
-        </div>
         <!-- Inner wrapper to guarantee space at the bottom to prevent time label clipping -->
         <div id="chart-inner" style="position: absolute; top: 0; left: 0; right: 0; bottom: 24px;"></div>
         <div class="legend">
@@ -354,7 +294,7 @@
             </div>
             <div class="legend-item">
                 <div class="legend-color" style="background: #a855f7; border-style: dashed; border-width: 1px; border-color: #a855f7; height: 0; border-top: 2px dashed #a855f7;"></div>
-                <span style="color:#a855f7;font-weight:600;">TWAP: <span id="leg-twap">--</span></span>
+                <span style="color:#a855f7;font-weight:600;">10 SMA: <span id="leg-sma">--</span></span>
             </div>
         </div>
     </div>
@@ -475,47 +415,77 @@
         }
 
         // ── SPOT vs TWAP CROSSOVER + PCR CONFIRMATION ──
+        // ── SPOT vs SMA CROSSOVER + PCR CONFIRMATION ──
         // Works for ALL symbols (stocks + indices) — no fixed PCR thresholds
         // Rules:
-        //   1. No signal before 9:35 AM (first 20 candles skipped — TWAP not stable)
-        //   2. Spot must be ≥ 0.10% away from TWAP at crossover (gap filter)
+        //   1. No signal before 9:35 AM (first 20 candles skipped)
+        //   2. Spot must be ≥ 0.05% away from SMA
         //   3. Strong signals = arrowUp/arrowDown with label
         //      Trap signals   = circle dot, no text (subtle caution marker)
-        const LOOKBACK = 15; // 15 candles range
+        const PCR_LOOK = 10;   // PCR trend lookback periods
+        const MIN_CANDLE = 20; // Skip first 20 candles
+        const MIN_GAP = 0.05;  // Spot must be ≥ 0.05% from SMA
+        const MIN_PCR_CHG = 0.01; // Minimum PCR change to confirm trend
+        const SMA_PERIOD = 10;
 
         function buildMarkers(spotArr, pcrArr) {
             const markers = [];
-            let signalState = 0; // 1 = Bullish, -1 = Bearish
 
-            for (let i = LOOKBACK; i < spotArr.length; i++) {
-                // Find 20-min High/Low for Spot and PCR
-                let spotHigh = -Infinity, spotLow = Infinity;
-                let pcrHigh = -Infinity, pcrLow = Infinity;
-                
-                for(let j = i - LOOKBACK; j < i; j++) {
-                    if(spotArr[j].value > spotHigh) spotHigh = spotArr[j].value;
-                    if(spotArr[j].value < spotLow) spotLow = spotArr[j].value;
-                    if(pcrArr[j].value > pcrHigh) pcrHigh = pcrArr[j].value;
-                    if(pcrArr[j].value < pcrLow) pcrLow = pcrArr[j].value;
+            // Calculate SMA inline
+            const sma = [];
+            let sum = 0;
+            for(let i=0; i<spotArr.length; i++) {
+                sum += spotArr[i].value;
+                if(i >= SMA_PERIOD) sum -= spotArr[i - SMA_PERIOD].value;
+                sma.push(i >= SMA_PERIOD - 1 ? sum / SMA_PERIOD : spotArr[i].value);
+            }
+
+            // Stateful Tracking
+            let signalState = 0; // 1 = Bullish, -1 = Bearish
+            let trapState = 0;
+
+            for (let i = 1; i < spotArr.length; i++) {
+                if (i < MIN_CANDLE) continue;
+
+                const spotNow  = spotArr[i].value;
+                const smaNow   = sma[i];
+                const gapPct   = (spotNow - smaNow) / smaNow * 100;
+
+                // Only reset trap states on SMA crossover, do NOT reset signalState.
+                // This prevents multiple consecutive BUY arrows when price wiggles around the SMA.
+                if (spotNow <= smaNow) {
+                    if (trapState === 1) trapState = 0;
+                }
+                if (spotNow >= smaNow) {
+                    if (trapState === -1) trapState = 0;
                 }
 
-                const spotNow = spotArr[i].value;
-                const pcrNow = pcrArr[i].value;
+                // ── PCR momentum over last PCR_LOOK candles ──
+                const pcrLook = Math.max(0, i - PCR_LOOK);
+                const pcrChg  = pcrArr[i].value - pcrArr[pcrLook].value;
 
-                // Breakout Logic
-                const spotBreakUp = spotNow > spotHigh;
-                const spotBreakDown = spotNow < spotLow;
-                const pcrBreakUp = pcrNow > pcrHigh;
-                const pcrBreakDown = pcrNow < pcrLow;
-
-                if (spotBreakUp && pcrBreakUp && signalState !== 1) {
-                    markers.push({ time: spotArr[i].time, position: 'belowBar',
-                        color: '#10b981', shape: 'arrowUp', text: '🟢 Breakout BUY', size: 1.8 });
-                    signalState = 1;
-                } else if (spotBreakDown && pcrBreakDown && signalState !== -1) {
-                    markers.push({ time: spotArr[i].time, position: 'aboveBar',
-                        color: '#ef4444', shape: 'arrowDown', text: '🔴 Breakout SELL', size: 1.8 });
-                    signalState = -1;
+                if (gapPct >= MIN_GAP) {
+                    if (pcrChg >= MIN_PCR_CHG && signalState !== 1) {
+                        markers.push({ time: spotArr[i].time, position: 'belowBar',
+                            color: '#10b981', shape: 'arrowUp', text: '🟢 Buy', size: 1.8 });
+                        signalState = 1; 
+                        trapState = 0;   
+                    } else if (pcrChg <= -MIN_PCR_CHG && signalState !== 1 && trapState !== 1) {
+                        markers.push({ time: spotArr[i].time, position: 'belowBar',
+                            color: '#f59e0b', shape: 'circle', text: '', size: 0.8 });
+                        trapState = 1; 
+                    }
+                } else if (gapPct <= -MIN_GAP) {
+                    if (pcrChg <= -MIN_PCR_CHG && signalState !== -1) {
+                        markers.push({ time: spotArr[i].time, position: 'aboveBar',
+                            color: '#ef4444', shape: 'arrowDown', text: '🔴 Sell', size: 1.8 });
+                        signalState = -1; 
+                        trapState = 0;
+                    } else if (pcrChg >= MIN_PCR_CHG && signalState !== -1 && trapState !== -1) {
+                        markers.push({ time: spotArr[i].time, position: 'aboveBar',
+                            color: '#3b82f6', shape: 'circle', text: '', size: 0.8 });
+                        trapState = -1;
+                    }
                 }
             }
 
@@ -523,15 +493,17 @@
             return markers;
         }
 
-        // ── TWAP: Time-Weighted Average Price ──
-        // Cumulative average of spot price from 9:15 onwards
-        function buildTwap(spotArr) {
-            let cumSum = 0;
-            return spotArr.map((pt, i) => {
-                cumSum += pt.value;
-                return { time: pt.time, value: cumSum / (i + 1) };
-            });
-        }
+        // ── 10 SMA ──
+        function buildSma(spotArr) {
+            const sma = [];
+            let sum = 0;
+            for(let i=0; i<spotArr.length; i++) {
+                sum += spotArr[i].value;
+                if(i >= SMA_PERIOD) sum -= spotArr[i - SMA_PERIOD].value;
+                sma.push({ time: spotArr[i].time, value: i >= SMA_PERIOD - 1 ? sum / SMA_PERIOD : spotArr[i].value });
+            }
+            return sma;
+        };
 
         function updateChart(symbol) {
             if (!globalData[symbol]) return;
@@ -550,7 +522,7 @@
             const uniquePcr = pcrData.filter((v,i,a)=>a.findIndex(t=>(t.time===v.time))===i);
             spotSeries.setData(uniqueSpot);
             pcrSeries.setData(uniquePcr);
-            twapSeries.setData(buildTwap(uniqueSpot));
+            twapSeries.setData(buildSma(uniqueSpot));
             spotSeries.setMarkers(buildMarkers(uniqueSpot, uniquePcr));
             chart.timeScale().fitContent();
             if(uniqueSpot.length > 0) {
@@ -620,81 +592,6 @@
             if (subEl) subEl.innerText = sub;
         }
 
-        function toggleScanner() {
-            const listEl = document.getElementById('scanner-list');
-            const toggleIcon = document.getElementById('scanner-toggle');
-            if (listEl.style.display === 'none') {
-                listEl.style.display = 'flex';
-                toggleIcon.innerText = '−';
-            } else {
-                listEl.style.display = 'none';
-                toggleIcon.innerText = '+';
-            }
-        }
-
-        let isFirstScan = true;
-        let alertHistory = {};
-
-        function runScanner() {
-            const listEl = document.getElementById('scanner-list');
-
-            Object.keys(globalData).forEach(symbol => {
-                const data = globalData[symbol];
-                if(!data.prices || data.prices.length === 0) return;
-
-                const spotArr = [], pcrArr = [];
-                for(let i=0; i<data.labels.length; i++) {
-                    const ts = convertTimeToTimestamp(data.labels[i]);
-                    spotArr.push({ time: ts, value: data.prices[i], label: data.labels[i] });
-                    let p = data.pcrs && data.pcrs[i] !== undefined ? data.pcrs[i] : 1.0;
-                    pcrArr.push({ time: ts, value: p });
-                }
-
-                // Dedup and build markers
-                const uniqueSpot = spotArr.filter((v,i,a)=>a.findIndex(t=>(t.time===v.time))===i);
-                const uniquePcr = pcrArr.filter((v,i,a)=>a.findIndex(t=>(t.time===v.time))===i);
-                
-                const markers = buildMarkers(uniqueSpot, uniquePcr);
-                if(markers.length === 0) return;
-
-                const lastMarker = markers[markers.length - 1];
-                const lastSpot = uniqueSpot[uniqueSpot.length - 1];
-                
-                // Initialize history on first load
-                if(isFirstScan) {
-                    alertHistory[symbol] = lastMarker.time;
-                    return;
-                }
-
-                // Check if new
-                if(lastMarker.time > (alertHistory[symbol] || 0)) {
-                    // Update history
-                    alertHistory[symbol] = lastMarker.time;
-                    
-                    // Only alert if the marker is very recent (within last 300 seconds = 5 mins)
-                    const isRecent = (lastSpot.time - lastMarker.time) <= 300;
-                    if(isRecent) {
-                        // 1. Add to UI
-                        if(listEl.innerHTML.includes("Waiting")) listEl.innerHTML = "";
-                        const item = document.createElement('div');
-                        const isBuy = lastMarker.shape === 'arrowUp';
-                        item.className = `scanner-item ${isBuy ? 'buy' : 'sell'}`;
-                        const lbl = uniqueSpot.find(x => x.time === lastMarker.time)?.label || 'Now';
-                        item.innerHTML = `<b>${lbl}</b> | ${symbol}<br><span style="color:${isBuy?'#10b981':'#ef4444'}">${lastMarker.text}</span>`;
-                        item.onclick = () => { document.getElementById('symbolSelect').value = symbol; updateChart(symbol); };
-                        listEl.prepend(item);
-
-                        // Update counter
-                        const countEl = document.getElementById('scan-count');
-                        countEl.innerText = parseInt(countEl.innerText) + 1;
-
-                    }
-                }
-            });
-
-            isFirstScan = false;
-        }
-
         async function fetchData() {
             try {
                 const res = await fetch(`${R2_URL}?t=${new Date().getTime()}`);
@@ -728,7 +625,6 @@
                     select.value = select.options[0].value;
                 }
                 updateChart(select.value);
-                runScanner();
             } catch (e) {
                 console.error("Error fetching signals.json:", e);
                 document.getElementById('lastUpdated').innerText = "Update Failed (Retrying...)";

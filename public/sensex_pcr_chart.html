@@ -112,6 +112,107 @@
         @keyframes spin { to { transform: rotate(360deg); } }
         #ov-msg { font-size: 1.1rem; font-weight: 600; }
         #ov-prog { font-size: 0.85rem; color: var(--text-muted); margin-top: 8px; font-family: 'JetBrains Mono';}
+
+        /* ── SCANNER PANEL ── */
+        .scanner-panel {
+            position: absolute; right: 20px; bottom: 20px; width: 280px;
+            background: rgba(15, 23, 42, 0.95); border: 1px solid #334155; border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5); z-index: 100;
+            display: flex; flex-direction: column; overflow: hidden; backdrop-filter: blur(10px);
+        }
+        .scanner-header {
+            background: #1e293b; padding: 10px 14px; font-weight: 700; font-size: 0.85rem;
+            color: #fbbf24; border-bottom: 1px solid #334155; display: flex;
+            justify-content: space-between; align-items: center; user-select: none;
+        }
+        .scanner-list {
+            max-height: 250px; overflow-y: auto; display: flex; flex-direction: column;
+        }
+        .scanner-list::-webkit-scrollbar { width: 6px; }
+        .scanner-list::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+        .scanner-item {
+            padding: 10px 14px; border-bottom: 1px solid rgba(51,65,85,0.5); font-size: 0.75rem;
+            line-height: 1.4; transition: background 0.2s;
+        }
+        .scanner-item:hover { background: rgba(51,65,85,0.3); }
+        .scanner-item.buy { border-left: 4px solid #10b981; }
+        .scanner-item.sell { border-left: 4px solid #ef4444; }
+
+        /* ── MOBILE ── */
+        @media (max-width: 600px) {
+            html, body {
+                height: auto !important;
+                overflow-y: auto !important;
+            }
+
+            .header {
+                padding: 10px 14px;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+
+            .title-group h1 { font-size: 1rem; }
+            .title-group p  { font-size: 0.72rem; }
+
+            .status { font-size: 0.72rem; }
+
+            #chart-container { min-height: 50vh !important; }
+
+            .legend {
+                top: 8px;
+                left: 8px;
+                padding: 8px 10px;
+                font-size: 0.75rem;
+            }
+
+            .analysis-panel {
+                flex-wrap: nowrap !important;
+                overflow-x: auto !important;
+                -webkit-overflow-scrolling: touch;
+                padding-bottom: 12px;
+                gap: 10px;
+                justify-content: flex-start !important;
+            }
+            
+            .analysis-panel .a-item {
+                flex: 0 0 250px !important;
+                min-width: 250px !important;
+            }
+        }
+
+        @media (max-width: 380px) {
+            .title-group h1 { font-size: 0.9rem; }
+            .legend { font-size: 0.7rem; }
+        }
+
+        @media (max-height: 500px) and (orientation: landscape) {
+            html, body {
+                height: auto !important;
+                overflow-y: auto !important;
+            }
+            .header {
+                flex-direction: row !important;
+                padding: 5px 10px !important;
+            }
+            .title-group p { display: none; }
+            #chart-container { min-height: 70vh !important; }
+            .analysis-panel { 
+                padding: 8px 10px !important; 
+                margin-bottom: 5px; 
+                flex-wrap: nowrap !important;
+                overflow-x: auto !important;
+                -webkit-overflow-scrolling: touch;
+                justify-content: flex-start !important;
+            }
+            .analysis-panel .a-item { 
+                padding: 6px 10px !important; 
+                flex: 0 0 200px !important;
+                min-width: 200px !important;
+            }
+            .a-sub { display: none; }
+            .legend { padding: 4px 6px !important; font-size: 0.65rem !important; }
+        }
     </style>
 </head>
 <body>
@@ -137,28 +238,42 @@
     </div>
 
     <div class="analysis-panel">
-        <div class="a-item" id="c-spot">
-            <div class="a-label">SENSEX SPOT</div>
-            <div class="a-value" id="a-spot-val">--</div>
-            <div class="a-sub" id="a-spot-sub">--</div>
-        </div>
-        <div class="a-item" id="c-pcr">
-            <div class="a-label">PUT-CALL RATIO (PCR)</div>
-            <div class="a-value" id="a-pcr-val">--</div>
-            <div class="a-sub" id="a-pcr-sub">--</div>
+        <div class="a-item neutral" id="c-adv">
+            <div class="a-label">TRADING ADVICE</div>
+            <div class="a-sub" id="a-adv-val" style="font-size:0.8rem; margin-top:0; color:var(--text-main);">--</div>
         </div>
         <div class="a-item" id="c-sig">
             <div class="a-label">MARKET SENTIMENT</div>
             <div class="a-value" id="a-sig-val" style="font-size:1rem; color:var(--text-main);">--</div>
             <div class="a-sub" id="a-sig-sub">--</div>
         </div>
-        <div class="a-item neutral" id="c-adv">
-            <div class="a-label">TRADING ADVICE</div>
-            <div class="a-sub" id="a-adv-val" style="font-size:0.8rem; margin-top:0; color:var(--text-main);">--</div>
+        <div class="a-item" id="c-pcr">
+            <div class="a-label">PUT-CALL RATIO (PCR)</div>
+            <div class="a-value" id="a-pcr-val">--</div>
+            <div class="a-sub" id="a-pcr-sub">--</div>
+        </div>
+        <div class="a-item" id="c-spot">
+            <div class="a-label">SENSEX SPOT</div>
+            <div class="a-value" id="a-spot-val">--</div>
+            <div class="a-sub" id="a-spot-sub">--</div>
         </div>
     </div>
 
     <div id="chart-container">
+        <!-- Live Alert Scanner Panel -->
+        <div class="scanner-panel" id="scanner-panel">
+            <div class="scanner-header" id="scanner-header" style="cursor:move;" title="Drag to move. Click +/- to toggle.">
+                <span>📡 LIVE SCANNER</span>
+                <span>
+                    <span id="scan-count" style="margin-right:8px;background:#fbbf24;color:#000;padding:2px 6px;border-radius:10px;font-size:0.7rem;">0</span>
+                    <span id="scanner-toggle" style="cursor:pointer; padding: 0 5px;" onclick="toggleScanner(event)">−</span>
+                </span>
+            </div>
+            <div class="scanner-list" id="scanner-list">
+                <div style="color:var(--text-muted);font-size:0.7rem;text-align:center;padding:10px;">Waiting for new signals...</div>
+            </div>
+        </div>
+
         <div class="legend">
             <div class="legend-item">
                 <div class="legend-color" style="background:var(--spot-color)"></div>
@@ -180,6 +295,83 @@
         
         let chart, spotSeries, pcrSeries, smaSeries;
         let loadBusy = false;
+        let alertHistory = 0; // Stores last marker time seen for Sensex
+        let allNewMarkers = [];
+        let isFirstScan = true;
+
+        function toggleScanner(e) {
+            e.stopPropagation();
+            const listEl = document.getElementById('scanner-list');
+            const toggleIcon = document.getElementById('scanner-toggle');
+            if (listEl.style.display === 'none') {
+                listEl.style.display = 'flex';
+                toggleIcon.innerText = '−';
+            } else {
+                listEl.style.display = 'none';
+                toggleIcon.innerText = '+';
+            }
+        }
+
+        // --- Dragging Logic for Scanner Panel ---
+        setTimeout(() => {
+            const scannerPanelEl = document.getElementById('scanner-panel');
+            const scannerHeaderEl = document.getElementById('scanner-header');
+            let isDragging = false;
+            let dragOffsetX = 0;
+            let dragOffsetY = 0;
+
+            scannerHeaderEl.addEventListener('mousedown', (e) => {
+                if (e.target.id === 'scanner-toggle' || e.target.id === 'scan-count') return;
+                isDragging = true;
+                const rect = scannerPanelEl.getBoundingClientRect();
+                dragOffsetX = e.clientX - rect.left;
+                dragOffsetY = e.clientY - rect.top;
+                
+                scannerPanelEl.style.position = 'fixed';
+                scannerPanelEl.style.right = 'auto';
+                scannerPanelEl.style.bottom = 'auto';
+                scannerPanelEl.style.left = rect.left + 'px';
+                scannerPanelEl.style.top = rect.top + 'px';
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                let newX = e.clientX - dragOffsetX;
+                let newY = e.clientY - dragOffsetY;
+                newX = Math.max(0, Math.min(newX, window.innerWidth - scannerPanelEl.offsetWidth));
+                newY = Math.max(0, Math.min(newY, window.innerHeight - scannerPanelEl.offsetHeight));
+                scannerPanelEl.style.left = newX + 'px';
+                scannerPanelEl.style.top = newY + 'px';
+            });
+
+            document.addEventListener('mouseup', () => { isDragging = false; });
+
+            scannerHeaderEl.addEventListener('touchstart', (e) => {
+                if (e.target.id === 'scanner-toggle' || e.target.id === 'scan-count') return;
+                isDragging = true;
+                const rect = scannerPanelEl.getBoundingClientRect();
+                dragOffsetX = e.touches[0].clientX - rect.left;
+                dragOffsetY = e.touches[0].clientY - rect.top;
+                
+                scannerPanelEl.style.position = 'fixed';
+                scannerPanelEl.style.right = 'auto';
+                scannerPanelEl.style.bottom = 'auto';
+                scannerPanelEl.style.left = rect.left + 'px';
+                scannerPanelEl.style.top = rect.top + 'px';
+            });
+
+            document.addEventListener('touchmove', (e) => {
+                if (!isDragging) return;
+                let newX = e.touches[0].clientX - dragOffsetX;
+                let newY = e.touches[0].clientY - dragOffsetY;
+                newX = Math.max(0, Math.min(newX, window.innerWidth - scannerPanelEl.offsetWidth));
+                newY = Math.max(0, Math.min(newY, window.innerHeight - scannerPanelEl.offsetHeight));
+                scannerPanelEl.style.left = newX + 'px';
+                scannerPanelEl.style.top = newY + 'px';
+            });
+
+            document.addEventListener('touchend', () => { isDragging = false; });
+        }, 500);
 
         function initChart() {
             chart = LightweightCharts.createChart(document.getElementById('chart-container'), {
@@ -432,7 +624,59 @@
             pcrSeries.setData(dataPoints.map(d => ({ time: d.time, value: d.pcr })));
             
             smaSeries.setData(buildSma(dataPoints));
-            spotSeries.setMarkers(buildMarkers(dataPoints));
+            
+            const markers = buildMarkers(dataPoints);
+            spotSeries.setMarkers(markers);
+
+            // Scanner processing
+            if (!isFirstScan) {
+                const listEl = document.getElementById('scanner-list');
+                
+                markers.forEach(marker => {
+                    if (marker.time > alertHistory) {
+                        alertHistory = marker.time;
+                        
+                        // Find the original HH:MM time using getUTCHours
+                        const d = new Date(marker.time * 1000);
+                        let hr = d.getUTCHours(); let min = d.getUTCMinutes();
+                        hr = hr < 10 ? '0'+hr : hr; min = min < 10 ? '0'+min : min;
+                        
+                        allNewMarkers.push({
+                            symbol: 'SENSEX',
+                            time: marker.time,
+                            label: `${hr}:${min}`,
+                            shape: marker.shape,
+                            text: marker.text
+                        });
+                    }
+                });
+                
+                if (allNewMarkers.length > 0) {
+                    allNewMarkers.sort((a, b) => a.time - b.time);
+                    if(listEl.innerHTML.includes("Waiting")) listEl.innerHTML = "";
+                    
+                    allNewMarkers.forEach(markerObj => {
+                        const item = document.createElement('div');
+                        const isBuy = markerObj.shape === 'arrowUp';
+                        item.className = `scanner-item ${isBuy ? 'buy' : 'sell'}`;
+                        item.innerHTML = `<b>${markerObj.label}</b> | ${markerObj.symbol}<br><span style="color:${isBuy?'#10b981':'#ef4444'}">${markerObj.text}</span>`;
+                        
+                        // Prepending oldest to newest ensures the absolute newest ends up at the very top
+                        listEl.prepend(item);
+                        
+                        const countEl = document.getElementById('scan-count');
+                        countEl.innerText = parseInt(countEl.innerText) + 1;
+                    });
+                    
+                    // Clear the array so we don't duplicate on next tick
+                    allNewMarkers = [];
+                }
+            } else {
+                if(markers.length > 0) {
+                    alertHistory = markers[markers.length - 1].time;
+                }
+                isFirstScan = false;
+            }
 
             if(dataPoints.length > 0) {
                 const last = dataPoints[dataPoints.length - 1];

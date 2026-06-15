@@ -342,11 +342,11 @@
     <div id="chart-container">
         <!-- Live Alert Scanner Panel -->
         <div class="scanner-panel" id="scanner-panel">
-            <div class="scanner-header" onclick="toggleScanner()" style="cursor:pointer;" title="Click to Collapse/Expand">
+            <div class="scanner-header" id="scanner-header" style="cursor:move;" title="Drag to move. Click +/- to toggle.">
                 <span>📡 LIVE SCANNER</span>
                 <span>
                     <span id="scan-count" style="margin-right:8px;background:#fbbf24;color:#000;padding:2px 6px;border-radius:10px;font-size:0.7rem;">0</span>
-                    <span id="scanner-toggle">−</span>
+                    <span id="scanner-toggle" style="cursor:pointer; padding: 0 5px;" onclick="toggleScanner(event)">−</span>
                 </span>
             </div>
             <div class="scanner-list" id="scanner-list">
@@ -632,7 +632,8 @@
             if (subEl) subEl.innerText = sub;
         }
 
-        function toggleScanner() {
+        function toggleScanner(e) {
+            if(e) e.stopPropagation();
             const listEl = document.getElementById('scanner-list');
             const toggleIcon = document.getElementById('scanner-toggle');
             if (listEl.style.display === 'none') {
@@ -643,6 +644,78 @@
                 toggleIcon.innerText = '+';
             }
         }
+
+        // --- Dragging Logic for Scanner Panel ---
+        const scannerPanelEl = document.getElementById('scanner-panel');
+        const scannerHeaderEl = document.getElementById('scanner-header');
+        let isDragging = false;
+        let dragOffsetX = 0;
+        let dragOffsetY = 0;
+
+        scannerHeaderEl.addEventListener('mousedown', (e) => {
+            if (e.target.id === 'scanner-toggle' || e.target.id === 'scan-count') return;
+            isDragging = true;
+            const rect = scannerPanelEl.getBoundingClientRect();
+            dragOffsetX = e.clientX - rect.left;
+            dragOffsetY = e.clientY - rect.top;
+            
+            // Switch to fixed left/top positioning for dragging
+            scannerPanelEl.style.position = 'fixed';
+            scannerPanelEl.style.right = 'auto';
+            scannerPanelEl.style.bottom = 'auto';
+            scannerPanelEl.style.left = rect.left + 'px';
+            scannerPanelEl.style.top = rect.top + 'px';
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            let newX = e.clientX - dragOffsetX;
+            let newY = e.clientY - dragOffsetY;
+            
+            // Clamp to screen bounds
+            newX = Math.max(0, Math.min(newX, window.innerWidth - scannerPanelEl.offsetWidth));
+            newY = Math.max(0, Math.min(newY, window.innerHeight - scannerPanelEl.offsetHeight));
+
+            scannerPanelEl.style.left = newX + 'px';
+            scannerPanelEl.style.top = newY + 'px';
+        });
+
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+
+        // Touch support
+        scannerHeaderEl.addEventListener('touchstart', (e) => {
+            if (e.target.id === 'scanner-toggle' || e.target.id === 'scan-count') return;
+            isDragging = true;
+            const touch = e.touches[0];
+            const rect = scannerPanelEl.getBoundingClientRect();
+            dragOffsetX = touch.clientX - rect.left;
+            dragOffsetY = touch.clientY - rect.top;
+            
+            scannerPanelEl.style.position = 'fixed';
+            scannerPanelEl.style.right = 'auto';
+            scannerPanelEl.style.bottom = 'auto';
+            scannerPanelEl.style.left = rect.left + 'px';
+            scannerPanelEl.style.top = rect.top + 'px';
+        }, {passive: true});
+
+        document.addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            const touch = e.touches[0];
+            let newX = touch.clientX - dragOffsetX;
+            let newY = touch.clientY - dragOffsetY;
+            
+            newX = Math.max(0, Math.min(newX, window.innerWidth - scannerPanelEl.offsetWidth));
+            newY = Math.max(0, Math.min(newY, window.innerHeight - scannerPanelEl.offsetHeight));
+
+            scannerPanelEl.style.left = newX + 'px';
+            scannerPanelEl.style.top = newY + 'px';
+        }, {passive: true});
+
+        document.addEventListener('touchend', () => {
+            isDragging = false;
+        });
 
         let isFirstScan = true;
         let alertHistory = {};

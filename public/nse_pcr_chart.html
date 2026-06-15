@@ -163,6 +163,11 @@
 
         /* ── MOBILE ── */
         @media (max-width: 600px) {
+            html, body {
+                height: auto !important;
+                overflow-y: auto !important;
+            }
+
             .header {
                 padding: 10px 14px;
                 flex-direction: column;
@@ -216,6 +221,35 @@
         @media (max-width: 380px) {
             .title-group h1 { font-size: 0.9rem; }
             .legend { font-size: 0.7rem; }
+        }
+
+        @media (max-height: 500px) and (orientation: landscape) {
+            html, body {
+                height: auto !important;
+                overflow-y: auto !important;
+            }
+            .header {
+                flex-direction: row !important;
+                padding: 5px 10px !important;
+            }
+            .title-group p { display: none; }
+            .controls { width: auto !important; }
+            #chart-container { min-height: 70vh !important; }
+            .analysis-panel { 
+                padding: 8px 10px !important; 
+                margin-bottom: 5px; 
+                flex-wrap: nowrap !important;
+                overflow-x: auto !important;
+                -webkit-overflow-scrolling: touch;
+                justify-content: flex-start !important;
+            }
+            .analysis-panel .a-item { 
+                padding: 6px 10px !important; 
+                flex: 0 0 200px !important;
+                min-width: 200px !important;
+            }
+            .a-sub { display: none; }
+            .legend { padding: 4px 6px !important; font-size: 0.65rem !important; }
         }
 
         /* ── ANALYSIS PANEL ── */

@@ -225,8 +225,19 @@
             .title-group p { display: none; }
             .controls { width: auto !important; }
             #chart-container { min-height: 70vh !important; }
-            .analysis-panel { padding: 8px 10px !important; margin-bottom: 5px; }
-            .analysis-panel .a-item { padding: 6px 10px !important; }
+            .analysis-panel { 
+                padding: 8px 10px !important; 
+                margin-bottom: 5px; 
+                flex-wrap: nowrap !important;
+                overflow-x: auto !important;
+                -webkit-overflow-scrolling: touch;
+                justify-content: flex-start !important;
+            }
+            .analysis-panel .a-item { 
+                padding: 6px 10px !important; 
+                flex: 0 0 200px !important;
+                min-width: 200px !important;
+            }
             .a-sub { display: none; }
             .legend { padding: 4px 6px !important; font-size: 0.65rem !important; }
         }
@@ -465,6 +476,7 @@
         let pcrSeries, sma20Series, sma50Series;
         let allData = {};
         let loadBusy = false;
+        let latestValues = { spot: null, pcr: null, sma20: null, sma50: null };
 
         // ── INIT CHART ──
         function initChart() {
@@ -517,6 +529,11 @@
                     if (pc !== undefined) document.getElementById('leg-pcr').innerText = pc.value.toFixed(2);
                     if (sm20 !== undefined) document.getElementById('leg-sma20').innerText = sm20.value.toFixed(2);
                     if (sm50 !== undefined) document.getElementById('leg-sma50').innerText = sm50.value.toFixed(2);
+                } else {
+                    if (latestValues.spot !== null) document.getElementById('leg-spot').innerText = latestValues.spot.toFixed(2);
+                    if (latestValues.pcr !== null) document.getElementById('leg-pcr').innerText = latestValues.pcr.toFixed(2);
+                    if (latestValues.sma20 !== null) document.getElementById('leg-sma20').innerText = latestValues.sma20.toFixed(2);
+                    if (latestValues.sma50 !== null) document.getElementById('leg-sma50').innerText = latestValues.sma50.toFixed(2);
                 }
             });
         }
@@ -711,9 +728,15 @@
 
             const lastSpot = spotArr[spotArr.length - 1].value;
             const lastPcr  = pcrArr[pcrArr.length - 1].value;
+            const lastSma20 = sma20Arr[sma20Arr.length - 1].value;
+            const lastSma50 = sma50Arr[sma50Arr.length - 1].value;
+
+            latestValues = { spot: lastSpot, pcr: lastPcr, sma20: lastSma20, sma50: lastSma50 };
 
             document.getElementById('leg-spot').innerText = lastSpot.toFixed(2);
             document.getElementById('leg-pcr').innerText = lastPcr.toFixed(2);
+            document.getElementById('leg-sma20').innerText = lastSma20.toFixed(2);
+            document.getElementById('leg-sma50').innerText = lastSma50.toFixed(2);
             
             spotSeries.setMarkers(buildMarkers(spotArr, pcrArr, sma20Arr, sma50Arr, sym));
             analyze(spotArr, pcrArr);

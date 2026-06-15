@@ -629,53 +629,46 @@
             spotSeries.setMarkers(markers);
 
             // Scanner processing
-            if (!isFirstScan) {
-                const listEl = document.getElementById('scanner-list');
+            const listEl = document.getElementById('scanner-list');
+            
+            markers.forEach(marker => {
+                if (marker.time > alertHistory) {
+                    alertHistory = marker.time;
+                    
+                    // Find the original HH:MM time using getUTCHours
+                    const d = new Date(marker.time * 1000);
+                    let hr = d.getUTCHours(); let min = d.getUTCMinutes();
+                    hr = hr < 10 ? '0'+hr : hr; min = min < 10 ? '0'+min : min;
+                    
+                    allNewMarkers.push({
+                        symbol: 'SENSEX',
+                        time: marker.time,
+                        label: `${hr}:${min}`,
+                        shape: marker.shape,
+                        text: marker.text
+                    });
+                }
+            });
+            
+            if (allNewMarkers.length > 0) {
+                allNewMarkers.sort((a, b) => a.time - b.time);
+                if(listEl.innerHTML.includes("Waiting")) listEl.innerHTML = "";
                 
-                markers.forEach(marker => {
-                    if (marker.time > alertHistory) {
-                        alertHistory = marker.time;
-                        
-                        // Find the original HH:MM time using getUTCHours
-                        const d = new Date(marker.time * 1000);
-                        let hr = d.getUTCHours(); let min = d.getUTCMinutes();
-                        hr = hr < 10 ? '0'+hr : hr; min = min < 10 ? '0'+min : min;
-                        
-                        allNewMarkers.push({
-                            symbol: 'SENSEX',
-                            time: marker.time,
-                            label: `${hr}:${min}`,
-                            shape: marker.shape,
-                            text: marker.text
-                        });
-                    }
+                allNewMarkers.forEach(markerObj => {
+                    const item = document.createElement('div');
+                    const isBuy = markerObj.shape === 'arrowUp';
+                    item.className = `scanner-item ${isBuy ? 'buy' : 'sell'}`;
+                    item.innerHTML = `<b>${markerObj.label}</b> | ${markerObj.symbol}<br><span style="color:${isBuy?'#10b981':'#ef4444'}">${markerObj.text}</span>`;
+                    
+                    // Prepending oldest to newest ensures the absolute newest ends up at the very top
+                    listEl.prepend(item);
+                    
+                    const countEl = document.getElementById('scan-count');
+                    countEl.innerText = parseInt(countEl.innerText) + 1;
                 });
                 
-                if (allNewMarkers.length > 0) {
-                    allNewMarkers.sort((a, b) => a.time - b.time);
-                    if(listEl.innerHTML.includes("Waiting")) listEl.innerHTML = "";
-                    
-                    allNewMarkers.forEach(markerObj => {
-                        const item = document.createElement('div');
-                        const isBuy = markerObj.shape === 'arrowUp';
-                        item.className = `scanner-item ${isBuy ? 'buy' : 'sell'}`;
-                        item.innerHTML = `<b>${markerObj.label}</b> | ${markerObj.symbol}<br><span style="color:${isBuy?'#10b981':'#ef4444'}">${markerObj.text}</span>`;
-                        
-                        // Prepending oldest to newest ensures the absolute newest ends up at the very top
-                        listEl.prepend(item);
-                        
-                        const countEl = document.getElementById('scan-count');
-                        countEl.innerText = parseInt(countEl.innerText) + 1;
-                    });
-                    
-                    // Clear the array so we don't duplicate on next tick
-                    allNewMarkers = [];
-                }
-            } else {
-                if(markers.length > 0) {
-                    alertHistory = markers[markers.length - 1].time;
-                }
-                isFirstScan = false;
+                // Clear the array so we don't duplicate on next tick
+                allNewMarkers = [];
             }
 
             if(dataPoints.length > 0) {

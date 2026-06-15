@@ -189,7 +189,7 @@
 
             .status { font-size: 0.72rem; }
 
-            #chart-container { min-height: 0; }
+            #chart-container { min-height: 50vh !important; }
 
             .legend {
                 top: 8px;
@@ -199,15 +199,17 @@
             }
 
             .analysis-panel {
-                flex-wrap: nowrap;
-                overflow-x: auto;
+                flex-wrap: nowrap !important;
+                overflow-x: auto !important;
                 -webkit-overflow-scrolling: touch;
                 padding-bottom: 12px;
                 gap: 10px;
+                justify-content: flex-start !important;
             }
             
             .analysis-panel .a-item {
-                flex: 0 0 220px;
+                flex: 0 0 250px !important;
+                min-width: 250px !important;
             }
         }
 

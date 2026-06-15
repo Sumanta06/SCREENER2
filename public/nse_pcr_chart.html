@@ -373,6 +373,10 @@
 
     <!-- AUTO ANALYSIS PANEL -->
     <div class="analysis-panel" id="analysisPanel">
+        <div class="a-item neutral" id="a-advice">
+            <div class="a-label">Trading Advice</div>
+            <div class="a-value muted" id="a-advice-val" style="font-size:0.85rem;">--</div>
+        </div>
         <div class="a-item neutral" id="a-signal">
             <div class="a-label">Signal</div>
             <div class="a-value muted" id="a-signal-val">Loading...</div>
@@ -387,10 +391,6 @@
             <div class="a-label">Spot Trend (Today)</div>
             <div class="a-value muted" id="a-spot-val">--</div>
             <div class="a-sub" id="a-spot-sub"></div>
-        </div>
-        <div class="a-item neutral" id="a-advice">
-            <div class="a-label">Trading Advice</div>
-            <div class="a-value muted" id="a-advice-val" style="font-size:0.85rem;">--</div>
         </div>
     </div>
 
@@ -649,6 +649,7 @@
 
         function runScanner() {
             const listEl = document.getElementById('scanner-list');
+            let allNewMarkers = [];
 
             Object.keys(globalData).forEach(symbol => {
                 const data = globalData[symbol];
@@ -669,30 +670,45 @@
                 const markers = buildMarkers(uniqueSpot, uniquePcr);
                 if(markers.length === 0) return;
 
-                // Loop through all markers (oldest to newest)
+                // Loop through all markers for this symbol
                 markers.forEach(marker => {
                     // Check if we haven't seen this marker yet
                     if(marker.time > (alertHistory[symbol] || 0)) {
                         // Update history
                         alertHistory[symbol] = marker.time;
                         
-                        // Add to UI
-                        if(listEl.innerHTML.includes("Waiting")) listEl.innerHTML = "";
-                        const item = document.createElement('div');
-                        const isBuy = marker.shape === 'arrowUp';
-                        item.className = `scanner-item ${isBuy ? 'buy' : 'sell'}`;
                         const lbl = uniqueSpot.find(x => x.time === marker.time)?.label || 'Now';
-                        item.innerHTML = `<b>${lbl}</b> | ${symbol}<br><span style="color:${isBuy?'#10b981':'#ef4444'}">${marker.text}</span>`;
-                        item.onclick = () => { document.getElementById('symbolSelect').value = symbol; updateChart(symbol); };
-                        
-                        // Since we iterate oldest -> newest, prepending makes the newest end up at the top
-                        listEl.prepend(item);
-
-                        // Update counter
-                        const countEl = document.getElementById('scan-count');
-                        countEl.innerText = parseInt(countEl.innerText) + 1;
+                        allNewMarkers.push({
+                            symbol: symbol,
+                            time: marker.time,
+                            label: lbl,
+                            shape: marker.shape,
+                            text: marker.text
+                        });
                     }
                 });
+            });
+
+            if (allNewMarkers.length === 0) return;
+
+            // Sort all new markers strictly by global time (oldest to newest)
+            allNewMarkers.sort((a, b) => a.time - b.time);
+
+            if(listEl.innerHTML.includes("Waiting")) listEl.innerHTML = "";
+
+            allNewMarkers.forEach(markerObj => {
+                const item = document.createElement('div');
+                const isBuy = markerObj.shape === 'arrowUp';
+                item.className = `scanner-item ${isBuy ? 'buy' : 'sell'}`;
+                item.innerHTML = `<b>${markerObj.label}</b> | ${markerObj.symbol}<br><span style="color:${isBuy?'#10b981':'#ef4444'}">${markerObj.text}</span>`;
+                item.onclick = () => { document.getElementById('symbolSelect').value = markerObj.symbol; updateChart(markerObj.symbol); };
+                
+                // Prepending oldest to newest ensures the absolute newest ends up at the very top
+                listEl.prepend(item);
+
+                // Update counter
+                const countEl = document.getElementById('scan-count');
+                countEl.innerText = parseInt(countEl.innerText) + 1;
             });
 
             isFirstScan = false;

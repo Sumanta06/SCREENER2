@@ -214,6 +214,10 @@
         }
 
         @media (max-height: 500px) and (orientation: landscape) {
+            html, body {
+                height: auto !important;
+                overflow-y: auto !important;
+            }
             .header {
                 flex-direction: row !important;
                 padding: 5px 10px !important;

@@ -213,6 +213,20 @@
             .legend { font-size: 0.7rem; }
         }
 
+        @media (max-height: 500px) and (orientation: landscape) {
+            .header {
+                flex-direction: row !important;
+                padding: 5px 10px !important;
+            }
+            .title-group p { display: none; }
+            .controls { width: auto !important; }
+            #chart-container { min-height: 70vh !important; }
+            .analysis-panel { padding: 8px 10px !important; margin-bottom: 5px; }
+            .analysis-panel .a-item { padding: 6px 10px !important; }
+            .a-sub { display: none; }
+            .legend { padding: 4px 6px !important; font-size: 0.65rem !important; }
+        }
+
         /* ── ANALYSIS PANEL ── */
         .analysis-panel {
             background: var(--panel-bg);

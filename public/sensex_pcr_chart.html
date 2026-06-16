@@ -285,7 +285,7 @@
             </div>
             <div class="legend-item">
                 <div class="legend-color" style="background: #a855f7; border-style: dashed; border-width: 1px; border-color: #a855f7; height: 0; border-top: 2px dashed #a855f7;"></div>
-                <span style="color:#a855f7;font-weight:600;">10 SMA: <span id="leg-sma">--</span></span>
+                <span style="color:#a855f7;font-weight:600;">20 EMA: <span id="leg-sma">--</span></span>
             </div>
         </div>
     </div>
@@ -459,63 +459,104 @@
             if(subText) document.getElementById(`a-${id}-sub`).innerHTML = subText;
         }
 
-        const PCR_LOOK = 10;   // PCR trend lookback periods
-        const MIN_CANDLE = 20; // Skip first 20 candles
-        const MIN_GAP = 0.05;  // Spot must be ≥ 0.05% from SMA
-        const MIN_PCR_CHG = 0.01; // Minimum PCR change to confirm trend
-        const SMA_PERIOD = 10;
-
         function buildMarkers(dataPoints) {
             const markers = [];
-            const sma = [];
-            let sum = 0;
-            for(let i=0; i<dataPoints.length; i++) {
-                sum += dataPoints[i].spot;
-                if(i >= SMA_PERIOD) sum -= dataPoints[i - SMA_PERIOD].spot;
-                sma.push(i >= SMA_PERIOD - 1 ? sum / SMA_PERIOD : dataPoints[i].spot);
+            if (dataPoints.length < 20) return [];
+
+            // Calculate 20 EMA of Spot
+            const spotEma = [];
+            let currentSpotEma = dataPoints[0].spot;
+            const alphaSpot = 2 / (20 + 1);
+            spotEma.push(currentSpotEma);
+            for(let i=1; i<dataPoints.length; i++) {
+                currentSpotEma = dataPoints[i].spot * alphaSpot + currentSpotEma * (1 - alphaSpot);
+                spotEma.push(currentSpotEma);
+            }
+
+            // Calculate 10 EMA of PCR
+            const pcrEma = [];
+            let currentPcrEma = dataPoints[0].pcr;
+            const alphaPcr = 2 / (10 + 1);
+            pcrEma.push(currentPcrEma);
+            for(let i=1; i<dataPoints.length; i++) {
+                currentPcrEma = dataPoints[i].pcr * alphaPcr + currentPcrEma * (1 - alphaPcr);
+                pcrEma.push(currentPcrEma);
+            }
+
+            // Calculate Bollinger Bands (20-period)
+            const sma20 = [];
+            const stdDev = [];
+            for (let i = 0; i < dataPoints.length; i++) {
+                if (i < 19) {
+                    sma20.push(dataPoints[i].spot);
+                    stdDev.push(0);
+                    continue;
+                }
+                let sum = 0;
+                for (let j = i - 19; j <= i; j++) {
+                    sum += dataPoints[j].spot;
+                }
+                const avg = sum / 20;
+                sma20.push(avg);
+
+                let varianceSum = 0;
+                for (let j = i - 19; j <= i; j++) {
+                    varianceSum += Math.pow(dataPoints[j].spot - avg, 2);
+                }
+                stdDev.push(Math.sqrt(varianceSum / 20));
             }
 
             let signalState = 0; 
             let trapState = 0;
 
-            for (let i = 1; i < dataPoints.length; i++) {
-                if (i < MIN_CANDLE) continue;
-
+            for (let i = 20; i < dataPoints.length; i++) {
                 const spotNow  = dataPoints[i].spot;
-                const smaNow   = sma[i];
-                const gapPct   = (spotNow - smaNow) / smaNow * 100;
+                const spotEmaNow = spotEma[i];
+                const pcrNow = dataPoints[i].pcr;
+                const pcrEmaNow = pcrEma[i];
 
-                if (spotNow <= smaNow) {
+                // Bollinger Bandwidth check
+                const bandwidth = (4 * stdDev[i]) / sma20[i];
+                // Squeeze filter: If band width is less than 0.15% of spot price, it's a tight squeeze zone
+                const isSqueeze = bandwidth < 0.0015;
+
+                // Price position relative to Spot EMA
+                const gapPct = (spotNow - spotEmaNow) / spotEmaNow * 100;
+
+                if (spotNow <= spotEmaNow) {
                     if (trapState === 1) trapState = 0;
                 }
-                if (spotNow >= smaNow) {
+                if (spotNow >= spotEmaNow) {
                     if (trapState === -1) trapState = 0;
                 }
 
-                const pcrLook = Math.max(0, i - PCR_LOOK);
-                const pcrChg  = dataPoints[i].pcr - dataPoints[pcrLook].pcr;
+                // PCR Trend: PCR must cross above its 10 EMA for Buy, and below for Sell
+                const isPcrBullish = pcrNow > pcrEmaNow && (pcrNow - pcrEmaNow) > 0.002;
+                const isPcrBearish = pcrNow < pcrEmaNow && (pcrEmaNow - pcrNow) > 0.002;
 
-                if (gapPct >= MIN_GAP) {
-                    if (pcrChg >= MIN_PCR_CHG && signalState !== 1) {
-                        markers.push({ time: dataPoints[i].time, position: 'belowBar',
-                            color: '#10b981', shape: 'arrowUp', text: '🟢 Buy', size: 1.8 });
-                        signalState = 1; 
-                        trapState = 0;   
-                    } else if (pcrChg <= -MIN_PCR_CHG && signalState !== 1 && trapState !== 1) {
-                        markers.push({ time: dataPoints[i].time, position: 'belowBar',
-                            color: '#f59e0b', shape: 'circle', text: '', size: 0.8 });
-                        trapState = 1; 
-                    }
-                } else if (gapPct <= -MIN_GAP) {
-                    if (pcrChg <= -MIN_PCR_CHG && signalState !== -1) {
-                        markers.push({ time: dataPoints[i].time, position: 'aboveBar',
-                            color: '#ef4444', shape: 'arrowDown', text: '🔴 Sell', size: 1.8 });
-                        signalState = -1; 
-                        trapState = 0;
-                    } else if (pcrChg >= MIN_PCR_CHG && signalState !== -1 && trapState !== -1) {
-                        markers.push({ time: dataPoints[i].time, position: 'aboveBar',
-                            color: '#3b82f6', shape: 'circle', text: '', size: 0.8 });
-                        trapState = -1;
+                if (!isSqueeze) {
+                    if (gapPct >= 0.05) {
+                        if (isPcrBullish && signalState !== 1) {
+                            markers.push({ time: dataPoints[i].time, position: 'belowBar',
+                                color: '#10b981', shape: 'arrowUp', text: '🟢 Buy', size: 1.8 });
+                            signalState = 1; 
+                            trapState = 0;   
+                        } else if (isPcrBearish && signalState !== 1 && trapState !== 1) {
+                            markers.push({ time: dataPoints[i].time, position: 'belowBar',
+                                color: '#f59e0b', shape: 'circle', text: '', size: 0.8 });
+                            trapState = 1; 
+                        }
+                    } else if (gapPct <= -0.05) {
+                        if (isPcrBearish && signalState !== -1) {
+                            markers.push({ time: dataPoints[i].time, position: 'aboveBar',
+                                color: '#ef4444', shape: 'arrowDown', text: '🔴 Sell', size: 1.8 });
+                            signalState = -1; 
+                            trapState = 0;
+                        } else if (isPcrBullish && signalState !== -1 && trapState !== -1) {
+                            markers.push({ time: dataPoints[i].time, position: 'aboveBar',
+                                color: '#3b82f6', shape: 'circle', text: '', size: 0.8 });
+                            trapState = -1;
+                        }
                     }
                 }
             }
@@ -523,14 +564,17 @@
         }
 
         function buildSma(dataPoints) {
-            const sma = [];
-            let sum = 0;
-            for(let i=0; i<dataPoints.length; i++) {
-                sum += dataPoints[i].spot;
-                if(i >= SMA_PERIOD) sum -= dataPoints[i - SMA_PERIOD].spot;
-                sma.push({ time: dataPoints[i].time, value: i >= SMA_PERIOD - 1 ? sum / SMA_PERIOD : dataPoints[i].spot });
+            const ema = [];
+            if (dataPoints.length === 0) return [];
+            let val = dataPoints[0].spot;
+            const period = 20;
+            const alpha = 2 / (period + 1);
+            ema.push({ time: dataPoints[0].time, value: val });
+            for (let i = 1; i < dataPoints.length; i++) {
+                val = dataPoints[i].spot * alpha + val * (1 - alpha);
+                ema.push({ time: dataPoints[i].time, value: val });
             }
-            return sma;
+            return ema;
         }
 
         async function fetchJson(url) {
@@ -632,7 +676,7 @@
             const listEl = document.getElementById('scanner-list');
             
             markers.forEach(marker => {
-                if (marker.time > alertHistory) {
+                if (marker.text && marker.time > alertHistory) {
                     alertHistory = marker.time;
                     
                     // Find the original HH:MM time using getUTCHours

@@ -589,17 +589,30 @@ async function loadData(silent=false) {
     const res = Number(data.ce_wall) || 0;
     const spot = Number(data.spot) || 0;
     
-    if (sup > 0 && res > 0 && res > sup) {
-        const range = res - sup;
-        const pos = Math.min(Math.max(((spot - sup) / range) * 100, 0), 100);
-        
-        document.getElementById('gauge-pointer').style.left = `${pos}%`;
-        document.getElementById('gauge-spot-val').innerText = format(spot, 0);
-        document.getElementById('gauge-sup-label').innerText = `SUP: ${format(sup, 0)}`;
-        document.getElementById('gauge-res-label').innerText = `RES: ${format(res, 0)}`;
-        
-        document.getElementById('dist-res').innerText = `${format(res - spot, 1)} pts (${(((res-spot)/spot)*100).toFixed(2)}%)`;
-        document.getElementById('dist-sup').innerText = `${format(spot - sup, 1)} pts (${(((spot-sup)/spot)*100).toFixed(2)}%)`;
+    if (sup > 0 && res > 0) {
+        if (res > sup) {
+            const range = res - sup;
+            const pos = Math.min(Math.max(((spot - sup) / range) * 100, 0), 100);
+            
+            document.getElementById('gauge-pointer').style.left = `${pos}%`;
+            document.getElementById('gauge-spot-val').innerText = format(spot, 0);
+            document.getElementById('gauge-sup-label').innerText = `SUP: ${format(sup, 0)}`;
+            document.getElementById('gauge-sup-label').style.color = 'var(--text)';
+            document.getElementById('gauge-res-label').innerText = `RES: ${format(res, 0)}`;
+            
+            document.getElementById('dist-res').innerText = `${format(res - spot, 1)} pts (${(((res-spot)/spot)*100).toFixed(2)}%)`;
+            document.getElementById('dist-sup').innerText = `${format(spot - sup, 1)} pts (${(((spot-sup)/spot)*100).toFixed(2)}%)`;
+        } else if (res === sup) {
+            document.getElementById('gauge-pointer').style.left = `50%`;
+            document.getElementById('gauge-spot-val').innerText = format(spot, 0);
+            document.getElementById('gauge-sup-label').innerText = `SUP: ${format(sup, 0)}`;
+            document.getElementById('gauge-sup-label').style.color = 'var(--text)';
+            document.getElementById('gauge-res-label').innerText = `RES: ${format(res, 0)}`;
+            
+            const dist = Math.abs(spot - sup);
+            document.getElementById('dist-sup').innerText = `Deviation: ${format(dist, 1)} pts`;
+            document.getElementById('dist-res').innerText = ``;
+        }
         
         const gBias = document.getElementById('gauge-bias');
         if (gBias) {
